@@ -1,13 +1,7 @@
 {
   "files": {
     "ignoreUnknown": false,
-    "includes": [
-      "**",
-      "!node_modules",
-      "!dist",
-      "!.claude",
-      "!.beads"
-    ]
+    "includes": ["**", "!node_modules", "!dist", "!.claude", "!.beads"]
   },
   "linter": {
     "rules": {
@@ -28,8 +22,7 @@
       }
     }
   },
-  "overrides": [
-  ],
+  "overrides": [],
   "formatter": {
     "enabled": true,
     "useEditorconfig": true,

@@ -2,4 +2,4 @@
 set -e
 bun run build
 bunx biome check --write .
-bun test --dots
+bun run test

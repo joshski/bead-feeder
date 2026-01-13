@@ -1,11 +1,12 @@
 {
-  "name": "ralph-kit",
+  "name": "bead-feeder",
   "version": "1.0.0",
-  "description": "A starter kit for agent-driven development with ralph and beads.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "A web app for managing beads issues with a dependency graph view.",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -16,17 +17,24 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/joshski/ralph-kit/issues"
   },
   "homepage": "https://github.com/joshski/ralph-kit#readme",
   "dependencies": {
     "@types/node": "^25.0.6",
-    "typescript": "^5.9.3"
+    "@vitejs/plugin-react": "^5.1.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
+    "@testing-library/react": "^16.3.1",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "^27.4.0",
     "vitest": "^4.0.16"
   }
 }

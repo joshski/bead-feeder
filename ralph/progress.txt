@@ -1,1 +1,15 @@
 # Progress Log
+
+## 2026-01-13: Initialize Vite React TypeScript project (bead-feeder-qdp)
+
+Set up Vite + React + TypeScript project with:
+- Added vite, react, react-dom, @vitejs/plugin-react dependencies
+- Created index.html entry point
+- Created src/main.tsx and src/App.tsx
+- Configured tsconfig.json for React JSX and ESNext modules
+- Created vite.config.ts with React plugin
+- Created vitest.config.ts with jsdom environment for React testing
+- Added @testing-library/react for component tests
+- Created src/App.test.tsx with basic render test
+- Updated check script to use vitest via `bun run test`
+- Updated package.json with Vite scripts (dev, build, preview)

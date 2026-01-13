@@ -3,7 +3,13 @@
     "allow": [
       "Bash(bd onboard:*)",
       "Bash(bd create:*)",
-      "Bash(bd ready:*)"
+      "Bash(bd ready:*)",
+      "Bash(find:*)",
+      "Bash(git -C /workspaces/bead-feeder config:*)",
+      "Bash(git -C /workspaces/bead-feeder log --all --oneline)",
+      "Bash(git -C /workspaces/bead-feeder ls-files:*)",
+      "Bash(bd --version:*)",
+      "Bash(bd list:*)"
     ]
   }
 }

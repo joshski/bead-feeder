@@ -13,3 +13,14 @@ Set up Vite + React + TypeScript project with:
 - Created src/App.test.tsx with basic render test
 - Updated check script to use vitest via `bun run test`
 - Updated package.json with Vite scripts (dev, build, preview)
+
+## 2026-01-13: Set up React Router v7 (bead-feeder-4lc)
+
+Configured react-router v7 for navigation:
+- Installed react-router v7.12.0
+- Created src/pages/DagView.tsx for the main DAG view
+- Created src/pages/IssueDetail.tsx for viewing individual issues
+- Updated src/App.tsx with layout (header, nav, Outlet)
+- Updated src/main.tsx with BrowserRouter and route definitions
+- Routes: "/" (DAG view), "/issues/:issueId" (issue detail)
+- Updated App.test.tsx to use MemoryRouter for testing

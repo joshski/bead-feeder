@@ -1,7 +1,17 @@
+import { Link, Outlet } from 'react-router'
+
 function App() {
   return (
     <div>
-      <h1>Bead Feeder</h1>
+      <header>
+        <h1>Bead Feeder</h1>
+        <nav>
+          <Link to="/">DAG View</Link>
+        </nav>
+      </header>
+      <main>
+        <Outlet />
+      </main>
     </div>
   )
 }

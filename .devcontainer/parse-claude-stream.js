@@ -3,7 +3,8 @@
 // Parser for Claude Code's stream-json output
 // Converts streaming JSON to human-readable output
 
-const readline = require('node:readline')
+import readline from 'node:readline'
+import { fileURLToPath } from 'node:url'
 
 // Format tool details for display
 function formatToolDetails(toolName, inputJson) {
@@ -176,7 +177,7 @@ function createParser(output = process.stdout, errorOutput = process.stderr) {
 }
 
 // Run as CLI when executed directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const parser = createParser()
   const rl = readline.createInterface({
     input: process.stdin,
@@ -187,4 +188,4 @@ if (require.main === module) {
 }
 
 // Export for testing
-module.exports = { formatToolDetails, createParser }
+export { formatToolDetails, createParser }

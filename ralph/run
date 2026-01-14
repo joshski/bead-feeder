@@ -18,7 +18,11 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=========================================="
 
     claude "Read ./ralph/RALPH.md and get to work" \
-        --dangerously-skip-permissions
+        --dangerously-skip-permissions \
+        --output-format stream-json \
+        --verbose \
+        --include-partial-messages \
+        | node .devcontainer/parse-claude-stream.js
 done
 
 echo ""

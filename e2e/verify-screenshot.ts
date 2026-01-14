@@ -28,13 +28,17 @@ export async function verifyScreenshotShowsIssues(
     '{"verified": true or false, "issueCount": NUMBER, "description": "DESCRIPTION"}. ' +
     'Set verified to true if you can see at least one issue node displayed in the graph.'
 
-  console.log(`Running claude CLI to verify screenshot...`)
+  console.log('Running claude CLI to verify screenshot...')
 
   const stdout = await new Promise<string>((resolve, reject) => {
-    const proc = spawn('claude', ['--dangerously-skip-permissions', '-p', prompt], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
-    })
+    const proc = spawn(
+      'claude',
+      ['--dangerously-skip-permissions', '-p', prompt],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: process.env,
+      }
+    )
 
     let output = ''
     let errorOutput = ''

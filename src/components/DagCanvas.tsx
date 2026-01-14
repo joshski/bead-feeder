@@ -17,7 +17,7 @@ import {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import '@xyflow/react/dist/style.css'
 import IssueNode from './IssueNode'
 
@@ -40,8 +40,17 @@ function DagCanvasInner({
   onEdgesChange: externalOnEdgesChange,
   onConnect: externalOnConnect,
 }: DagCanvasProps) {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes)
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+
+  // Sync nodes/edges when props change (e.g., after API fetch)
+  useEffect(() => {
+    setNodes(initialNodes)
+  }, [initialNodes, setNodes])
+
+  useEffect(() => {
+    setEdges(initialEdges)
+  }, [initialEdges, setEdges])
 
   const handleConnect = useCallback(
     (connection: Connection) => {

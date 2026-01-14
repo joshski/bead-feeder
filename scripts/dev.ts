@@ -46,7 +46,7 @@ async function main() {
   console.log('')
 
   const viteProc = spawn({
-    cmd: ['bun', 'run', 'vite'],
+    cmd: ['bun', 'run', 'vite', '--host'],
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),

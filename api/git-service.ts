@@ -308,3 +308,134 @@ export async function isGitRepository(cwd: string): Promise<boolean> {
   const result = await runGitCommand(['rev-parse', '--git-dir'], { cwd })
   return result.success
 }
+
+export interface BranchStatus {
+  ahead: number
+  behind: number
+  diverged: boolean
+}
+
+/**
+ * Check if the local branch is behind the remote (needs pull) or ahead (needs push).
+ * Returns the number of commits ahead/behind and whether branches have diverged.
+ */
+export async function compareBranches(
+  cwd: string,
+  remote = 'origin'
+): Promise<{ success: boolean; status?: BranchStatus; error?: string }> {
+  // Get current branch
+  const branchResult = await getCurrentBranch(cwd)
+  if (!branchResult.success || !branchResult.output) {
+    return {
+      success: false,
+      error: branchResult.error || 'Failed to get current branch',
+    }
+  }
+  const branch = branchResult.output
+
+  // Get rev-list count for ahead/behind
+  const result = await runGitCommand(
+    ['rev-list', '--left-right', '--count', `${remote}/${branch}...HEAD`],
+    { cwd }
+  )
+
+  if (!result.success) {
+    // This can fail if remote branch doesn't exist yet
+    if (result.error?.includes('unknown revision')) {
+      return { success: true, status: { ahead: 0, behind: 0, diverged: false } }
+    }
+    return { success: false, error: result.error }
+  }
+
+  // Output format: "behind\tahead"
+  const parts = result.output?.split(/\s+/) || []
+  const behind = Number.parseInt(parts[0] || '0', 10)
+  const ahead = Number.parseInt(parts[1] || '0', 10)
+
+  return {
+    success: true,
+    status: {
+      ahead,
+      behind,
+      diverged: ahead > 0 && behind > 0,
+    },
+  }
+}
+
+/**
+ * Check if there are merge conflicts in the working directory
+ */
+export async function hasConflicts(cwd: string): Promise<boolean> {
+  const result = await runGitCommand(
+    ['diff', '--name-only', '--diff-filter=U'],
+    { cwd }
+  )
+  return result.success && !!result.output?.trim()
+}
+
+/**
+ * Abort an in-progress merge
+ */
+export async function abortMerge(cwd: string): Promise<GitResult> {
+  return runGitCommand(['merge', '--abort'], { cwd })
+}
+
+/**
+ * Accept all remote changes during a conflict (theirs strategy)
+ */
+export async function resolveConflictsTheirs(cwd: string): Promise<GitResult> {
+  // Get list of conflicted files
+  const conflictedResult = await runGitCommand(
+    ['diff', '--name-only', '--diff-filter=U'],
+    { cwd }
+  )
+  if (!conflictedResult.success || !conflictedResult.output) {
+    return { success: true } // No conflicts
+  }
+
+  const files = conflictedResult.output.trim().split('\n').filter(Boolean)
+  for (const file of files) {
+    const checkoutResult = await runGitCommand(['checkout', '--theirs', file], {
+      cwd,
+    })
+    if (!checkoutResult.success) {
+      return checkoutResult
+    }
+    const addResult = await runGitCommand(['add', file], { cwd })
+    if (!addResult.success) {
+      return addResult
+    }
+  }
+
+  return { success: true }
+}
+
+/**
+ * Accept all local changes during a conflict (ours strategy)
+ */
+export async function resolveConflictsOurs(cwd: string): Promise<GitResult> {
+  // Get list of conflicted files
+  const conflictedResult = await runGitCommand(
+    ['diff', '--name-only', '--diff-filter=U'],
+    { cwd }
+  )
+  if (!conflictedResult.success || !conflictedResult.output) {
+    return { success: true } // No conflicts
+  }
+
+  const files = conflictedResult.output.trim().split('\n').filter(Boolean)
+  for (const file of files) {
+    const checkoutResult = await runGitCommand(['checkout', '--ours', file], {
+      cwd,
+    })
+    if (!checkoutResult.success) {
+      return checkoutResult
+    }
+    const addResult = await runGitCommand(['add', file], { cwd })
+    if (!addResult.success) {
+      return addResult
+    }
+  }
+
+  return { success: true }
+}

@@ -6,7 +6,10 @@ import {
   useEffect,
   useState,
 } from 'react'
-import type { SyncStatus } from '../components/SyncStatusIndicator'
+import type {
+  ConflictInfo,
+  SyncStatus,
+} from '../components/SyncStatusIndicator'
 import type { ToastMessage, ToastType } from '../components/Toast'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -16,12 +19,14 @@ interface SyncState {
   lastSyncTime: number | null
   errorMessage: string | null
   pendingChanges: boolean
+  conflictInfo: ConflictInfo | null
 }
 
 interface SyncContextValue extends SyncState {
   toasts: ToastMessage[]
   addToast: (type: ToastType, message: string) => void
   dismissToast: (id: string) => void
+  resolveConflict: (resolution: 'theirs' | 'ours' | 'abort') => Promise<void>
 }
 
 const SyncContext = createContext<SyncContextValue | null>(null)
@@ -44,6 +49,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
     lastSyncTime: null,
     errorMessage: null,
     pendingChanges: false,
+    conflictInfo: null,
   })
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
@@ -55,6 +61,37 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
+
+  const resolveConflict = useCallback(
+    async (resolution: 'theirs' | 'ours' | 'abort') => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/sync/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ resolution }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || 'Failed to resolve conflict')
+        }
+
+        setSyncState(prev => ({
+          ...prev,
+          status: 'syncing',
+          conflictInfo: null,
+          errorMessage: null,
+        }))
+
+        addToast('info', `Resolving conflict with "${resolution}" strategy...`)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        addToast('error', `Failed to resolve: ${message}`)
+      }
+    },
+    [addToast]
+  )
 
   // Subscribe to sync status updates via SSE
   useEffect(() => {
@@ -69,7 +106,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
         if (data.type === 'status') {
           // Map backend status to frontend status
           let frontendStatus: SyncStatus = 'synced'
-          if (data.status === 'syncing') {
+          if (data.status === 'conflict') {
+            frontendStatus = 'conflict'
+          } else if (data.status === 'syncing') {
             frontendStatus = 'syncing'
           } else if (data.status === 'error') {
             frontendStatus = 'error'
@@ -83,6 +122,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
             lastSyncTime: data.lastSync,
             errorMessage: data.lastError,
             pendingChanges: data.pendingJobs > 0,
+            conflictInfo: data.conflictInfo || null,
           }))
         } else if (data.type === 'syncComplete') {
           setSyncState(prev => ({
@@ -100,6 +140,17 @@ export function SyncProvider({ children }: SyncProviderProps) {
             errorMessage: data.error,
           }))
           addToast('error', `Sync failed: ${data.error}`)
+        } else if (data.type === 'conflict') {
+          setSyncState(prev => ({
+            ...prev,
+            status: 'conflict',
+            errorMessage: data.message,
+            conflictInfo: { ahead: data.ahead, behind: data.behind },
+          }))
+          addToast(
+            'error',
+            `Sync conflict: ${data.ahead} commits ahead, ${data.behind} behind`
+          )
         }
       } catch {
         // Ignore parse errors
@@ -121,6 +172,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
     toasts,
     addToast,
     dismissToast,
+    resolveConflict,
   }
 
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>

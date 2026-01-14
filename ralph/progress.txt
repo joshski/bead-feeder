@@ -383,3 +383,42 @@ Added UI components for sync status display with toast notifications:
 - Added 9 tests for Toast component
 - Cleaned up test artifact issues from issue tracker
 - All 205 tests passing
+
+## 2026-01-14: Handle sync conflicts and errors (bead-feeder-7d9)
+
+Implemented git conflict detection, retry with exponential backoff, and conflict resolution UI:
+- Added conflict detection functions to api/git-service.ts:
+  - compareBranches(): Returns ahead/behind counts and diverged status
+  - hasConflicts(): Checks for merge conflicts in working directory
+  - abortMerge(): Aborts an in-progress merge
+  - resolveConflictsTheirs(): Accept all remote changes
+  - resolveConflictsOurs(): Accept all local changes
+- Updated api/sync-queue.ts with conflict handling:
+  - Added 'conflict' status to SyncStatus type
+  - Added conflictInfo to SyncQueueState (ahead/behind counts)
+  - Added 'conflict' event type for notifying frontend
+  - Implemented retry with exponential backoff (configurable maxRetries, retryBaseDelayMs)
+  - Push now fetches first, checks if behind remote, auto-pulls if not diverged
+  - Detects conflicts during push/pull and emits conflict events
+  - Added enqueueResolve() method with 'theirs', 'ours', 'abort' strategies
+  - Added clearConflict() to reset conflict state after resolution
+- Updated src/components/SyncStatusIndicator.tsx:
+  - Added 'conflict' status with red indicator
+  - Shows ahead/behind counts when in conflict state
+  - Shows Pull/Abort buttons with onResolve callback
+- Updated src/context/SyncContext.tsx:
+  - Added conflictInfo state and resolveConflict function
+  - Handles conflict events from SSE endpoint
+  - Shows toast notifications on conflict
+- Added POST /api/sync/resolve endpoint to api/server.ts:
+  - Accepts resolution: 'theirs' | 'ours' | 'abort'
+  - Requires authentication via cookie
+  - Triggers sync queue conflict resolution
+- Updated /api/sync/events SSE endpoint to emit conflict events
+- Added 19 new tests:
+  - 3 tests for git-service conflict detection functions
+  - 7 tests for sync-queue conflict handling and enqueueResolve
+  - 5 tests for SyncStatusIndicator conflict UI
+  - 4 tests for /api/sync/resolve endpoint
+- Cleaned up 16 test artifact issues from issue tracker
+- All 224 tests passing

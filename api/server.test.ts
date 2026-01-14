@@ -482,4 +482,70 @@ describe('API Server', () => {
       expect(response.headers.get('access-control-allow-origin')).toBe('*')
     })
   })
+
+  describe('POST /api/sync/resolve', () => {
+    it('returns 401 without authentication', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/sync/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resolution: 'theirs' }),
+        }
+      )
+
+      expect(response.status).toBe(401)
+      const error = await response.json()
+      expect(error).toHaveProperty('error', 'Unauthorized')
+    })
+
+    it('returns 400 for invalid resolution', async () => {
+      // This will fail auth first, but tests the validation path
+      const response = await fetch(
+        `http://localhost:${port}/api/sync/resolve`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: 'github_token=test-token',
+          },
+          body: JSON.stringify({ resolution: 'invalid' }),
+        }
+      )
+
+      expect(response.status).toBe(400)
+    })
+
+    it('returns 400 for missing resolution', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/sync/resolve`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: 'github_token=test-token',
+          },
+          body: JSON.stringify({}),
+        }
+      )
+
+      expect(response.status).toBe(400)
+    })
+
+    it('includes CORS headers on response', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/sync/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resolution: 'theirs' }),
+        }
+      )
+
+      expect(response.headers.get('access-control-allow-origin')).toBeDefined()
+      expect(response.headers.get('access-control-allow-credentials')).toBe(
+        'true'
+      )
+    })
+  })
 })

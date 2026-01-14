@@ -8,8 +8,15 @@ import { useSyncStatus } from './context/SyncContext'
 function App() {
   const { user, isLoading, logout } = useAuth()
   const { owner, repo } = useParams<{ owner?: string; repo?: string }>()
-  const { status, lastSyncTime, errorMessage, toasts, dismissToast } =
-    useSyncStatus()
+  const {
+    status,
+    lastSyncTime,
+    errorMessage,
+    conflictInfo,
+    toasts,
+    dismissToast,
+    resolveConflict,
+  } = useSyncStatus()
 
   return (
     <div>
@@ -39,6 +46,8 @@ function App() {
                 status={status}
                 lastSyncTime={lastSyncTime}
                 errorMessage={errorMessage}
+                conflictInfo={conflictInfo}
+                onResolve={resolveConflict}
               />
             </>
           )}

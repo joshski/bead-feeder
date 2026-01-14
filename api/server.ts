@@ -743,6 +743,64 @@ const server = Bun.serve({
       }
     }
 
+    // Conflict resolution endpoint
+    if (url.pathname === '/api/sync/resolve' && req.method === 'POST') {
+      const token = getTokenFromCookies(req)
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
+
+      try {
+        const body = await req.json()
+        const resolution = body.resolution as 'theirs' | 'ours' | 'abort'
+
+        if (!resolution || !['theirs', 'ours', 'abort'].includes(resolution)) {
+          return new Response(
+            JSON.stringify({
+              error: 'Invalid resolution. Must be "theirs", "ours", or "abort"',
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        const syncQueue = getSyncQueue()
+        syncQueue.setToken(token)
+        syncQueue.enqueueResolve(resolution)
+
+        return new Response(JSON.stringify({ success: true, resolution }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      } catch {
+        return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
+    }
+
     // SSE endpoint for sync status updates
     if (url.pathname === '/api/sync/events' && req.method === 'GET') {
       const syncQueue = getSyncQueue()
@@ -784,6 +842,18 @@ const server = Bun.serve({
             controller.enqueue(encoder.encode(eventData))
           })
 
+          // Subscribe to conflict events
+          const unsubscribeConflict = syncQueue.on('conflict', data => {
+            const conflictData = data as {
+              ahead: number
+              behind: number
+              message: string
+              hasConflicts?: boolean
+            }
+            const eventData = `data: ${JSON.stringify({ type: 'conflict', ...conflictData })}\n\n`
+            controller.enqueue(encoder.encode(eventData))
+          })
+
           // Send heartbeat every 30 seconds to keep connection alive
           const heartbeatInterval = setInterval(() => {
             try {
@@ -801,6 +871,7 @@ const server = Bun.serve({
             unsubscribeStatus()
             unsubscribeComplete()
             unsubscribeError()
+            unsubscribeConflict()
           }
         },
       })

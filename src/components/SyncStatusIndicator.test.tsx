@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import SyncStatusIndicator from './SyncStatusIndicator'
 
 describe('SyncStatusIndicator', () => {
@@ -52,5 +52,66 @@ describe('SyncStatusIndicator', () => {
     )
     const container = screen.getByText('Sync error').closest('div')
     expect(container?.getAttribute('title')).toBe('Failed to push changes')
+  })
+
+  it('displays conflict status with ahead/behind info', () => {
+    render(
+      <SyncStatusIndicator
+        status="conflict"
+        conflictInfo={{ ahead: 2, behind: 3 }}
+      />
+    )
+    expect(screen.getByText('Conflict')).toBeDefined()
+    expect(screen.getByText('(2 ahead, 3 behind)')).toBeDefined()
+  })
+
+  it('shows resolution buttons when in conflict state with onResolve', () => {
+    const onResolve = vi.fn()
+    render(
+      <SyncStatusIndicator
+        status="conflict"
+        conflictInfo={{ ahead: 1, behind: 1 }}
+        onResolve={onResolve}
+      />
+    )
+    expect(screen.getByText('Pull')).toBeDefined()
+    expect(screen.getByText('Abort')).toBeDefined()
+  })
+
+  it('calls onResolve with theirs when Pull is clicked', () => {
+    const onResolve = vi.fn()
+    render(
+      <SyncStatusIndicator
+        status="conflict"
+        conflictInfo={{ ahead: 1, behind: 1 }}
+        onResolve={onResolve}
+      />
+    )
+    fireEvent.click(screen.getByText('Pull'))
+    expect(onResolve).toHaveBeenCalledWith('theirs')
+  })
+
+  it('calls onResolve with abort when Abort is clicked', () => {
+    const onResolve = vi.fn()
+    render(
+      <SyncStatusIndicator
+        status="conflict"
+        conflictInfo={{ ahead: 1, behind: 1 }}
+        onResolve={onResolve}
+      />
+    )
+    fireEvent.click(screen.getByText('Abort'))
+    expect(onResolve).toHaveBeenCalledWith('abort')
+  })
+
+  it('does not show resolution buttons without onResolve callback', () => {
+    render(
+      <SyncStatusIndicator
+        status="conflict"
+        conflictInfo={{ ahead: 1, behind: 1 }}
+      />
+    )
+    expect(screen.queryByText('Pull')).toBeNull()
+    expect(screen.queryByText('Abort')).toBeNull()
   })
 })

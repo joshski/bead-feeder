@@ -1,9 +1,16 @@
-export type SyncStatus = 'synced' | 'syncing' | 'pending' | 'error'
+export type SyncStatus = 'synced' | 'syncing' | 'pending' | 'error' | 'conflict'
+
+export interface ConflictInfo {
+  ahead: number
+  behind: number
+}
 
 export interface SyncStatusIndicatorProps {
   status: SyncStatus
   lastSyncTime?: number | null
   errorMessage?: string | null
+  conflictInfo?: ConflictInfo | null
+  onResolve?: (resolution: 'theirs' | 'ours' | 'abort') => void
 }
 
 const statusStyles: Record<SyncStatus, { color: string; label: string }> = {
@@ -11,6 +18,7 @@ const statusStyles: Record<SyncStatus, { color: string; label: string }> = {
   syncing: { color: '#3b82f6', label: 'Syncing...' },
   pending: { color: '#f59e0b', label: 'Pending changes' },
   error: { color: '#ef4444', label: 'Sync error' },
+  conflict: { color: '#ef4444', label: 'Conflict' },
 }
 
 function formatLastSync(timestamp: number): string {
@@ -36,6 +44,8 @@ function SyncStatusIndicator({
   status,
   lastSyncTime,
   errorMessage,
+  conflictInfo,
+  onResolve,
 }: SyncStatusIndicatorProps) {
   const { color, label } = statusStyles[status]
 
@@ -47,7 +57,7 @@ function SyncStatusIndicator({
         gap: '8px',
         padding: '4px 12px',
         borderRadius: '16px',
-        backgroundColor: '#f3f4f6',
+        backgroundColor: status === 'conflict' ? '#fef2f2' : '#f3f4f6',
         fontSize: '13px',
       }}
       title={
@@ -68,6 +78,47 @@ function SyncStatusIndicator({
         }}
       />
       <span style={{ color: '#374151' }}>{label}</span>
+      {status === 'conflict' && conflictInfo && (
+        <span style={{ color: '#9ca3af', fontSize: '12px' }}>
+          ({conflictInfo.ahead} ahead, {conflictInfo.behind} behind)
+        </span>
+      )}
+      {status === 'conflict' && onResolve && (
+        <div style={{ display: 'flex', gap: '4px', marginLeft: '4px' }}>
+          <button
+            type="button"
+            onClick={() => onResolve('theirs')}
+            style={{
+              padding: '2px 8px',
+              fontSize: '11px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Accept remote changes and discard local conflicts"
+          >
+            Pull
+          </button>
+          <button
+            type="button"
+            onClick={() => onResolve('abort')}
+            style={{
+              padding: '2px 8px',
+              fontSize: '11px',
+              backgroundColor: '#6b7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Abort the merge and revert to previous state"
+          >
+            Abort
+          </button>
+        </div>
+      )}
       {lastSyncTime && status === 'synced' && (
         <span style={{ color: '#9ca3af', fontSize: '12px' }}>
           {formatLastSync(lastSyncTime)}

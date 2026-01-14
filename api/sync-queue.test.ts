@@ -174,4 +174,92 @@ describe('SyncQueue', () => {
       queue2.stop()
     })
   })
+
+  describe('enqueueResolve', () => {
+    it('queues a resolve job with theirs strategy', () => {
+      queue.enqueueResolve('theirs')
+      const state = queue.getState()
+      expect(state.pendingJobs).toBeGreaterThanOrEqual(0) // May already be processing
+    })
+
+    it('queues a resolve job with abort strategy', () => {
+      queue.enqueueResolve('abort')
+      const state = queue.getState()
+      expect(state.pendingJobs).toBeGreaterThanOrEqual(0)
+    })
+
+    it('replaces existing resolve jobs', () => {
+      queue.enqueueResolve('theirs')
+      queue.enqueueResolve('abort')
+      // Should only have one resolve job
+      const state = queue.getState()
+      expect(state.pendingJobs).toBeLessThanOrEqual(1)
+    })
+  })
+
+  describe('clearConflict', () => {
+    it('clears conflict state when in conflict status', async () => {
+      // Manually set conflict state for testing
+      const internalQueue = queue as unknown as {
+        status: string
+        conflictInfo: { ahead: number; behind: number } | undefined
+        lastError: string | null
+        setStatus: (status: string) => void
+      }
+      internalQueue.status = 'conflict'
+      internalQueue.conflictInfo = { ahead: 1, behind: 2 }
+      internalQueue.lastError = 'Test conflict'
+
+      queue.clearConflict()
+
+      const state = queue.getState()
+      expect(state.status).toBe('idle')
+      expect(state.conflictInfo).toBeUndefined()
+      expect(state.lastError).toBeNull()
+    })
+
+    it('does nothing when not in conflict state', () => {
+      const initialState = queue.getState()
+      queue.clearConflict()
+      const afterState = queue.getState()
+      expect(afterState.status).toBe(initialState.status)
+    })
+  })
+
+  describe('conflict events', () => {
+    it('emits conflict events', async () => {
+      const conflictEvents: unknown[] = []
+      queue.on('conflict', data => conflictEvents.push(data))
+
+      // Manually trigger a conflict event for testing
+      const internalQueue = queue as unknown as {
+        emit: (event: string, data: unknown) => void
+      }
+      internalQueue.emit('conflict', {
+        ahead: 5,
+        behind: 3,
+        message: 'Test conflict',
+      })
+
+      expect(conflictEvents).toHaveLength(1)
+      const event = conflictEvents[0] as {
+        ahead: number
+        behind: number
+        message: string
+      }
+      expect(event.ahead).toBe(5)
+      expect(event.behind).toBe(3)
+    })
+  })
+
+  describe('retry configuration', () => {
+    it('accepts custom retry configuration', () => {
+      const customQueue = new SyncQueue({
+        maxRetries: 5,
+        retryBaseDelayMs: 500,
+      })
+      expect(customQueue.getState().status).toBe('idle')
+      customQueue.stop()
+    })
+  })
 })

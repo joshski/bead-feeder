@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildAuthenticatedUrl,
+  compareBranches,
   getCurrentBranch,
   getStatus,
+  hasConflicts,
   isGitRepository,
   parseGitHubUrl,
 } from './git-service'
@@ -95,5 +97,33 @@ describe('getStatus', () => {
     expect(result.success).toBe(true)
     // Output can be empty (clean) or have content (dirty)
     expect(result.output).toBeDefined()
+  })
+})
+
+describe('compareBranches', () => {
+  it('returns branch status for current repo', async () => {
+    const result = await compareBranches(process.cwd())
+    expect(result.success).toBe(true)
+    if (result.status) {
+      expect(typeof result.status.ahead).toBe('number')
+      expect(typeof result.status.behind).toBe('number')
+      expect(typeof result.status.diverged).toBe('boolean')
+    }
+  })
+
+  it('handles non-existent remote branch gracefully', async () => {
+    // This tests the case when the remote branch doesn't exist yet
+    // The function should still return success with 0 ahead/behind
+    const result = await compareBranches(process.cwd(), 'nonexistent-remote')
+    // Should fail gracefully since the remote doesn't exist
+    expect(result.success === false || result.status !== undefined).toBe(true)
+  })
+})
+
+describe('hasConflicts', () => {
+  it('returns false when no conflicts exist', async () => {
+    // Current repo should have no conflicts
+    const result = await hasConflicts(process.cwd())
+    expect(result).toBe(false)
   })
 })

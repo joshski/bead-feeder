@@ -212,4 +212,134 @@ describe('API Server', () => {
       }
     })
   })
+
+  describe('POST /api/dependencies', () => {
+    const createdIssueIds: string[] = []
+    const createdDependencies: { blocked: string; blocker: string }[] = []
+
+    beforeAll(async () => {
+      // Create two test issues to use for dependency tests
+      const issue1Response = await fetch(
+        `http://localhost:${port}/api/issues`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Dep Test Issue 1' }),
+        }
+      )
+      const issue1 = await issue1Response.json()
+      createdIssueIds.push(issue1.id)
+
+      const issue2Response = await fetch(
+        `http://localhost:${port}/api/issues`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Dep Test Issue 2' }),
+        }
+      )
+      const issue2 = await issue2Response.json()
+      createdIssueIds.push(issue2.id)
+    })
+
+    afterAll(async () => {
+      // Clean up created dependencies
+      for (const dep of createdDependencies) {
+        try {
+          const { spawn } = await import('node:child_process')
+          const proc = spawn(
+            'bd',
+            ['dep', 'remove', dep.blocked, dep.blocker],
+            {
+              cwd: process.cwd(),
+            }
+          )
+          await new Promise(resolve => proc.on('close', resolve))
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+      // Clean up issues would happen via bd close, but we'll leave them
+    })
+
+    it('creates a dependency between two issues', async () => {
+      const blocked = createdIssueIds[0]
+      const blocker = createdIssueIds[1]
+
+      const response = await fetch(
+        `http://localhost:${port}/api/dependencies`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blocked, blocker }),
+        }
+      )
+
+      expect(response.status).toBe(201)
+      expect(response.headers.get('content-type')).toBe('application/json')
+
+      const result = await response.json()
+      expect(result).toHaveProperty('issue_id', blocked)
+      expect(result).toHaveProperty('depends_on_id', blocker)
+      createdDependencies.push({ blocked, blocker })
+    })
+
+    it('returns 400 for missing blocked', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/dependencies`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blocker: 'some-id' }),
+        }
+      )
+
+      expect(response.status).toBe(400)
+      const error = await response.json()
+      expect(error).toHaveProperty('error')
+      expect(error.error).toContain('blocked')
+    })
+
+    it('returns 400 for missing blocker', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/dependencies`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blocked: 'some-id' }),
+        }
+      )
+
+      expect(response.status).toBe(400)
+      const error = await response.json()
+      expect(error).toHaveProperty('error')
+      expect(error.error).toContain('blocker')
+    })
+
+    it('returns 400 for empty blocked', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/dependencies`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blocked: '   ', blocker: 'some-id' }),
+        }
+      )
+
+      expect(response.status).toBe(400)
+    })
+
+    it('includes CORS headers on POST response', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/dependencies`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blocked: 'a', blocker: 'b' }),
+        }
+      )
+
+      expect(response.headers.get('access-control-allow-origin')).toBe('*')
+    })
+  })
 })

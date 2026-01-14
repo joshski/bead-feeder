@@ -144,3 +144,16 @@ Built a UI for creating new issues with a floating action button and modal:
 - Added src/vite-env.d.ts for Vite environment type definitions (VITE_API_URL)
 - Added 11 tests for CreateIssueModal covering form interactions, validation, submission, and error handling
 - Added 5 tests for FloatingActionButton covering rendering and click behavior
+
+## 2026-01-14: Create API endpoint to add dependencies (bead-feeder-5yh)
+
+Added POST /api/dependencies endpoint for creating dependency relationships:
+- POST /api/dependencies accepts JSON body with blocked and blocker issue IDs
+- Both blocked and blocker are required and must be non-empty strings
+- Executes 'bd dep add <blocked> <blocker> --json' to create the dependency
+- Returns 201 status with created dependency JSON on success
+- Returns 400 for validation errors (missing/empty blocked or blocker)
+- Detects cycle errors from bd command and returns 400 with descriptive message
+- Returns 500 for other bd command errors
+- Includes CORS headers consistent with other endpoints
+- Added 5 integration tests: successful creation, missing blocked, missing blocker, empty blocked, CORS headers

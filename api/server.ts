@@ -130,6 +130,89 @@ const server = Bun.serve({
       }
     }
 
+    if (url.pathname === '/api/dependencies' && req.method === 'POST') {
+      try {
+        const body = await req.json()
+        const { blocked, blocker } = body as {
+          blocked?: string
+          blocker?: string
+        }
+
+        if (!blocked || typeof blocked !== 'string' || blocked.trim() === '') {
+          return new Response(
+            JSON.stringify({
+              error: 'blocked is required and must be a non-empty string',
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              },
+            }
+          )
+        }
+
+        if (!blocker || typeof blocker !== 'string' || blocker.trim() === '') {
+          return new Response(
+            JSON.stringify({
+              error: 'blocker is required and must be a non-empty string',
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              },
+            }
+          )
+        }
+
+        // Run bd dep add <blocked> <blocker> --json
+        const json = await runBdCommand([
+          'dep',
+          'add',
+          blocked.trim(),
+          blocker.trim(),
+          '--json',
+        ])
+        return new Response(json, {
+          status: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+
+        // Check for cycle detection errors from bd
+        if (message.includes('cycle') || message.includes('circular')) {
+          return new Response(
+            JSON.stringify({
+              error: 'Adding this dependency would create a cycle',
+              details: message,
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              },
+            }
+          )
+        }
+
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+    }
+
     if (url.pathname === '/api/graph' && req.method === 'GET') {
       try {
         const json = await runBdCommand(['graph', '--all', '--json'])

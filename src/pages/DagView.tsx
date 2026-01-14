@@ -68,7 +68,10 @@ async function fetchGraph(
     url.searchParams.set('owner', owner)
     url.searchParams.set('repo', repo)
   }
-  const response = await fetch(url.toString(), { credentials: 'include' })
+  // Only include credentials when fetching from GitHub (requires auth)
+  const fetchOptions: RequestInit =
+    owner && repo ? { credentials: 'include' } : {}
+  const response = await fetch(url.toString(), fetchOptions)
   if (!response.ok) {
     throw new Error('Failed to fetch graph')
   }

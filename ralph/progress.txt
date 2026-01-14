@@ -584,3 +584,15 @@ Created a unified e2e test runner that starts servers and runs all Playwright te
 - Added "test:e2e" script to package.json for convenient one-command execution
 - Usage: `bun run test:e2e` starts servers, runs all e2e tests, shuts down
 - All 245 tests passing
+
+## 2026-01-14: Connect boxes in Dag view for dependent issues (bead-feeder-doh)
+
+Fixed DAG view to properly display edges between dependent issues:
+- Added `/local` route to main.tsx for viewing local beads DAG without GitHub authentication
+- Fixed CORS issue in DagView.tsx: fetchGraph was using `credentials: 'include'` for all requests
+- When credentials are included, CORS requires a specific origin (not wildcard `*`)
+- Now only includes credentials when fetching from GitHub repos (when owner/repo params are present)
+- Local graph endpoint (`/api/graph` without params) no longer fails due to CORS
+- Edges between dependent issues now render correctly as smooth-step lines
+- Visual verification: parent issues connect to child issues with visible lines showing dependency relationships
+- All 245 tests passing

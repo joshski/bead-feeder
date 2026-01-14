@@ -22,6 +22,7 @@ createRoot(rootElement).render(
           <Routes>
             <Route path="/" element={<App />}>
               <Route index element={<Home />} />
+              <Route path="local" element={<DagView />} />
               <Route path="repos/:owner/:repo" element={<DagView />} />
               <Route path="issues/:issueId" element={<IssueDetail />} />
             </Route>

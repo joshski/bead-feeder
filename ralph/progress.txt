@@ -535,3 +535,20 @@ Created a Playwright test script for GitHub authentication e2e testing:
 - Created e2e/ and screenshots/ directories
 - Added test-results and screenshots to .gitignore
 - All 245 existing tests still passing
+
+## 2026-01-14: E2E test: Load beads issues from GitHub repository (bead-feeder-uko)
+
+Created Playwright e2e test that verifies the full flow of signing into GitHub and loading beads issues:
+- Created e2e/load-beads-issues.spec.ts with comprehensive test flow:
+  - Step 1: Signs into GitHub using TEST_GITHUB_USERNAME and TEST_GITHUB_PASSWORD env vars
+  - Step 2: Navigates to the Bead Feeder app and clicks the GitHub login button
+  - Step 3: Handles GitHub OAuth authorization (clicks Authorize if first time)
+  - Step 4: Selects the test repository from the repository selector
+  - Step 5: Verifies issue nodes are displayed in the DAG view
+- Test uses configurable TEST_GITHUB_REPOSITORY env var (defaults to josh-beads-test-1/bead-feeder-example-issues)
+- Detects 2FA and fails with helpful error message if encountered
+- Takes success screenshot to screenshots/e2e-issues-loaded.png on completion
+- Playwright config already has screenshot: 'only-on-failure' for automatic failure screenshots
+- Added "test:e2e:load-issues" script to package.json
+- Added TEST_GITHUB_REPOSITORY to .env.example with documentation
+- All 245 tests still passing

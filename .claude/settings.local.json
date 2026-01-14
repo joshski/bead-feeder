@@ -10,7 +10,17 @@
       "Bash(git -C /workspaces/bead-feeder ls-files:*)",
       "Bash(bd --version:*)",
       "Bash(bd list:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(set -a)",
+      "Bash(source .env)",
+      "Bash(set +a)",
+      "Bash(bunx playwright test:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd E2E test issue for loading beads from GitHub repository\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git pull:*)",
+      "Bash(bd sync:*)",
+      "Bash(git push)",
+      "Bash(git stash:*)"
     ]
   }
 }

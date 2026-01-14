@@ -1,9 +1,6 @@
-import { exec } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { promisify } from 'node:util'
-
-const execAsync = promisify(exec)
 
 interface VerificationResult {
   verified: boolean
@@ -23,19 +20,53 @@ export async function verifyScreenshotShowsIssues(
     throw new Error(`Screenshot not found: ${absolutePath}`)
   }
 
-  const prompt = `Look at this screenshot of a DAG visualization app.
-Verify that it shows issue nodes in the UI.
+  const prompt =
+    `Read the image at ${absolutePath} and analyze it. ` +
+    'This is a screenshot of a DAG visualization app. ' +
+    'Count how many issue nodes (cards/boxes with titles) are visible. ' +
+    'Respond with ONLY a JSON object: ' +
+    '{"verified": true or false, "issueCount": NUMBER, "description": "DESCRIPTION"}. ' +
+    'Set verified to true if you can see at least one issue node displayed in the graph.'
 
-Respond with ONLY a JSON object (no markdown, no explanation) in this exact format:
-{"verified": true/false, "issueCount": <number>, "description": "<brief description>"}
+  console.log(`Running claude CLI to verify screenshot...`)
 
-Set "verified" to true if you can see at least one issue node displayed.
-Set "issueCount" to the number of visible issue nodes.`
+  const stdout = await new Promise<string>((resolve, reject) => {
+    const proc = spawn('claude', ['--dangerously-skip-permissions', '-p', prompt], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+    })
 
-  const { stdout } = await execAsync(
-    `claude -p "${prompt}" "${absolutePath}"`,
-    { maxBuffer: 1024 * 1024 }
-  )
+    let output = ''
+    let errorOutput = ''
+
+    proc.stdout.on('data', (data: Buffer) => {
+      output += data.toString()
+    })
+
+    proc.stderr.on('data', (data: Buffer) => {
+      errorOutput += data.toString()
+    })
+
+    proc.on('close', (code: number | null) => {
+      if (code === 0) {
+        resolve(output)
+      } else {
+        reject(new Error(`Claude CLI exited with code ${code}: ${errorOutput}`))
+      }
+    })
+
+    proc.on('error', (err: Error) => {
+      reject(err)
+    })
+
+    // Timeout after 2 minutes
+    setTimeout(() => {
+      proc.kill()
+      reject(new Error('Claude CLI timed out after 120 seconds'))
+    }, 120000)
+  })
+
+  console.log(`Claude response: ${stdout.substring(0, 200)}...`)
 
   // Extract JSON from response (handle potential markdown code blocks)
   let jsonStr = stdout.trim()

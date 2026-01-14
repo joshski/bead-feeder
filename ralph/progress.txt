@@ -491,3 +491,12 @@ Created a combined dev script that runs both Vite and API servers with merged ou
   - "dev:vite" runs vite only
   - "dev:api" runs API server only
 - All 244 tests passing
+
+## 2026-01-14: Clean up test artifact issues (maintenance)
+
+Closed 17 test artifact issues that accumulated from API and tool executor integration tests:
+- Issues had titles: "Test Full Issue", "Full Tool Executor Test Issue", "CORS Test Issue", "Dep Test Issue 1/2", "Test API Issue", "Tool Executor Test Issue"
+- These were orphaned issues created during integration testing runs
+- Issue tracker is now clean with no open issues
+- All 244 tests still passing
+- Ready for next feature work

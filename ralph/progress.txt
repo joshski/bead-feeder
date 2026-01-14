@@ -24,3 +24,11 @@ Configured react-router v7 for navigation:
 - Updated src/main.tsx with BrowserRouter and route definitions
 - Routes: "/" (DAG view), "/issues/:issueId" (issue detail)
 - Updated App.test.tsx to use MemoryRouter for testing
+
+## 2026-01-14: Add React Flow library and configure (bead-feeder-60x)
+
+Installed and configured React Flow for DAG visualization:
+- Installed @xyflow/react v12.10.0
+- Created src/components/DagCanvas.tsx wrapper component with Background, Controls, and MiniMap
+- Updated src/pages/DagView.tsx to use DagCanvas with sample nodes/edges
+- Component accepts nodes and edges props for flexible DAG rendering

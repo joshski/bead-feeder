@@ -203,3 +203,18 @@ Connected to Anthropic Claude API from the backend with streaming responses:
 - Includes CORS headers consistent with other endpoints
 - Added 4 integration tests for validation and CORS in api/server.test.ts
 - All 86 tests passing (82 unit + 4 new API tests)
+
+## 2026-01-14: Define LLM tools for graph manipulation (bead-feeder-bdg)
+
+Created Anthropic tool definitions for LLM-driven graph manipulation:
+- Created api/llm-tools.ts with 5 tool definitions for the LLM
+- create_issue: Creates new issues with title (required), description, type (task/bug/feature), priority (0-3)
+- add_dependency: Links issues with blocked_issue_id and blocker_issue_id
+- remove_dependency: Removes dependency links between issues
+- update_issue: Updates issue fields (title, description, type, priority, status, assignee)
+- close_issue: Closes an issue with optional reason
+- Each tool uses Anthropic Tool type with input_schema for parameter validation
+- Exported llmTools array containing all 5 tools for use with the Anthropic API
+- Updated vitest.config.ts to include api/**/*.test.ts for running API tests
+- Added 26 comprehensive tests in api/llm-tools.test.ts covering all tool definitions
+- All 129 tests passing (108 unit + 21 API server tests)

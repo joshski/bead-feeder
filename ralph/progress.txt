@@ -517,3 +517,21 @@ Fixed integration tests to stop creating real issues in the local beads reposito
 - Cleaned up 10 existing test artifact issues from previous test runs
 - All 245 tests passing (net +1 test from additional tool-executor coverage)
 - Issue tracker now stays clean when running tests
+
+## 2026-01-14: Add Playwright script to sign into GitHub (bead-feeder-dh7)
+
+Created a Playwright test script for GitHub authentication e2e testing:
+- Added @playwright/test as dev dependency (v1.57.0)
+- Installed Chromium browser and system dependencies for Playwright
+- Created e2e/github-login.spec.ts with GitHub login test:
+  - Reads credentials from TEST_GITHUB_USERNAME and TEST_GITHUB_PASSWORD env vars
+  - Navigates to github.com/login and fills in credentials
+  - Handles 2FA detection (takes screenshot at 2FA prompt if encountered)
+  - Verifies successful login by checking for user avatar/profile elements
+  - Takes full-page screenshot of authenticated state
+- Created playwright.config.ts with Chromium project configuration
+- Added TEST_GITHUB_USERNAME and TEST_GITHUB_PASSWORD to .env.example with documentation
+- Added "test:e2e:login" script to package.json to run the test
+- Created e2e/ and screenshots/ directories
+- Added test-results and screenshots to .gitignore
+- All 245 existing tests still passing

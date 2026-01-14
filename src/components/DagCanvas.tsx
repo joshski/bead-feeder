@@ -10,6 +10,11 @@ import {
   useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import IssueNode from './IssueNode'
+
+const nodeTypes = {
+  issue: IssueNode,
+}
 
 interface DagCanvasProps {
   nodes: Node[]
@@ -32,6 +37,7 @@ function DagCanvasInner({
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={externalOnNodesChange ?? onNodesChange}
         onEdgesChange={externalOnEdgesChange ?? onEdgesChange}
         fitView

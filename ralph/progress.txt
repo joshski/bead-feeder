@@ -238,3 +238,19 @@ Implemented LLM tool execution and real-time graph updates:
 - Uses existing transformers (issuesToNodes, dependenciesToEdges) and applyDagLayout for visualization
 - Added 7 tests in api/tool-executor.test.ts covering all tool execution paths
 - All 136 tests passing
+
+## 2026-01-14: Configure GitHub OAuth app (bead-feeder-bnd)
+
+Set up environment configuration for GitHub OAuth authentication:
+- Updated .gitignore to include .env, .env.local, and .env.*.local patterns
+- Created .env.example with documented environment variables:
+  - GITHUB_CLIENT_ID: OAuth app client ID
+  - GITHUB_CLIENT_SECRET: OAuth app client secret (keep secret!)
+  - GITHUB_OAUTH_SCOPES: Optional, defaults to "repo"
+  - PORT: API server port (default 3001)
+  - VITE_API_URL: Frontend API URL
+  - VITE_GITHUB_CLIENT_ID: Client ID for frontend OAuth flow
+- Documented required OAuth scopes: "repo" for full control of private repositories
+- Documented OAuth app registration steps with callback URL
+- Updated src/vite-env.d.ts with VITE_GITHUB_CLIENT_ID type definition
+- All 136 tests passing

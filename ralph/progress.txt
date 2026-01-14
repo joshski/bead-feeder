@@ -157,3 +157,17 @@ Added POST /api/dependencies endpoint for creating dependency relationships:
 - Returns 500 for other bd command errors
 - Includes CORS headers consistent with other endpoints
 - Added 5 integration tests: successful creation, missing blocked, missing blocker, empty blocked, CORS headers
+
+## 2026-01-14: Enable edge creation by connecting nodes (bead-feeder-360)
+
+Configured React Flow to allow users to draw edges between nodes by dragging from handles:
+- Updated DagCanvas component to accept onConnect callback prop
+- Added handleConnect function that adds edge to local state for immediate visual feedback
+- Uses smoothstep edge type for curved connections
+- External onConnect handler is called after adding edge to state
+- Updated DagView to pass onConnect handler that calls POST /api/dependencies
+- Correctly maps React Flow connection (source→target) to dependency API (blocker→blocked)
+- Edge direction: drag from bottom handle (source/blocker) to top handle (target/blocked)
+- Errors from API are logged to console
+- Added test for DagCanvas accepting onConnect callback prop
+- All 66 tests passing

@@ -1,5 +1,13 @@
-import type { Edge, Node, OnEdgesChange, OnNodesChange } from '@xyflow/react'
+import type {
+  Connection,
+  Edge,
+  Node,
+  OnConnect,
+  OnEdgesChange,
+  OnNodesChange,
+} from '@xyflow/react'
 import {
+  addEdge,
   Background,
   BackgroundVariant,
   Controls,
@@ -9,6 +17,7 @@ import {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react'
+import { useCallback } from 'react'
 import '@xyflow/react/dist/style.css'
 import IssueNode from './IssueNode'
 
@@ -21,6 +30,7 @@ interface DagCanvasProps {
   edges: Edge[]
   onNodesChange?: OnNodesChange
   onEdgesChange?: OnEdgesChange
+  onConnect?: OnConnect
 }
 
 function DagCanvasInner({
@@ -28,9 +38,23 @@ function DagCanvasInner({
   edges: initialEdges,
   onNodesChange: externalOnNodesChange,
   onEdgesChange: externalOnEdgesChange,
+  onConnect: externalOnConnect,
 }: DagCanvasProps) {
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      // Add the edge to the local state for immediate visual feedback
+      setEdges(eds => addEdge({ ...connection, type: 'smoothstep' }, eds))
+
+      // Call external handler if provided
+      if (externalOnConnect) {
+        externalOnConnect(connection)
+      }
+    },
+    [setEdges, externalOnConnect]
+  )
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
@@ -40,6 +64,7 @@ function DagCanvasInner({
         nodeTypes={nodeTypes}
         onNodesChange={externalOnNodesChange ?? onNodesChange}
         onEdgesChange={externalOnEdgesChange ?? onEdgesChange}
+        onConnect={handleConnect}
         fitView
         panOnScroll
         selectionOnDrag

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import DagCanvas from './DagCanvas'
 
 describe('DagCanvas', () => {
@@ -26,5 +26,19 @@ describe('DagCanvas', () => {
 
     const minimap = document.querySelector('.react-flow__minimap')
     expect(minimap).toBeDefined()
+  })
+
+  it('accepts an onConnect callback prop', () => {
+    const onConnect = vi.fn()
+    const nodes = [
+      { id: '1', position: { x: 0, y: 0 }, data: { label: 'Node 1' } },
+      { id: '2', position: { x: 100, y: 100 }, data: { label: 'Node 2' } },
+    ]
+
+    render(<DagCanvas nodes={nodes} edges={[]} onConnect={onConnect} />)
+
+    // Verify the component renders without error when onConnect is provided
+    expect(screen.getByText('Node 1')).toBeDefined()
+    expect(screen.getByText('Node 2')).toBeDefined()
   })
 })

@@ -1,5 +1,5 @@
-import type { Edge, Node } from '@xyflow/react'
-import { useState } from 'react'
+import type { Connection, Edge, Node } from '@xyflow/react'
+import { useCallback, useState } from 'react'
 import CreateIssueModal, {
   type CreateIssueData,
 } from '../components/CreateIssueModal'
@@ -67,6 +67,24 @@ async function createIssue(data: CreateIssueData): Promise<void> {
   }
 }
 
+async function createDependency(
+  blocked: string,
+  blocker: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/dependencies`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ blocked, blocker }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || 'Failed to create dependency')
+  }
+}
+
 function DagView() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -74,9 +92,24 @@ function DagView() {
     await createIssue(data)
   }
 
+  const handleConnect = useCallback((connection: Connection) => {
+    // In React Flow: source is where you drag FROM, target is where you drag TO
+    // In our DAG: source handle (bottom) = blocker, target handle (top) = blocked
+    // So: source node blocks target node
+    if (connection.source && connection.target) {
+      createDependency(connection.target, connection.source).catch(error => {
+        console.error('Failed to create dependency:', error)
+      })
+    }
+  }, [])
+
   return (
     <div style={{ width: '100%', height: 'calc(100vh - 100px)' }}>
-      <DagCanvas nodes={sampleNodes} edges={sampleEdges} />
+      <DagCanvas
+        nodes={sampleNodes}
+        edges={sampleEdges}
+        onConnect={handleConnect}
+      />
       <FloatingActionButton onClick={() => setIsModalOpen(true)} />
       <CreateIssueModal
         isOpen={isModalOpen}

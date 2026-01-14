@@ -32,3 +32,17 @@ Installed and configured React Flow for DAG visualization:
 - Created src/components/DagCanvas.tsx wrapper component with Background, Controls, and MiniMap
 - Updated src/pages/DagView.tsx to use DagCanvas with sample nodes/edges
 - Component accepts nodes and edges props for flexible DAG rendering
+
+## 2026-01-14: Create React Flow canvas component (bead-feeder-5ls)
+
+Enhanced DagCanvas with proper FlowProvider setup and pan/zoom controls:
+- Added ReactFlowProvider wrapper for state management (enables hooks outside ReactFlow)
+- Configured useNodesState and useEdgesState for reactive node/edge updates
+- Added comprehensive pan/zoom controls: panOnScroll, selectionOnDrag, zoomOnPinch, zoomOnDoubleClick
+- Set zoom bounds (minZoom: 0.1, maxZoom: 4)
+- Configured panOnDrag with mouse buttons [1, 2] for middle/right click panning
+- Enhanced Controls component with showZoom, showFitView, showInteractive options
+- Made MiniMap zoomable and pannable
+- Added BackgroundVariant.Dots with configurable gap and size
+- Created src/test-setup.ts with ResizeObserver mock for jsdom
+- Added src/components/DagCanvas.test.tsx with tests for nodes, controls, and minimap rendering

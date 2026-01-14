@@ -310,3 +310,30 @@ Built a git operations service that uses GitHub access tokens for authenticated 
 - Added 13 comprehensive tests in api/git-service.test.ts
 - Also cleaned up 12 more test artifact issues from the issue tracker
 - All 165 tests passing
+
+## 2026-01-14: Add repository selector UI (bead-feeder-3e5)
+
+Built a repository selector UI that shows after login and filters repos by .beads presence:
+- Added GET /api/repos endpoint to list user's GitHub repositories (uses listUserRepositories from git-service)
+- Added GET /api/repos/:owner/:repo/has-beads endpoint to check if a repo has a .beads directory
+- Both endpoints require authentication via httpOnly cookie and return 401 if not authenticated
+- Created src/components/RepositorySelector.tsx component:
+  - Fetches user's repos on mount and checks each for .beads directory
+  - Separates repos into "Repositories with Beads" and "Other Repositories" sections
+  - Shows loading state, error state with retry button
+  - Displays repo owner/name and default branch
+  - Clicking a repo calls onSelect callback
+- Created src/pages/Home.tsx:
+  - Shows welcome card with GitHub login button when not authenticated
+  - Shows RepositorySelector when authenticated
+  - Navigates to /repos/:owner/:repo on repo selection
+- Updated routing in main.tsx:
+  - Home page at "/" shows login or repo selector
+  - DagView moved to "/repos/:owner/:repo"
+- Updated App.tsx header:
+  - Title now links to home page
+  - Shows breadcrumb with owner/repo when on a repo page
+- Added helper function getTokenFromCookies() in server.ts for reuse
+- Added 7 tests for RepositorySelector component
+- Cleaned up 20 test artifact issues from the issue tracker
+- All 172 tests passing

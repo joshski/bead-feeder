@@ -1,9 +1,10 @@
-import { Link, Outlet } from 'react-router'
+import { Link, Outlet, useParams } from 'react-router'
 import GitHubLoginButton from './components/GitHubLoginButton'
 import { useAuth } from './context/AuthContext'
 
 function App() {
   const { user, isLoading, logout } = useAuth()
+  const { owner, repo } = useParams<{ owner?: string; repo?: string }>()
 
   return (
     <div>
@@ -16,10 +17,17 @@ function App() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <h1>Bead Feeder</h1>
-          <nav>
-            <Link to="/">DAG View</Link>
-          </nav>
+          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <h1 style={{ margin: 0 }}>Bead Feeder</h1>
+          </Link>
+          {owner && repo && (
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#666' }}>/</span>
+              <span style={{ fontWeight: 500 }}>
+                {owner}/{repo}
+              </span>
+            </nav>
+          )}
         </div>
         <div>
           {isLoading ? null : user ? (

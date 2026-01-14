@@ -6,6 +6,7 @@ import type {
   ToolResultBlockParam,
   ToolUseBlock,
 } from '@anthropic-ai/sdk/resources/messages'
+import { listUserRepositories } from './git-service'
 import { llmTools } from './llm-tools'
 import { executeTool } from './tool-executor'
 
@@ -16,6 +17,17 @@ const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
 const GITHUB_USER_URL = 'https://api.github.com/user'
 
 const anthropic = new Anthropic()
+
+function getTokenFromCookies(req: Request): string | null {
+  const cookieHeader = req.headers.get('cookie') || ''
+  const cookies = Object.fromEntries(
+    cookieHeader.split(';').map(c => {
+      const [key, ...val] = c.trim().split('=')
+      return [key, val.join('=')]
+    })
+  )
+  return cookies.github_token || null
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -630,6 +642,104 @@ const server = Bun.serve({
             'github_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
         },
       })
+    }
+
+    // List user's GitHub repositories
+    if (url.pathname === '/api/repos' && req.method === 'GET') {
+      const token = getTokenFromCookies(req)
+
+      if (!token) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      }
+
+      const result = await listUserRepositories(token)
+
+      if (!result.success) {
+        return new Response(JSON.stringify({ error: result.error }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
+
+      return new Response(JSON.stringify({ repos: result.repos }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      })
+    }
+
+    // Check if a repository has a .beads directory
+    const repoBeadsMatch = url.pathname.match(
+      /^\/api\/repos\/([^/]+)\/([^/]+)\/has-beads$/
+    )
+    if (repoBeadsMatch && req.method === 'GET') {
+      const token = getTokenFromCookies(req)
+
+      if (!token) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      }
+
+      const [, owner, repo] = repoBeadsMatch
+
+      try {
+        // Check for .beads directory via GitHub Contents API
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/contents/.beads`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github+json',
+            },
+          }
+        )
+
+        // 200 means directory exists, 404 means it doesn't
+        const hasBeads = response.ok
+
+        return new Response(JSON.stringify({ hasBeads, owner, repo }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
     }
 
     return new Response('Not found', { status: 404 })

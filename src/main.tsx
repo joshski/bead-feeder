@@ -5,6 +5,7 @@ import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import AuthCallback from './pages/AuthCallback'
 import DagView from './pages/DagView'
+import Home from './pages/Home'
 import IssueDetail from './pages/IssueDetail'
 
 const rootElement = document.getElementById('root')
@@ -18,7 +19,8 @@ createRoot(rootElement).render(
       <AuthProvider>
         <Routes>
           <Route path="/" element={<App />}>
-            <Route index element={<DagView />} />
+            <Route index element={<Home />} />
+            <Route path="repos/:owner/:repo" element={<DagView />} />
             <Route path="issues/:issueId" element={<IssueDetail />} />
           </Route>
           <Route path="/auth/callback" element={<AuthCallback />} />

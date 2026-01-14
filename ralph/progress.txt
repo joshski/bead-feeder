@@ -94,3 +94,14 @@ Created data transformer to convert beads issue data into React Flow node format
 - TransformOptions allow customizing startX/Y, spacingX/Y, and nodesPerRow
 - Extended IssueNodeData interface with Record<string, unknown> for React Flow compatibility
 - Added comprehensive tests in src/transformers/issueToNode.test.ts (13 tests)
+
+## 2026-01-14: Transform dependencies to React Flow edges (bead-feeder-8jb)
+
+Created data transformer to convert beads dependency relationships into React Flow edges:
+- Created src/transformers/dependencyToEdge.ts with BdDependency interface
+- dependencyToEdge() converts single dependency to React Flow Edge
+- dependenciesToEdges() converts array of dependencies
+- Edge direction: source = blocker (depends_on_id), target = blocked (issue_id)
+- Edge ID format: `{source}-{target}` for uniqueness
+- Uses smoothstep edge type for curved connections
+- Added comprehensive tests in src/transformers/dependencyToEdge.test.ts (11 tests)

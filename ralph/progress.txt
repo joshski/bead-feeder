@@ -282,3 +282,11 @@ Fixed 16 lint warnings for non-null assertions in test files:
 - Fixed src/transformers/dagLayout.test.ts: created `findNodeById` helper function to replace all 15 non-null assertions
 - Helper function throws descriptive error if node not found, improving test failure messages
 - All 152 tests passing with zero lint warnings
+
+## 2026-01-14: Clean up test artifact issues (bead-feeder-7j9)
+
+Removed test artifact issues created by API and tool executor integration tests:
+- Closed 68 test issues with titles: "Test Full Issue", "Full Tool Executor Test Issue", "CORS Test Issue", "Dep Test Issue 2", "Test API Issue"
+- These were orphaned issues created during integration testing of the bd CLI tools
+- Issue tracker now shows only real work items (2 remaining tasks)
+- Ready queue clean with legitimate tasks: "Create authenticated git operations service" and "Add repository selector UI"

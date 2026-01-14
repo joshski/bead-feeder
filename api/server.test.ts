@@ -483,6 +483,38 @@ describe('API Server', () => {
     })
   })
 
+  describe('GET /api/graph with owner/repo', () => {
+    it('returns 401 when owner/repo provided without authentication', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/graph?owner=test-owner&repo=test-repo`
+      )
+
+      expect(response.status).toBe(401)
+      const error = await response.json()
+      expect(error).toHaveProperty('error', 'Authentication required')
+    })
+
+    it('includes CORS headers when owner/repo provided', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/graph?owner=test-owner&repo=test-repo`,
+        {
+          headers: { Origin: 'http://localhost:5173' },
+        }
+      )
+
+      expect(response.headers.get('access-control-allow-credentials')).toBe(
+        'true'
+      )
+    })
+
+    it('falls back to local bd command when no owner/repo', async () => {
+      const response = await fetch(`http://localhost:${port}/api/graph`)
+
+      expect(response.ok).toBe(true)
+      expect(response.headers.get('access-control-allow-origin')).toBe('*')
+    })
+  })
+
   describe('POST /api/sync/resolve', () => {
     it('returns 401 without authentication', async () => {
       const response = await fetch(

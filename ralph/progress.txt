@@ -422,3 +422,35 @@ Implemented git conflict detection, retry with exponential backoff, and conflict
   - 4 tests for /api/sync/resolve endpoint
 - Cleaned up 16 test artifact issues from issue tracker
 - All 224 tests passing
+
+## 2026-01-14: Pass repository context to graph API (bead-feeder-6w9)
+
+Updated the graph API to fetch issues from selected GitHub repositories:
+- Updated src/pages/DagView.tsx:
+  - Added useParams hook to extract owner/repo from URL params
+  - Modified fetchGraph() to accept optional owner/repo parameters
+  - Builds URL with query params when owner/repo provided
+  - Added credentials: 'include' for cookie authentication
+  - Added react-router-dom dependency (v7.12.0)
+- Updated api/server.ts /api/graph endpoint:
+  - Accepts optional owner and repo query parameters
+  - When params provided: requires authentication, fetches .beads/issues.jsonl via GitHub Contents API
+  - Decodes base64 content and parses JSONL format
+  - Filters out tombstone issues
+  - Returns empty array on 404 (no issues file)
+  - When no params: keeps existing local bd graph behavior
+- Created api/buildGraphsFromIssues.ts module:
+  - Exported BdIssue, BdDependency, GraphApiResponse interfaces
+  - buildGraphsFromIssues() transforms issues array to GraphApiResponse format
+  - Builds dependency relationships from issue dependencies arrays
+  - Identifies root issues (no incoming dependencies)
+  - Creates one graph entry per root issue
+- Added api/buildGraphsFromIssues.test.ts with 9 tests:
+  - Empty input, single issue, dependencies, root identification
+  - Multiple roots, multiple dependencies, IssueMap building
+  - Property preservation, circular dependency handling
+- Added 3 tests to api/server.test.ts for /api/graph with owner/repo:
+  - Returns 401 without authentication
+  - Includes CORS credentials headers
+  - Falls back to local bd command when no params
+- All 236 tests passing

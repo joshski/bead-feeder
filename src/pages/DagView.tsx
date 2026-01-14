@@ -1,5 +1,6 @@
 import type { Connection, Edge, Node } from '@xyflow/react'
 import { useCallback, useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import ChatPanel, { type ChatMessage } from '../components/ChatPanel'
 import CreateIssueModal, {
   type CreateIssueData,
@@ -55,11 +56,19 @@ async function createDependency(
   }
 }
 
-async function fetchGraph(): Promise<{
+async function fetchGraph(
+  owner?: string,
+  repo?: string
+): Promise<{
   nodes: Node[]
   edges: Edge[]
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/graph`)
+  const url = new URL(`${API_BASE_URL}/api/graph`)
+  if (owner && repo) {
+    url.searchParams.set('owner', owner)
+    url.searchParams.set('repo', repo)
+  }
+  const response = await fetch(url.toString(), { credentials: 'include' })
   if (!response.ok) {
     throw new Error('Failed to fetch graph')
   }
@@ -89,6 +98,7 @@ async function fetchGraph(): Promise<{
 }
 
 function DagView() {
+  const { owner, repo } = useParams<{ owner?: string; repo?: string }>()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
@@ -98,13 +108,13 @@ function DagView() {
   // Fetch graph data on mount and provide refresh function
   const refreshGraph = useCallback(async () => {
     try {
-      const { nodes: newNodes, edges: newEdges } = await fetchGraph()
+      const { nodes: newNodes, edges: newEdges } = await fetchGraph(owner, repo)
       setNodes(newNodes)
       setEdges(newEdges)
     } catch (error) {
       console.error('Failed to fetch graph:', error)
     }
-  }, [])
+  }, [owner, repo])
 
   useEffect(() => {
     refreshGraph()

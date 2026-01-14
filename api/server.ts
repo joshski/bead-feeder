@@ -6,6 +6,7 @@ import type {
   ToolResultBlockParam,
   ToolUseBlock,
 } from '@anthropic-ai/sdk/resources/messages'
+import { type BdIssue, buildGraphsFromIssues } from './buildGraphsFromIssues'
 import { listUserRepositories } from './git-service'
 import { llmTools } from './llm-tools'
 import { getSyncQueue } from './sync-queue'
@@ -264,6 +265,101 @@ const server = Bun.serve({
     }
 
     if (url.pathname === '/api/graph' && req.method === 'GET') {
+      const owner = url.searchParams.get('owner')
+      const repo = url.searchParams.get('repo')
+
+      // If owner and repo provided, fetch from GitHub
+      if (owner && repo) {
+        const token = getTokenFromCookies(req)
+        if (!token) {
+          return new Response(
+            JSON.stringify({ error: 'Authentication required' }),
+            {
+              status: 401,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        try {
+          // Fetch issues.jsonl via GitHub Contents API
+          const ghResponse = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/.beads/issues.jsonl`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/vnd.github+json',
+              },
+            }
+          )
+
+          if (!ghResponse.ok) {
+            if (ghResponse.status === 404) {
+              // No issues file, return empty graph
+              return new Response(JSON.stringify([]), {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': origin,
+                  'Access-Control-Allow-Credentials': 'true',
+                },
+              })
+            }
+            throw new Error(`GitHub API error: ${ghResponse.status}`)
+          }
+
+          const ghData = (await ghResponse.json()) as {
+            content?: string
+            encoding?: string
+          }
+
+          if (!ghData.content) {
+            return new Response(JSON.stringify([]), {
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            })
+          }
+
+          // Decode base64 content
+          const decoded = atob(ghData.content.replace(/\n/g, ''))
+          const lines = decoded.trim().split('\n').filter(Boolean)
+
+          // Parse JSONL and filter out tombstones
+          const issues: BdIssue[] = lines
+            .map(line => JSON.parse(line) as BdIssue)
+            .filter(issue => issue.status !== 'tombstone')
+
+          // Build graph format from issues
+          const graphs = buildGraphsFromIssues(issues)
+
+          return new Response(JSON.stringify(graphs), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          })
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Unknown error'
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          })
+        }
+      }
+
+      // No owner/repo - use local bd command
       try {
         const json = await runBdCommand(['graph', '--all', '--json'])
         return new Response(json, {

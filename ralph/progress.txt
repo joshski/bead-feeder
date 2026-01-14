@@ -572,3 +572,15 @@ Updated the UI to use a sans-serif font for better readability:
 - Uses system font stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
 - Also added margin: 0 to remove default body margin
 - All 245 tests passing
+
+## 2026-01-14: Add single command to run all e2e tests (bead-feeder-22z)
+
+Created a unified e2e test runner that starts servers and runs all Playwright tests:
+- Created scripts/e2e.ts that manages the full e2e test lifecycle
+- Starts dev servers (vite + API) using existing scripts/dev.ts
+- Waits for both servers to be ready (polls endpoints with timeout)
+- Runs all Playwright tests via `bunx playwright test`
+- Cleans up servers after tests complete (success or failure)
+- Added "test:e2e" script to package.json for convenient one-command execution
+- Usage: `bun run test:e2e` starts servers, runs all e2e tests, shuts down
+- All 245 tests passing

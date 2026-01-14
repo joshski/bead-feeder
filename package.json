@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "bun run scripts/e2e.ts",
     "test:e2e:login": "playwright test github-login",
     "test:e2e:load-issues": "playwright test load-beads-issues"
   },

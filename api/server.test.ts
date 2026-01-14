@@ -77,4 +77,45 @@ describe('API Server', () => {
 
     expect(response.status).toBe(404)
   })
+
+  it('GET /api/graph returns JSON array of graph entries', async () => {
+    const response = await fetch(`http://localhost:${port}/api/graph`)
+
+    expect(response.ok).toBe(true)
+    expect(response.headers.get('content-type')).toBe('application/json')
+
+    const graphs = await response.json()
+    expect(Array.isArray(graphs)).toBe(true)
+
+    if (graphs.length > 0) {
+      const graph = graphs[0]
+      expect(graph).toHaveProperty('Root')
+      expect(graph).toHaveProperty('Issues')
+      expect(graph).toHaveProperty('Dependencies')
+      expect(graph).toHaveProperty('IssueMap')
+    }
+  })
+
+  it('GET /api/graph includes CORS headers', async () => {
+    const response = await fetch(`http://localhost:${port}/api/graph`)
+
+    expect(response.headers.get('access-control-allow-origin')).toBe('*')
+  })
+
+  it('GET /api/graph returns dependencies as an array', async () => {
+    const response = await fetch(`http://localhost:${port}/api/graph`)
+    const graphs = await response.json()
+
+    if (graphs.length > 0) {
+      const graph = graphs[0]
+      expect(Array.isArray(graph.Dependencies)).toBe(true)
+
+      if (graph.Dependencies.length > 0) {
+        const dep = graph.Dependencies[0]
+        expect(dep).toHaveProperty('issue_id')
+        expect(dep).toHaveProperty('depends_on_id')
+        expect(dep).toHaveProperty('type')
+      }
+    }
+  })
 })

@@ -2,9 +2,9 @@ import { spawn } from 'node:child_process'
 
 const PORT = process.env.PORT || 3001
 
-async function runBdList(): Promise<string> {
+async function runBdCommand(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn('bd', ['list', '--json'], {
+    const proc = spawn('bd', args, {
       cwd: process.cwd(),
     })
 
@@ -23,7 +23,9 @@ async function runBdList(): Promise<string> {
       if (code === 0) {
         resolve(stdout)
       } else {
-        reject(new Error(`bd list failed with code ${code}: ${stderr}`))
+        reject(
+          new Error(`bd ${args.join(' ')} failed with code ${code}: ${stderr}`)
+        )
       }
     })
 
@@ -50,7 +52,28 @@ const server = Bun.serve({
 
     if (url.pathname === '/api/issues' && req.method === 'GET') {
       try {
-        const json = await runBdList()
+        const json = await runBdCommand(['list', '--json'])
+        return new Response(json, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+    }
+
+    if (url.pathname === '/api/graph' && req.method === 'GET') {
+      try {
+        const json = await runBdCommand(['graph', '--all', '--json'])
         return new Response(json, {
           headers: {
             'Content-Type': 'application/json',

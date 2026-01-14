@@ -73,3 +73,13 @@ Built backend API endpoint that calls 'bd list --json' and returns issues:
 - 404 for unknown routes
 - Added dev:api script to package.json for running the server
 - Created api/server.test.ts with integration tests (server startup, response format, CORS)
+
+## 2026-01-14: Create API endpoint to get dependency graph (bead-feeder-8mt)
+
+Added GET /api/graph endpoint for dependency graph data:
+- Refactored runBdList to generic runBdCommand(args) function for reuse
+- GET /api/graph executes 'bd graph --all --json' and returns full graph data
+- Response includes Root, Issues, Dependencies, and IssueMap for each graph entry
+- Dependencies array contains issue_id, depends_on_id, and type fields
+- Added CORS headers consistent with /api/issues endpoint
+- Added 3 integration tests: response format, CORS headers, dependency structure

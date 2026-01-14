@@ -171,3 +171,20 @@ Configured React Flow to allow users to draw edges between nodes by dragging fro
 - Errors from API are logged to console
 - Added test for DagCanvas accepting onConnect callback prop
 - All 66 tests passing
+
+## 2026-01-14: Add chat UI component (bead-feeder-mxu)
+
+Created a chat panel component with message history, input, and markdown rendering:
+- Installed react-markdown v10.1.0 for markdown rendering in assistant messages
+- Created src/components/ChatPanel.tsx with ChatMessage interface
+- ChatPanel accepts messages array, onSendMessage callback, and optional isLoading prop
+- Message history display with empty state when no messages
+- User messages styled with blue bubbles (right-aligned), assistant messages with white bubbles (left-aligned)
+- Markdown rendering for assistant messages using react-markdown (supports bold, code, lists, headings, links)
+- Styled code blocks with syntax highlighting colors
+- Text input with placeholder and disabled state during loading
+- Send button that submits on click or Enter key (Shift+Enter for new line)
+- Loading indicator with animated dots when isLoading is true
+- Input validation: prevents sending empty or whitespace-only messages
+- Added 16 comprehensive tests in src/components/ChatPanel.test.tsx
+- All 82 tests passing

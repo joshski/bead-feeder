@@ -9,7 +9,8 @@
       "Bash(git -C /workspaces/bead-feeder log --all --oneline)",
       "Bash(git -C /workspaces/bead-feeder ls-files:*)",
       "Bash(bd --version:*)",
-      "Bash(bd list:*)"
+      "Bash(bd list:*)",
+      "Bash(ls:*)"
     ]
   }
 }

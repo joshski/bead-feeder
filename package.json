@@ -4,7 +4,8 @@
   "description": "A web app for managing beads issues with a dependency graph view.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "bun run scripts/dev.ts",
+    "dev:vite": "vite",
     "dev:api": "bun run api/server.ts",
     "build": "tsc && vite build",
     "preview": "vite preview",

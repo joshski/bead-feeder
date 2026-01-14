@@ -118,4 +118,98 @@ describe('API Server', () => {
       }
     }
   })
+
+  describe('POST /api/issues', () => {
+    const createdIssueIds: string[] = []
+
+    afterAll(async () => {
+      // Clean up created test issues
+      for (const id of createdIssueIds) {
+        try {
+          await fetch(`http://localhost:${port}/api/issues/${id}`, {
+            method: 'DELETE',
+          })
+        } catch {
+          // Ignore cleanup errors - bd close will be used manually if needed
+        }
+      }
+    })
+
+    it('creates an issue with title only', async () => {
+      const response = await fetch(`http://localhost:${port}/api/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Test API Issue' }),
+      })
+
+      expect(response.status).toBe(201)
+      expect(response.headers.get('content-type')).toBe('application/json')
+
+      const issue = await response.json()
+      expect(issue).toHaveProperty('id')
+      expect(issue.title).toBe('Test API Issue')
+      expect(issue.status).toBe('open')
+      createdIssueIds.push(issue.id)
+    })
+
+    it('creates an issue with all fields', async () => {
+      const response = await fetch(`http://localhost:${port}/api/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Test Full Issue',
+          description: 'Test description',
+          type: 'bug',
+          priority: 1,
+        }),
+      })
+
+      expect(response.status).toBe(201)
+
+      const issue = await response.json()
+      expect(issue.title).toBe('Test Full Issue')
+      expect(issue.description).toBe('Test description')
+      expect(issue.issue_type).toBe('bug')
+      expect(issue.priority).toBe(1)
+      createdIssueIds.push(issue.id)
+    })
+
+    it('returns 400 for missing title', async () => {
+      const response = await fetch(`http://localhost:${port}/api/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'No title' }),
+      })
+
+      expect(response.status).toBe(400)
+
+      const error = await response.json()
+      expect(error).toHaveProperty('error')
+      expect(error.error).toContain('title')
+    })
+
+    it('returns 400 for empty title', async () => {
+      const response = await fetch(`http://localhost:${port}/api/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '   ' }),
+      })
+
+      expect(response.status).toBe(400)
+    })
+
+    it('includes CORS headers on POST response', async () => {
+      const response = await fetch(`http://localhost:${port}/api/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'CORS Test Issue' }),
+      })
+
+      expect(response.headers.get('access-control-allow-origin')).toBe('*')
+      if (response.status === 201) {
+        const issue = await response.json()
+        createdIssueIds.push(issue.id)
+      }
+    })
+  })
 })

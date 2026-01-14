@@ -118,3 +118,15 @@ Implemented automatic hierarchical positioning of nodes using dagre:
 - Converts dagre center-based positions to React Flow top-left positions
 - Added comprehensive tests in src/transformers/dagLayout.test.ts (11 tests)
 - Tests cover: empty graphs, single nodes, TB/LR layouts, multi-level dependencies, diamond patterns, isolated nodes
+
+## 2026-01-14: Create API endpoint to create issues (bead-feeder-02x)
+
+Added POST /api/issues endpoint to create new issues via the API:
+- POST /api/issues accepts JSON body with title, description, type, and priority fields
+- title is required and must be a non-empty string (returns 400 if invalid)
+- description, type, priority are optional
+- Executes 'bd create' with --json flag for structured output
+- Returns 201 status with created issue JSON on success
+- Returns 400 for validation errors, 500 for bd command errors
+- Includes CORS headers consistent with other endpoints
+- Added 5 integration tests: title-only creation, full fields, missing title, empty title, CORS headers

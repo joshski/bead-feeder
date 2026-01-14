@@ -71,6 +71,65 @@ const server = Bun.serve({
       }
     }
 
+    if (url.pathname === '/api/issues' && req.method === 'POST') {
+      try {
+        const body = await req.json()
+        const { title, description, type, priority } = body as {
+          title?: string
+          description?: string
+          type?: string
+          priority?: number
+        }
+
+        if (!title || typeof title !== 'string' || title.trim() === '') {
+          return new Response(
+            JSON.stringify({
+              error: 'title is required and must be a non-empty string',
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              },
+            }
+          )
+        }
+
+        const args = ['create', title.trim(), '--json']
+
+        if (description && typeof description === 'string') {
+          args.push('--description', description)
+        }
+
+        if (type && typeof type === 'string') {
+          args.push('--type', type)
+        }
+
+        if (priority !== undefined && typeof priority === 'number') {
+          args.push('--priority', String(priority))
+        }
+
+        const json = await runBdCommand(args)
+        return new Response(json, {
+          status: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+    }
+
     if (url.pathname === '/api/graph' && req.method === 'GET') {
       try {
         const json = await runBdCommand(['graph', '--all', '--json'])

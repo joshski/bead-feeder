@@ -564,3 +564,11 @@ Enhanced the load-beads-issues E2E test to verify screenshots using Claude Code 
   - Provides description of what's visible
 - Updated test to fail if Claude cannot verify issues are displayed
 - Note: 2 pre-existing test failures in server.test.ts (GET /api/graph tests) - these were failing before this change
+
+## 2026-01-14: Use sans-serif font in UI (bead-feeder-q62)
+
+Updated the UI to use a sans-serif font for better readability:
+- Added font-family style to body element in index.html
+- Uses system font stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
+- Also added margin: 0 to remove default body margin
+- All 245 tests passing

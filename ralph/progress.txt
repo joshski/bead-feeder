@@ -500,3 +500,20 @@ Closed 17 test artifact issues that accumulated from API and tool executor integ
 - Issue tracker is now clean with no open issues
 - All 244 tests still passing
 - Ready for next feature work
+
+## 2026-01-14: Stop creating test issues in local repository (bead-feeder-8og)
+
+Fixed integration tests to stop creating real issues in the local beads repository:
+- Refactored api/tool-executor.test.ts to mock the node:child_process spawn function
+  - Used vi.hoisted() to create mock before vi.mock() hoisting
+  - Created mockSpawnSuccess() and mockSpawnFailure() helpers for test setup
+  - Tests now verify bd CLI calls without actually executing them
+  - Increased test coverage with positive test cases for all tool operations
+- Refactored api/server.test.ts to only test validation paths
+  - Removed tests that create actual issues (POST /api/issues success cases)
+  - Removed tests that create dependencies (POST /api/dependencies success cases)
+  - Kept validation tests (400 errors for missing/empty fields) since they don't create issues
+  - Added explanatory comments about why success path tests were removed
+- Cleaned up 10 existing test artifact issues from previous test runs
+- All 245 tests passing (net +1 test from additional tool-executor coverage)
+- Issue tracker now stays clean when running tests

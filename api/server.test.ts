@@ -128,60 +128,10 @@ describe('API Server', () => {
     }
   })
 
-  describe('POST /api/issues', () => {
-    const createdIssueIds: string[] = []
-
-    afterAll(async () => {
-      // Clean up created test issues
-      for (const id of createdIssueIds) {
-        try {
-          await fetch(`http://localhost:${port}/api/issues/${id}`, {
-            method: 'DELETE',
-          })
-        } catch {
-          // Ignore cleanup errors - bd close will be used manually if needed
-        }
-      }
-    })
-
-    it('creates an issue with title only', async () => {
-      const response = await fetch(`http://localhost:${port}/api/issues`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Test API Issue' }),
-      })
-
-      expect(response.status).toBe(201)
-      expect(response.headers.get('content-type')).toBe('application/json')
-
-      const issue = await response.json()
-      expect(issue).toHaveProperty('id')
-      expect(issue.title).toBe('Test API Issue')
-      expect(issue.status).toBe('open')
-      createdIssueIds.push(issue.id)
-    })
-
-    it('creates an issue with all fields', async () => {
-      const response = await fetch(`http://localhost:${port}/api/issues`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'Test Full Issue',
-          description: 'Test description',
-          type: 'bug',
-          priority: 1,
-        }),
-      })
-
-      expect(response.status).toBe(201)
-
-      const issue = await response.json()
-      expect(issue.title).toBe('Test Full Issue')
-      expect(issue.description).toBe('Test description')
-      expect(issue.issue_type).toBe('bug')
-      expect(issue.priority).toBe(1)
-      createdIssueIds.push(issue.id)
-    })
+  describe('POST /api/issues - validation', () => {
+    // Note: We only test validation here, not successful issue creation,
+    // to avoid creating test artifacts in the local beads repository.
+    // Successful issue creation is tested via mocked unit tests in tool-executor.test.ts
 
     it('returns 400 for missing title', async () => {
       const response = await fetch(`http://localhost:${port}/api/issues`, {
@@ -207,91 +157,20 @@ describe('API Server', () => {
       expect(response.status).toBe(400)
     })
 
-    it('includes CORS headers on POST response', async () => {
+    it('includes CORS headers on validation error response', async () => {
       const response = await fetch(`http://localhost:${port}/api/issues`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'CORS Test Issue' }),
+        body: JSON.stringify({ description: 'No title' }),
       })
 
       expect(response.headers.get('access-control-allow-origin')).toBe('*')
-      if (response.status === 201) {
-        const issue = await response.json()
-        createdIssueIds.push(issue.id)
-      }
     })
   })
 
-  describe('POST /api/dependencies', () => {
-    const createdIssueIds: string[] = []
-    const createdDependencies: { blocked: string; blocker: string }[] = []
-
-    beforeAll(async () => {
-      // Create two test issues to use for dependency tests
-      const issue1Response = await fetch(
-        `http://localhost:${port}/api/issues`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: 'Dep Test Issue 1' }),
-        }
-      )
-      const issue1 = await issue1Response.json()
-      createdIssueIds.push(issue1.id)
-
-      const issue2Response = await fetch(
-        `http://localhost:${port}/api/issues`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: 'Dep Test Issue 2' }),
-        }
-      )
-      const issue2 = await issue2Response.json()
-      createdIssueIds.push(issue2.id)
-    })
-
-    afterAll(async () => {
-      // Clean up created dependencies
-      for (const dep of createdDependencies) {
-        try {
-          const { spawn } = await import('node:child_process')
-          const proc = spawn(
-            'bd',
-            ['dep', 'remove', dep.blocked, dep.blocker],
-            {
-              cwd: process.cwd(),
-            }
-          )
-          await new Promise(resolve => proc.on('close', resolve))
-        } catch {
-          // Ignore cleanup errors
-        }
-      }
-      // Clean up issues would happen via bd close, but we'll leave them
-    })
-
-    it('creates a dependency between two issues', async () => {
-      const blocked = createdIssueIds[0]
-      const blocker = createdIssueIds[1]
-
-      const response = await fetch(
-        `http://localhost:${port}/api/dependencies`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blocked, blocker }),
-        }
-      )
-
-      expect(response.status).toBe(201)
-      expect(response.headers.get('content-type')).toBe('application/json')
-
-      const result = await response.json()
-      expect(result).toHaveProperty('issue_id', blocked)
-      expect(result).toHaveProperty('depends_on_id', blocker)
-      createdDependencies.push({ blocked, blocker })
-    })
+  describe('POST /api/dependencies - validation', () => {
+    // Note: We only test validation here, not successful dependency creation,
+    // to avoid creating test artifacts in the local beads repository.
 
     it('returns 400 for missing blocked', async () => {
       const response = await fetch(
@@ -338,13 +217,13 @@ describe('API Server', () => {
       expect(response.status).toBe(400)
     })
 
-    it('includes CORS headers on POST response', async () => {
+    it('includes CORS headers on validation error response', async () => {
       const response = await fetch(
         `http://localhost:${port}/api/dependencies`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blocked: 'a', blocker: 'b' }),
+          body: JSON.stringify({ blocker: 'some-id' }),
         }
       )
 
@@ -437,7 +316,7 @@ describe('API Server', () => {
     })
   })
 
-  describe('POST /api/chat', () => {
+  describe('POST /api/chat - validation', () => {
     it('returns 400 for missing messages', async () => {
       const response = await fetch(`http://localhost:${port}/api/chat`, {
         method: 'POST',

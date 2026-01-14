@@ -83,3 +83,14 @@ Added GET /api/graph endpoint for dependency graph data:
 - Dependencies array contains issue_id, depends_on_id, and type fields
 - Added CORS headers consistent with /api/issues endpoint
 - Added 3 integration tests: response format, CORS headers, dependency structure
+
+## 2026-01-14: Transform issues to React Flow nodes (bead-feeder-cnl)
+
+Created data transformer to convert beads issue data into React Flow node format:
+- Created src/transformers/issueToNode.ts with BdIssue interface matching API response
+- issueToNode() converts single bd issue to React Flow Node with IssueNodeData
+- issuesToNodes() converts array of issues with configurable grid layout positioning
+- Maps status (open/in_progress/closed), type (task/bug/feature), priority (0-3 to P0-P3)
+- TransformOptions allow customizing startX/Y, spacingX/Y, and nodesPerRow
+- Extended IssueNodeData interface with Record<string, unknown> for React Flow compatibility
+- Added comprehensive tests in src/transformers/issueToNode.test.ts (13 tests)

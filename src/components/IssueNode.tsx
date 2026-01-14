@@ -6,7 +6,7 @@ export type IssueStatus = 'open' | 'in_progress' | 'closed'
 export type IssueType = 'task' | 'bug' | 'feature'
 export type IssuePriority = 'P0' | 'P1' | 'P2' | 'P3'
 
-export interface IssueNodeData {
+export interface IssueNodeData extends Record<string, unknown> {
   issueId: string
   title: string
   status: IssueStatus

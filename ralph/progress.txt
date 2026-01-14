@@ -454,3 +454,19 @@ Updated the graph API to fetch issues from selected GitHub repositories:
   - Includes CORS credentials headers
   - Falls back to local bd command when no params
 - All 236 tests passing
+
+## 2026-01-14: Add logging to API (bead-feeder-trx)
+
+Added structured logging to the API server:
+- Created api/logger.ts with logging utility module
+- Support for log levels: debug, info, warn, error (configurable via LOG_LEVEL env var)
+- logRequest() function for HTTP request logging with method, path, status, duration
+- Log format: [timestamp] [LEVEL] message method path -> status (duration)
+- Status-based log levels: 2xx/3xx=info, 4xx=warn, 5xx=error
+- Wrapped server fetch handler to log all requests with timing
+- Skips logging for OPTIONS preflight and SSE event stream endpoints
+- Catches unhandled errors and logs them with error level
+- Added 8 tests in api/logger.test.ts covering all log functions
+- Fixed 2 failing tests from previous session (OAuth configuration now present in .env)
+- Cleaned up ~30 test artifact issues created by integration tests
+- All 244 tests passing

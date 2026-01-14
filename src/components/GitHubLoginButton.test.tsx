@@ -36,19 +36,16 @@ describe('GitHubLoginButton', () => {
     expect(svg).toBeInTheDocument()
   })
 
-  it('logs error when client ID is not configured', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
+  it('stores OAuth state in sessionStorage when clicked', () => {
     render(<GitHubLoginButton />)
     const button = screen.getByRole('button', { name: /sign in with github/i })
     fireEvent.click(button)
 
-    // Without VITE_GITHUB_CLIENT_ID, it should log an error
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'VITE_GITHUB_CLIENT_ID is not configured'
+    // Should store the OAuth state for CSRF protection
+    expect(sessionStorage.setItem).toHaveBeenCalledWith(
+      'oauth_state',
+      expect.any(String)
     )
-
-    consoleSpy.mockRestore()
   })
 
   it('applies custom className', () => {

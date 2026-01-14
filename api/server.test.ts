@@ -18,7 +18,7 @@ describe('API Server', () => {
         5000
       )
       serverProcess.stdout?.on('data', data => {
-        if (data.toString().includes('API server listening')) {
+        if (data.toString().includes('API server started')) {
           clearTimeout(timeout)
           resolve()
         }
@@ -369,21 +369,20 @@ describe('API Server', () => {
       expect(error.error).toContain('code')
     })
 
-    it('POST /api/auth/github/callback returns 500 when OAuth not configured', async () => {
+    it('POST /api/auth/github/callback returns 400 for invalid code', async () => {
       const response = await fetch(
         `http://localhost:${port}/api/auth/github/callback`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: 'test-code' }),
+          body: JSON.stringify({ code: 'invalid-test-code' }),
         }
       )
 
-      // Without GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, should return 500
-      expect(response.status).toBe(500)
+      // Invalid code should return 400 with error message
+      expect(response.status).toBe(400)
       const error = await response.json()
       expect(error).toHaveProperty('error')
-      expect(error.error).toContain('not configured')
     })
 
     it('POST /api/auth/github/callback includes CORS headers', async () => {

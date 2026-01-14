@@ -1,0 +1,104 @@
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+
+interface LogEntry {
+  timestamp: string
+  level: LogLevel
+  message: string
+  method?: string
+  path?: string
+  status?: number
+  durationMs?: number
+  error?: string
+}
+
+const LOG_LEVEL: LogLevel = (process.env.LOG_LEVEL as LogLevel) || 'info'
+
+const LEVEL_PRIORITY: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+}
+
+function shouldLog(level: LogLevel): boolean {
+  return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[LOG_LEVEL]
+}
+
+function formatLog(entry: LogEntry): string {
+  const { timestamp, level, message, method, path, status, durationMs, error } =
+    entry
+
+  const parts = [
+    `[${timestamp}]`,
+    `[${level.toUpperCase().padEnd(5)}]`,
+    message,
+  ]
+
+  if (method && path) {
+    parts.push(`${method} ${path}`)
+  }
+
+  if (status !== undefined) {
+    parts.push(`-> ${status}`)
+  }
+
+  if (durationMs !== undefined) {
+    parts.push(`(${durationMs}ms)`)
+  }
+
+  if (error) {
+    parts.push(`| Error: ${error}`)
+  }
+
+  return parts.join(' ')
+}
+
+function log(level: LogLevel, message: string, meta?: Partial<LogEntry>) {
+  if (!shouldLog(level)) return
+
+  const entry: LogEntry = {
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    ...meta,
+  }
+
+  const formatted = formatLog(entry)
+
+  if (level === 'error') {
+    console.error(formatted)
+  } else if (level === 'warn') {
+    console.warn(formatted)
+  } else {
+    console.log(formatted)
+  }
+}
+
+export function debug(message: string, meta?: Partial<LogEntry>) {
+  log('debug', message, meta)
+}
+
+export function info(message: string, meta?: Partial<LogEntry>) {
+  log('info', message, meta)
+}
+
+export function warn(message: string, meta?: Partial<LogEntry>) {
+  log('warn', message, meta)
+}
+
+export function error(message: string, meta?: Partial<LogEntry>) {
+  log('error', message, meta)
+}
+
+export function logRequest(
+  method: string,
+  path: string,
+  status: number,
+  durationMs: number
+) {
+  const level: LogLevel =
+    status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
+  log(level, 'Request', { method, path, status, durationMs })
+}
+
+export type { LogLevel, LogEntry }

@@ -10,6 +10,11 @@ import { llmTools } from './llm-tools'
 import { executeTool } from './tool-executor'
 
 const PORT = process.env.PORT || 3001
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
+const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+const GITHUB_USER_URL = 'https://api.github.com/user'
+
 const anthropic = new Anthropic()
 
 interface ChatMessage {
@@ -68,12 +73,16 @@ const server = Bun.serve({
   async fetch(req) {
     const url = new URL(req.url)
 
+    // Get origin for CORS - allow localhost for development
+    const origin = req.headers.get('origin') || 'http://localhost:5173'
+
     if (req.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': origin,
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Credentials': 'true',
         },
       })
     }
@@ -403,6 +412,224 @@ const server = Bun.serve({
           },
         })
       }
+    }
+
+    // GitHub OAuth callback - exchange code for access token
+    if (url.pathname === '/api/auth/github/callback' && req.method === 'POST') {
+      try {
+        const body = await req.json()
+        const { code } = body as { code?: string }
+
+        if (!code || typeof code !== 'string') {
+          return new Response(
+            JSON.stringify({ error: 'Authorization code is required' }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+          return new Response(
+            JSON.stringify({ error: 'GitHub OAuth is not configured' }),
+            {
+              status: 500,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        // Exchange code for access token
+        const tokenResponse = await fetch(GITHUB_TOKEN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: GITHUB_CLIENT_ID,
+            client_secret: GITHUB_CLIENT_SECRET,
+            code,
+          }),
+        })
+
+        const tokenData = (await tokenResponse.json()) as {
+          access_token?: string
+          error?: string
+          error_description?: string
+        }
+
+        if (tokenData.error || !tokenData.access_token) {
+          return new Response(
+            JSON.stringify({
+              error: tokenData.error_description || 'Failed to exchange code',
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        // Fetch user info to return with the response
+        const userResponse = await fetch(GITHUB_USER_URL, {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+            Accept: 'application/vnd.github+json',
+          },
+        })
+
+        const userData = (await userResponse.json()) as {
+          login?: string
+          id?: number
+          avatar_url?: string
+          name?: string
+        }
+
+        // Set httpOnly cookie with the access token
+        const cookieOptions = [
+          `github_token=${tokenData.access_token}`,
+          'HttpOnly',
+          'Secure',
+          'SameSite=Strict',
+          'Path=/',
+          'Max-Age=86400', // 24 hours
+        ].join('; ')
+
+        return new Response(
+          JSON.stringify({
+            user: {
+              login: userData.login,
+              id: userData.id,
+              avatar_url: userData.avatar_url,
+              name: userData.name,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+              'Set-Cookie': cookieOptions,
+            },
+          }
+        )
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
+    }
+
+    // Get current user - check if authenticated via cookie
+    if (url.pathname === '/api/auth/me' && req.method === 'GET') {
+      const cookieHeader = req.headers.get('cookie') || ''
+      const cookies = Object.fromEntries(
+        cookieHeader.split(';').map(c => {
+          const [key, ...val] = c.trim().split('=')
+          return [key, val.join('=')]
+        })
+      )
+
+      const token = cookies.github_token
+
+      if (!token) {
+        return new Response(JSON.stringify({ user: null }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
+
+      try {
+        const userResponse = await fetch(GITHUB_USER_URL, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github+json',
+          },
+        })
+
+        if (!userResponse.ok) {
+          // Token is invalid, clear the cookie
+          return new Response(JSON.stringify({ user: null }), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+              'Set-Cookie':
+                'github_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
+            },
+          })
+        }
+
+        const userData = (await userResponse.json()) as {
+          login?: string
+          id?: number
+          avatar_url?: string
+          name?: string
+        }
+
+        return new Response(
+          JSON.stringify({
+            user: {
+              login: userData.login,
+              id: userData.id,
+              avatar_url: userData.avatar_url,
+              name: userData.name,
+            },
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      } catch {
+        return new Response(JSON.stringify({ user: null }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        })
+      }
+    }
+
+    // Logout - clear the auth cookie
+    if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
+          'Set-Cookie':
+            'github_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
+        },
+      })
     }
 
     return new Response('Not found', { status: 404 })

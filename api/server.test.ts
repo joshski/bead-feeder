@@ -63,12 +63,18 @@ describe('API Server', () => {
   it('OPTIONS /api/issues returns CORS preflight response', async () => {
     const response = await fetch(`http://localhost:${port}/api/issues`, {
       method: 'OPTIONS',
+      headers: { Origin: 'http://localhost:5173' },
     })
 
     expect(response.ok).toBe(true)
-    expect(response.headers.get('access-control-allow-origin')).toBe('*')
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      'http://localhost:5173'
+    )
     expect(response.headers.get('access-control-allow-methods')).toContain(
       'GET'
+    )
+    expect(response.headers.get('access-control-allow-credentials')).toBe(
+      'true'
     )
   })
 
@@ -340,6 +346,92 @@ describe('API Server', () => {
       )
 
       expect(response.headers.get('access-control-allow-origin')).toBe('*')
+    })
+  })
+
+  describe('Auth endpoints', () => {
+    it('POST /api/auth/github/callback returns 400 for missing code', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/auth/github/callback`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }
+      )
+
+      expect(response.status).toBe(400)
+      const error = await response.json()
+      expect(error).toHaveProperty('error')
+      expect(error.error).toContain('code')
+    })
+
+    it('POST /api/auth/github/callback returns 500 when OAuth not configured', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/auth/github/callback`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: 'test-code' }),
+        }
+      )
+
+      // Without GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, should return 500
+      expect(response.status).toBe(500)
+      const error = await response.json()
+      expect(error).toHaveProperty('error')
+      expect(error.error).toContain('not configured')
+    })
+
+    it('POST /api/auth/github/callback includes CORS headers', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/auth/github/callback`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Origin: 'http://localhost:5173',
+          },
+          body: JSON.stringify({}),
+        }
+      )
+
+      expect(response.headers.get('access-control-allow-credentials')).toBe(
+        'true'
+      )
+    })
+
+    it('GET /api/auth/me returns null user when not authenticated', async () => {
+      const response = await fetch(`http://localhost:${port}/api/auth/me`)
+
+      expect(response.ok).toBe(true)
+      const data = await response.json()
+      expect(data).toHaveProperty('user', null)
+    })
+
+    it('GET /api/auth/me includes CORS headers', async () => {
+      const response = await fetch(`http://localhost:${port}/api/auth/me`, {
+        headers: { Origin: 'http://localhost:5173' },
+      })
+
+      expect(response.headers.get('access-control-allow-credentials')).toBe(
+        'true'
+      )
+    })
+
+    it('POST /api/auth/logout clears the cookie', async () => {
+      const response = await fetch(`http://localhost:${port}/api/auth/logout`, {
+        method: 'POST',
+      })
+
+      expect(response.ok).toBe(true)
+      const data = await response.json()
+      expect(data).toHaveProperty('success', true)
+
+      // Check that cookie is being cleared
+      const setCookie = response.headers.get('set-cookie')
+      expect(setCookie).toContain('github_token=')
+      expect(setCookie).toContain('Max-Age=0')
     })
   })
 

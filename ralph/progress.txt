@@ -254,3 +254,23 @@ Set up environment configuration for GitHub OAuth authentication:
 - Documented OAuth app registration steps with callback URL
 - Updated src/vite-env.d.ts with VITE_GITHUB_CLIENT_ID type definition
 - All 136 tests passing
+
+## 2026-01-14: Implement GitHub OAuth login flow (bead-feeder-dl9)
+
+Implemented full GitHub OAuth authentication flow with secure token storage:
+- Created src/components/GitHubLoginButton.tsx component with GitHub icon and OAuth redirect
+- Generates random state parameter for CSRF protection stored in sessionStorage
+- Created src/pages/AuthCallback.tsx to handle GitHub OAuth callback
+- Validates state parameter and exchanges authorization code for access token
+- Added POST /api/auth/github/callback endpoint to exchange code for GitHub access token
+- Added GET /api/auth/me endpoint to check current authentication status via cookie
+- Added POST /api/auth/logout endpoint to clear the auth cookie
+- Stores access token in secure httpOnly cookie (Max-Age: 24 hours)
+- Created src/context/AuthContext.tsx for React auth state management
+- AuthProvider fetches user on mount, provides user/logout/refreshUser to children
+- Updated src/App.tsx header to show login button or user avatar/name with logout
+- Updated src/main.tsx with AuthProvider wrapper and /auth/callback route
+- Added CORS credentials support for cross-origin cookie handling
+- Added 6 auth-related API tests and 5 GitHubLoginButton component tests
+- Added 5 AuthContext tests covering user fetching and error handling
+- All 152 tests passing

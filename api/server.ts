@@ -1,6 +1,13 @@
 import { spawn } from 'node:child_process'
+import Anthropic from '@anthropic-ai/sdk'
 
 const PORT = process.env.PORT || 3001
+const anthropic = new Anthropic()
+
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
 
 async function runBdCommand(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -219,6 +226,72 @@ const server = Bun.serve({
         return new Response(json, {
           headers: {
             'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+      }
+    }
+
+    if (url.pathname === '/api/chat' && req.method === 'POST') {
+      try {
+        const body = await req.json()
+        const { messages } = body as { messages?: ChatMessage[] }
+
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+          return new Response(
+            JSON.stringify({
+              error: 'messages is required and must be a non-empty array',
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              },
+            }
+          )
+        }
+
+        const stream = anthropic.messages.stream({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: messages.map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+        })
+
+        const responseStream = new ReadableStream({
+          async start(controller) {
+            const encoder = new TextEncoder()
+            for await (const event of stream) {
+              if (
+                event.type === 'content_block_delta' &&
+                event.delta.type === 'text_delta'
+              ) {
+                const data = `data: ${JSON.stringify({ text: event.delta.text })}\n\n`
+                controller.enqueue(encoder.encode(data))
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+            controller.close()
+          },
+        })
+
+        return new Response(responseStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
             'Access-Control-Allow-Origin': '*',
           },
         })

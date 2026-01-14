@@ -188,3 +188,18 @@ Created a chat panel component with message history, input, and markdown renderi
 - Input validation: prevents sending empty or whitespace-only messages
 - Added 16 comprehensive tests in src/components/ChatPanel.test.tsx
 - All 82 tests passing
+
+## 2026-01-14: Integrate LLM API for chat (bead-feeder-juk)
+
+Connected to Anthropic Claude API from the backend with streaming responses:
+- Installed @anthropic-ai/sdk v0.71.2
+- Added POST /api/chat endpoint to api/server.ts
+- Accepts messages array in request body with role and content fields
+- Uses claude-sonnet-4-20250514 model with 1024 max tokens
+- Implements Server-Sent Events (SSE) streaming for real-time response delivery
+- Streams text deltas as JSON objects with text field
+- Sends [DONE] marker when stream completes
+- Returns 400 for missing/empty/non-array messages
+- Includes CORS headers consistent with other endpoints
+- Added 4 integration tests for validation and CORS in api/server.test.ts
+- All 86 tests passing (82 unit + 4 new API tests)

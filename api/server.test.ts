@@ -342,4 +342,49 @@ describe('API Server', () => {
       expect(response.headers.get('access-control-allow-origin')).toBe('*')
     })
   })
+
+  describe('POST /api/chat', () => {
+    it('returns 400 for missing messages', async () => {
+      const response = await fetch(`http://localhost:${port}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      expect(response.status).toBe(400)
+      const error = await response.json()
+      expect(error).toHaveProperty('error')
+      expect(error.error).toContain('messages')
+    })
+
+    it('returns 400 for empty messages array', async () => {
+      const response = await fetch(`http://localhost:${port}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [] }),
+      })
+
+      expect(response.status).toBe(400)
+    })
+
+    it('returns 400 for non-array messages', async () => {
+      const response = await fetch(`http://localhost:${port}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: 'not an array' }),
+      })
+
+      expect(response.status).toBe(400)
+    })
+
+    it('includes CORS headers on error response', async () => {
+      const response = await fetch(`http://localhost:${port}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      expect(response.headers.get('access-control-allow-origin')).toBe('*')
+    })
+  })
 })

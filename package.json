@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/joshski/ralph-kit#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@types/node": "^25.0.6",
     "@vitejs/plugin-react": "^5.1.2",
     "@xyflow/react": "^12.10.0",

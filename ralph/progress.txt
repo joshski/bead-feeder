@@ -274,3 +274,11 @@ Implemented full GitHub OAuth authentication flow with secure token storage:
 - Added 6 auth-related API tests and 5 GitHubLoginButton component tests
 - Added 5 AuthContext tests covering user fetching and error handling
 - All 152 tests passing
+
+## 2026-01-14: Fix linting warnings in test files (bead-feeder-lf5)
+
+Fixed 16 lint warnings for non-null assertions in test files:
+- Fixed src/components/ChatPanel.test.tsx: replaced `form!` with null check and type cast
+- Fixed src/transformers/dagLayout.test.ts: created `findNodeById` helper function to replace all 15 non-null assertions
+- Helper function throws descriptive error if node not found, improving test failure messages
+- All 152 tests passing with zero lint warnings

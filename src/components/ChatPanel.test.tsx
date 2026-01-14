@@ -56,7 +56,8 @@ describe('ChatPanel', () => {
     const form = input.closest('form')
 
     fireEvent.change(input, { target: { value: 'Test message' } })
-    fireEvent.submit(form!)
+    expect(form).not.toBeNull()
+    fireEvent.submit(form as HTMLFormElement)
 
     expect(mockOnSendMessage).toHaveBeenCalledWith('Test message')
     expect(input).toHaveValue('')

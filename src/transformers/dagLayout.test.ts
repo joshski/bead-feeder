@@ -2,6 +2,12 @@ import type { Edge, Node } from '@xyflow/react'
 import { describe, expect, it } from 'vitest'
 import { applyDagLayout } from './dagLayout'
 
+function findNodeById(nodes: Node[], id: string): Node {
+  const node = nodes.find(n => n.id === id)
+  if (!node) throw new Error(`Node with id "${id}" not found`)
+  return node
+}
+
 describe('applyDagLayout', () => {
   it('returns empty array for empty nodes', () => {
     const result = applyDagLayout([], [])
@@ -41,8 +47,8 @@ describe('applyDagLayout', () => {
     const edges: Edge[] = [{ id: 'e1', source: 'parent', target: 'child' }]
     const result = applyDagLayout(nodes, edges, { direction: 'TB' })
 
-    const parent = result.find(n => n.id === 'parent')!
-    const child = result.find(n => n.id === 'child')!
+    const parent = findNodeById(result, 'parent')
+    const child = findNodeById(result, 'child')
 
     // Child should be below parent in TB layout
     expect(child.position.y).toBeGreaterThan(parent.position.y)
@@ -56,8 +62,8 @@ describe('applyDagLayout', () => {
     const edges: Edge[] = [{ id: 'e1', source: 'parent', target: 'child' }]
     const result = applyDagLayout(nodes, edges, { direction: 'LR' })
 
-    const parent = result.find(n => n.id === 'parent')!
-    const child = result.find(n => n.id === 'child')!
+    const parent = findNodeById(result, 'parent')
+    const child = findNodeById(result, 'child')
 
     // Child should be to the right of parent in LR layout
     expect(child.position.x).toBeGreaterThan(parent.position.x)
@@ -75,9 +81,9 @@ describe('applyDagLayout', () => {
     ]
     const result = applyDagLayout(nodes, edges, { direction: 'TB' })
 
-    const root = result.find(n => n.id === 'root')!
-    const mid = result.find(n => n.id === 'mid')!
-    const leaf = result.find(n => n.id === 'leaf')!
+    const root = findNodeById(result, 'root')
+    const mid = findNodeById(result, 'mid')
+    const leaf = findNodeById(result, 'leaf')
 
     // Should be in order: root -> mid -> leaf
     expect(mid.position.y).toBeGreaterThan(root.position.y)
@@ -100,10 +106,10 @@ describe('applyDagLayout', () => {
     ]
     const result = applyDagLayout(nodes, edges, { direction: 'TB' })
 
-    const root = result.find(n => n.id === 'root')!
-    const left = result.find(n => n.id === 'left')!
-    const right = result.find(n => n.id === 'right')!
-    const bottom = result.find(n => n.id === 'bottom')!
+    const root = findNodeById(result, 'root')
+    const left = findNodeById(result, 'left')
+    const right = findNodeById(result, 'right')
+    const bottom = findNodeById(result, 'bottom')
 
     // Root should be at the top
     expect(left.position.y).toBeGreaterThan(root.position.y)
@@ -146,8 +152,8 @@ describe('applyDagLayout', () => {
       nodeHeight: 100,
     })
 
-    const parent = result.find(n => n.id === 'parent')!
-    const child = result.find(n => n.id === 'child')!
+    const parent = findNodeById(result, 'parent')
+    const child = findNodeById(result, 'child')
 
     // The vertical distance should be at least the nodeSpacingY + nodeHeight
     const verticalDistance = child.position.y - parent.position.y
@@ -173,8 +179,8 @@ describe('applyDagLayout', () => {
     })
 
     // Isolated node should be at the top level (same as connected1)
-    const connected1 = result.find(n => n.id === 'connected1')!
-    const isolated = result.find(n => n.id === 'isolated')!
+    const connected1 = findNodeById(result, 'connected1')
+    const isolated = findNodeById(result, 'isolated')
     expect(isolated.position.y).toBe(connected1.position.y)
   })
 })

@@ -596,3 +596,12 @@ Fixed DAG view to properly display edges between dependent issues:
 - Edges between dependent issues now render correctly as smooth-step lines
 - Visual verification: parent issues connect to child issues with visible lines showing dependency relationships
 - All 245 tests passing
+
+## 2026-01-14: Remove Claude verification from e2e test (bead-feeder-704)
+
+Made e2e test deterministic by removing AI verification:
+- Removed import and usage of verifyScreenshotShowsIssues from e2e/load-beads-issues.spec.ts
+- Deleted e2e/verify-screenshot.ts utility that invoked Claude CLI for screenshot analysis
+- Test now relies solely on Playwright assertions for DOM state verification
+- Screenshot is still taken on success for manual review if needed
+- All 245 tests passing

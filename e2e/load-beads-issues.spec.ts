@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test'
-import { verifyScreenshotShowsIssues } from './verify-screenshot'
 
 // Test repository containing sample beads issues
 const TEST_REPO_OWNER = 'josh-beads-test-1'
@@ -191,23 +190,6 @@ test.describe('Load beads issues from GitHub repository', () => {
         fullPage: true,
       })
       console.log(`Success screenshot saved to ${screenshotPath}`)
-
-      // Verify screenshot using Claude Code CLI
-      console.log('Verifying screenshot with Claude Code...')
-      const verification = await verifyScreenshotShowsIssues(screenshotPath)
-      console.log('Claude verification result:')
-      console.log(`  - Verified: ${verification.verified}`)
-      console.log(`  - Issue count: ${verification.issueCount}`)
-      console.log(`  - Description: ${verification.description}`)
-
-      // Verify Claude can see the DAG view loaded correctly
-      // (issues may or may not be present depending on test repo state)
-      if (issueCount > 0) {
-        expect(
-          verification.issueCount,
-          'Claude should detect the issues visible in screenshot'
-        ).toBeGreaterThan(0)
-      }
     })
   })
 })

@@ -337,3 +337,20 @@ Built a repository selector UI that shows after login and filters repos by .bead
 - Added 7 tests for RepositorySelector component
 - Cleaned up 20 test artifact issues from the issue tracker
 - All 172 tests passing
+
+## 2026-01-14: Implement background job queue for sync (bead-feeder-ksp)
+
+Created a background job queue for git sync operations:
+- Created api/sync-queue.ts with SyncQueue class for managing git sync operations
+- Queue supports three job types: commit, push, and pull
+- Debounces rapid commit requests to avoid excessive git operations (configurable, default 2000ms)
+- Periodic push interval to sync changes to remote (configurable, default 30000ms)
+- Event system with statusChange, syncComplete, and syncError events
+- Token management for authenticated git operations via setToken/getToken
+- State tracking with SyncQueueState interface (status, pendingJobs, lastSync, lastError)
+- Singleton pattern with getSyncQueue() and resetSyncQueue() functions
+- Commit operation stages .beads directory and commits only if there are changes
+- Push and pull operations use git-service for authenticated operations
+- Added 16 comprehensive tests in api/sync-queue.test.ts
+- Cleaned up 19 test artifact issues from the issue tracker
+- All 188 tests passing

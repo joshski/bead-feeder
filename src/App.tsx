@@ -1,10 +1,15 @@
 import { Link, Outlet, useParams } from 'react-router'
 import GitHubLoginButton from './components/GitHubLoginButton'
+import SyncStatusIndicator from './components/SyncStatusIndicator'
+import ToastContainer from './components/Toast'
 import { useAuth } from './context/AuthContext'
+import { useSyncStatus } from './context/SyncContext'
 
 function App() {
   const { user, isLoading, logout } = useAuth()
   const { owner, repo } = useParams<{ owner?: string; repo?: string }>()
+  const { status, lastSyncTime, errorMessage, toasts, dismissToast } =
+    useSyncStatus()
 
   return (
     <div>
@@ -21,12 +26,21 @@ function App() {
             <h1 style={{ margin: 0 }}>Bead Feeder</h1>
           </Link>
           {owner && repo && (
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ color: '#666' }}>/</span>
-              <span style={{ fontWeight: 500 }}>
-                {owner}/{repo}
-              </span>
-            </nav>
+            <>
+              <nav
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <span style={{ color: '#666' }}>/</span>
+                <span style={{ fontWeight: 500 }}>
+                  {owner}/{repo}
+                </span>
+              </nav>
+              <SyncStatusIndicator
+                status={status}
+                lastSyncTime={lastSyncTime}
+                errorMessage={errorMessage}
+              />
+            </>
           )}
         </div>
         <div>
@@ -57,6 +71,7 @@ function App() {
       <main>
         <Outlet />
       </main>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }

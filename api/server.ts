@@ -8,6 +8,7 @@ import type {
 } from '@anthropic-ai/sdk/resources/messages'
 import { listUserRepositories } from './git-service'
 import { llmTools } from './llm-tools'
+import { getSyncQueue } from './sync-queue'
 import { executeTool } from './tool-executor'
 
 const PORT = process.env.PORT || 3001
@@ -740,6 +741,79 @@ const server = Bun.serve({
           },
         })
       }
+    }
+
+    // SSE endpoint for sync status updates
+    if (url.pathname === '/api/sync/events' && req.method === 'GET') {
+      const syncQueue = getSyncQueue()
+
+      const responseStream = new ReadableStream({
+        start(controller) {
+          const encoder = new TextEncoder()
+
+          // Send initial state
+          const initialState = syncQueue.getState()
+          const initialData = `data: ${JSON.stringify({ type: 'status', ...initialState })}\n\n`
+          controller.enqueue(encoder.encode(initialData))
+
+          // Subscribe to status changes
+          const unsubscribeStatus = syncQueue.on('statusChange', data => {
+            const statusData = data as {
+              status: string
+              state: {
+                pendingJobs: number
+                lastSync: number | null
+                lastError: string | null
+              }
+            }
+            const eventData = `data: ${JSON.stringify({ type: 'status', ...statusData.state, status: statusData.status })}\n\n`
+            controller.enqueue(encoder.encode(eventData))
+          })
+
+          // Subscribe to sync complete events
+          const unsubscribeComplete = syncQueue.on('syncComplete', data => {
+            const completeData = data as { timestamp: number }
+            const eventData = `data: ${JSON.stringify({ type: 'syncComplete', timestamp: completeData.timestamp })}\n\n`
+            controller.enqueue(encoder.encode(eventData))
+          })
+
+          // Subscribe to sync error events
+          const unsubscribeError = syncQueue.on('syncError', data => {
+            const errorData = data as { job: unknown; error: string }
+            const eventData = `data: ${JSON.stringify({ type: 'syncError', error: errorData.error })}\n\n`
+            controller.enqueue(encoder.encode(eventData))
+          })
+
+          // Send heartbeat every 30 seconds to keep connection alive
+          const heartbeatInterval = setInterval(() => {
+            try {
+              controller.enqueue(encoder.encode(': heartbeat\n\n'))
+            } catch {
+              // Connection closed
+              clearInterval(heartbeatInterval)
+            }
+          }, 30000)
+
+          // Cleanup on close - Bun doesn't have a clean way to detect client disconnect
+          // so we rely on the heartbeat failing to clean up
+          return () => {
+            clearInterval(heartbeatInterval)
+            unsubscribeStatus()
+            unsubscribeComplete()
+            unsubscribeError()
+          }
+        },
+      })
+
+      return new Response(responseStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      })
     }
 
     return new Response('Not found', { status: 404 })

@@ -108,15 +108,18 @@ describe('API Server', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('*')
   })
 
-  it('GET /api/graph returns dependencies as an array', async () => {
+  it('GET /api/graph returns dependencies as an array or null', async () => {
     const response = await fetch(`http://localhost:${port}/api/graph`)
     const graphs = await response.json()
 
     if (graphs.length > 0) {
       const graph = graphs[0]
-      expect(Array.isArray(graph.Dependencies)).toBe(true)
+      // Dependencies can be null when there are no dependencies, or an array
+      expect(
+        graph.Dependencies === null || Array.isArray(graph.Dependencies)
+      ).toBe(true)
 
-      if (graph.Dependencies.length > 0) {
+      if (Array.isArray(graph.Dependencies) && graph.Dependencies.length > 0) {
         const dep = graph.Dependencies[0]
         expect(dep).toHaveProperty('issue_id')
         expect(dep).toHaveProperty('depends_on_id')

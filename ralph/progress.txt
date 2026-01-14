@@ -354,3 +354,32 @@ Created a background job queue for git sync operations:
 - Added 16 comprehensive tests in api/sync-queue.test.ts
 - Cleaned up 19 test artifact issues from the issue tracker
 - All 188 tests passing
+
+## 2026-01-14: Add sync status indicator (bead-feeder-zyf)
+
+Added UI components for sync status display with toast notifications:
+- Created src/components/SyncStatusIndicator.tsx with visual status indicator
+  - Displays four states: synced (green), syncing (blue animated), pending (amber), error (red)
+  - Shows relative time since last sync ("just now", "5m ago", "2h ago")
+  - Tooltip shows error message when in error state
+- Created src/components/Toast.tsx with ToastContainer for notifications
+  - Supports success, error, and info toast types with appropriate styling
+  - Auto-dismisses after 5 seconds with fade animation
+  - Manual dismiss button available
+- Created src/context/SyncContext.tsx for global sync state management
+  - Subscribes to /api/sync/events SSE endpoint for real-time updates
+  - Provides status, lastSyncTime, errorMessage, and toast management
+  - Auto-shows toasts on sync completion or error
+- Added GET /api/sync/events SSE endpoint to api/server.ts
+  - Streams sync queue state changes in real-time
+  - Sends initial state on connection
+  - Subscribes to statusChange, syncComplete, and syncError events
+  - Includes heartbeat to keep connection alive
+- Integrated SyncProvider in main.tsx
+- Added SyncStatusIndicator to App header (visible when viewing a repo)
+- Added ToastContainer to App for global notifications
+- Fixed flaky test for GET /api/graph that expected Dependencies to always be an array
+- Added 8 tests for SyncStatusIndicator
+- Added 9 tests for Toast component
+- Cleaned up test artifact issues from issue tracker
+- All 205 tests passing

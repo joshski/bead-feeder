@@ -3,10 +3,19 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
+import { SyncProvider } from './context/SyncContext'
+
+// Mock EventSource for SyncContext
+class MockEventSource {
+  onmessage: ((event: MessageEvent) => void) | null = null
+  onerror: (() => void) | null = null
+  close() {}
+}
 
 describe('App', () => {
   it('renders the heading', () => {
-    // Mock fetch for auth context
+    // Mock EventSource and fetch for contexts
+    vi.stubGlobal('EventSource', MockEventSource)
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -17,7 +26,9 @@ describe('App', () => {
     render(
       <MemoryRouter>
         <AuthProvider>
-          <App />
+          <SyncProvider>
+            <App />
+          </SyncProvider>
         </AuthProvider>
       </MemoryRouter>
     )

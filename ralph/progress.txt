@@ -552,3 +552,15 @@ Created Playwright e2e test that verifies the full flow of signing into GitHub a
 - Added "test:e2e:load-issues" script to package.json
 - Added TEST_GITHUB_REPOSITORY to .env.example with documentation
 - All 245 tests still passing
+
+## 2026-01-14: Add Claude Code vision verification to E2E test
+
+Enhanced the load-beads-issues E2E test to verify screenshots using Claude Code CLI:
+- Created e2e/verify-screenshot.ts utility that invokes `claude -p` to analyze screenshots
+- Test now always takes a screenshot on success and verifies it shows issues
+- Claude vision verification confirms:
+  - Screenshot contains visible issue nodes
+  - Reports count of issues found
+  - Provides description of what's visible
+- Updated test to fail if Claude cannot verify issues are displayed
+- Note: 2 pre-existing test failures in server.test.ts (GET /api/graph tests) - these were failing before this change

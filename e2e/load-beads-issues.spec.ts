@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { verifyScreenshotShowsIssues } from './verify-screenshot'
 
 // Test repository containing sample beads issues
 const TEST_REPO_OWNER = 'josh-beads-test-1'
@@ -180,13 +181,29 @@ test.describe('Load beads issues from GitHub repository', () => {
       console.log(`First issue title: ${titleText}`)
 
       // Take a success screenshot
+      const screenshotPath = 'screenshots/e2e-issues-loaded.png'
       await page.screenshot({
-        path: 'screenshots/e2e-issues-loaded.png',
+        path: screenshotPath,
         fullPage: true,
       })
-      console.log(
-        'Success screenshot saved to screenshots/e2e-issues-loaded.png'
-      )
+      console.log(`Success screenshot saved to ${screenshotPath}`)
+
+      // Verify screenshot shows issues using Claude Code CLI
+      console.log('Verifying screenshot with Claude Code...')
+      const verification = await verifyScreenshotShowsIssues(screenshotPath)
+      console.log('Claude verification result:')
+      console.log(`  - Verified: ${verification.verified}`)
+      console.log(`  - Issue count: ${verification.issueCount}`)
+      console.log(`  - Description: ${verification.description}`)
+
+      expect(
+        verification.verified,
+        `Claude vision verification failed: ${verification.description}`
+      ).toBe(true)
+      expect(
+        verification.issueCount,
+        'Claude detected no issues in screenshot'
+      ).toBeGreaterThan(0)
     })
   })
 })

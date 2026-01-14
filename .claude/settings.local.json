@@ -20,7 +20,8 @@
       "Bash(git pull:*)",
       "Bash(bd sync:*)",
       "Bash(git push)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(./check:*)"
     ]
   }
 }

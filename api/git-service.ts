@@ -1,0 +1,310 @@
+import { spawn } from 'node:child_process'
+
+interface GitResult {
+  success: boolean
+  output?: string
+  error?: string
+}
+
+interface RepoInfo {
+  owner: string
+  repo: string
+  branch?: string
+}
+
+/**
+ * Parse a GitHub repository URL to extract owner and repo
+ */
+export function parseGitHubUrl(url: string): RepoInfo | null {
+  // Handle HTTPS URLs: https://github.com/owner/repo.git
+  const httpsMatch = url.match(
+    /^https:\/\/github\.com\/([^/]+)\/([^/.]+)(?:\.git)?$/
+  )
+  if (httpsMatch) {
+    return { owner: httpsMatch[1], repo: httpsMatch[2] }
+  }
+
+  // Handle SSH URLs: git@github.com:owner/repo.git
+  const sshMatch = url.match(/^git@github\.com:([^/]+)\/([^/.]+)(?:\.git)?$/)
+  if (sshMatch) {
+    return { owner: sshMatch[1], repo: sshMatch[2] }
+  }
+
+  // Handle short form: owner/repo
+  const shortMatch = url.match(/^([^/]+)\/([^/]+)$/)
+  if (shortMatch) {
+    return { owner: shortMatch[1], repo: shortMatch[2] }
+  }
+
+  return null
+}
+
+/**
+ * Build an authenticated GitHub HTTPS URL using an access token
+ */
+export function buildAuthenticatedUrl(
+  owner: string,
+  repo: string,
+  token: string
+): string {
+  return `https://x-access-token:${token}@github.com/${owner}/${repo}.git`
+}
+
+/**
+ * Execute a git command with optional authentication
+ */
+async function runGitCommand(
+  args: string[],
+  options: { cwd?: string; env?: Record<string, string> } = {}
+): Promise<GitResult> {
+  return new Promise(resolve => {
+    const proc = spawn('git', args, {
+      cwd: options.cwd || process.cwd(),
+      env: { ...process.env, ...options.env },
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    proc.stdout.on('data', data => {
+      stdout += data.toString()
+    })
+
+    proc.stderr.on('data', data => {
+      stderr += data.toString()
+    })
+
+    proc.on('close', code => {
+      if (code === 0) {
+        resolve({ success: true, output: stdout.trim() })
+      } else {
+        resolve({ success: false, error: stderr.trim() || stdout.trim() })
+      }
+    })
+
+    proc.on('error', err => {
+      resolve({ success: false, error: err.message })
+    })
+  })
+}
+
+/**
+ * Clone a GitHub repository using an access token for authentication
+ */
+export async function cloneRepository(
+  repoUrl: string,
+  targetDir: string,
+  token: string
+): Promise<GitResult> {
+  const repoInfo = parseGitHubUrl(repoUrl)
+  if (!repoInfo) {
+    return { success: false, error: 'Invalid GitHub repository URL' }
+  }
+
+  const authUrl = buildAuthenticatedUrl(repoInfo.owner, repoInfo.repo, token)
+  return runGitCommand(['clone', authUrl, targetDir])
+}
+
+/**
+ * Fetch updates from a remote using an access token for authentication
+ */
+export async function fetchRepository(
+  cwd: string,
+  token: string,
+  remote = 'origin'
+): Promise<GitResult> {
+  // Get the remote URL to parse it
+  const urlResult = await runGitCommand(['remote', 'get-url', remote], { cwd })
+  if (!urlResult.success || !urlResult.output) {
+    return {
+      success: false,
+      error: `Failed to get remote URL: ${urlResult.error}`,
+    }
+  }
+
+  const repoInfo = parseGitHubUrl(urlResult.output)
+  if (!repoInfo) {
+    return { success: false, error: 'Remote is not a GitHub repository' }
+  }
+
+  const authUrl = buildAuthenticatedUrl(repoInfo.owner, repoInfo.repo, token)
+
+  // Temporarily set the remote URL with auth, fetch, then restore
+  const setResult = await runGitCommand(
+    ['remote', 'set-url', remote, authUrl],
+    { cwd }
+  )
+  if (!setResult.success) {
+    return setResult
+  }
+
+  try {
+    const fetchResult = await runGitCommand(['fetch', remote], { cwd })
+    return fetchResult
+  } finally {
+    // Restore the original URL (without token)
+    const originalUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}.git`
+    await runGitCommand(['remote', 'set-url', remote, originalUrl], { cwd })
+  }
+}
+
+/**
+ * Push to a remote using an access token for authentication
+ */
+export async function pushRepository(
+  cwd: string,
+  token: string,
+  remote = 'origin',
+  branch?: string
+): Promise<GitResult> {
+  // Get the remote URL to parse it
+  const urlResult = await runGitCommand(['remote', 'get-url', remote], { cwd })
+  if (!urlResult.success || !urlResult.output) {
+    return {
+      success: false,
+      error: `Failed to get remote URL: ${urlResult.error}`,
+    }
+  }
+
+  const repoInfo = parseGitHubUrl(urlResult.output)
+  if (!repoInfo) {
+    return { success: false, error: 'Remote is not a GitHub repository' }
+  }
+
+  const authUrl = buildAuthenticatedUrl(repoInfo.owner, repoInfo.repo, token)
+
+  // Temporarily set the remote URL with auth, push, then restore
+  const setResult = await runGitCommand(
+    ['remote', 'set-url', remote, authUrl],
+    { cwd }
+  )
+  if (!setResult.success) {
+    return setResult
+  }
+
+  try {
+    const pushArgs = ['push', remote]
+    if (branch) {
+      pushArgs.push(branch)
+    }
+    const pushResult = await runGitCommand(pushArgs, { cwd })
+    return pushResult
+  } finally {
+    // Restore the original URL (without token)
+    const originalUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}.git`
+    await runGitCommand(['remote', 'set-url', remote, originalUrl], { cwd })
+  }
+}
+
+/**
+ * Pull from a remote using an access token for authentication
+ */
+export async function pullRepository(
+  cwd: string,
+  token: string,
+  remote = 'origin',
+  branch?: string
+): Promise<GitResult> {
+  // Get the remote URL to parse it
+  const urlResult = await runGitCommand(['remote', 'get-url', remote], { cwd })
+  if (!urlResult.success || !urlResult.output) {
+    return {
+      success: false,
+      error: `Failed to get remote URL: ${urlResult.error}`,
+    }
+  }
+
+  const repoInfo = parseGitHubUrl(urlResult.output)
+  if (!repoInfo) {
+    return { success: false, error: 'Remote is not a GitHub repository' }
+  }
+
+  const authUrl = buildAuthenticatedUrl(repoInfo.owner, repoInfo.repo, token)
+
+  // Temporarily set the remote URL with auth, pull, then restore
+  const setResult = await runGitCommand(
+    ['remote', 'set-url', remote, authUrl],
+    { cwd }
+  )
+  if (!setResult.success) {
+    return setResult
+  }
+
+  try {
+    const pullArgs = ['pull', remote]
+    if (branch) {
+      pullArgs.push(branch)
+    }
+    const pullResult = await runGitCommand(pullArgs, { cwd })
+    return pullResult
+  } finally {
+    // Restore the original URL (without token)
+    const originalUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}.git`
+    await runGitCommand(['remote', 'set-url', remote, originalUrl], { cwd })
+  }
+}
+
+/**
+ * List user's repositories from GitHub API
+ */
+export async function listUserRepositories(
+  token: string
+): Promise<{ success: boolean; repos?: RepoInfo[]; error?: string }> {
+  try {
+    const response = await fetch(
+      'https://api.github.com/user/repos?per_page=100&sort=updated',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      return { success: false, error: `GitHub API error: ${response.status}` }
+    }
+
+    const repos = (await response.json()) as Array<{
+      owner: { login: string }
+      name: string
+      default_branch: string
+    }>
+
+    return {
+      success: true,
+      repos: repos.map(r => ({
+        owner: r.owner.login,
+        repo: r.name,
+        branch: r.default_branch,
+      })),
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+/**
+ * Get current branch name
+ */
+export async function getCurrentBranch(cwd: string): Promise<GitResult> {
+  return runGitCommand(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd })
+}
+
+/**
+ * Get the current git status
+ */
+export async function getStatus(cwd: string): Promise<GitResult> {
+  return runGitCommand(['status', '--porcelain'], { cwd })
+}
+
+/**
+ * Check if directory is a git repository
+ */
+export async function isGitRepository(cwd: string): Promise<boolean> {
+  const result = await runGitCommand(['rev-parse', '--git-dir'], { cwd })
+  return result.success
+}

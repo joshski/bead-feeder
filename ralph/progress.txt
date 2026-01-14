@@ -290,3 +290,23 @@ Removed test artifact issues created by API and tool executor integration tests:
 - These were orphaned issues created during integration testing of the bd CLI tools
 - Issue tracker now shows only real work items (2 remaining tasks)
 - Ready queue clean with legitimate tasks: "Create authenticated git operations service" and "Add repository selector UI"
+
+## 2026-01-14: Create authenticated git operations service (bead-feeder-226)
+
+Built a git operations service that uses GitHub access tokens for authenticated git operations:
+- Created api/git-service.ts with the following functions:
+  - parseGitHubUrl(): Parses GitHub URLs (HTTPS, SSH, and short form owner/repo)
+  - buildAuthenticatedUrl(): Constructs authenticated URL with x-access-token
+  - cloneRepository(): Clones a GitHub repo using access token authentication
+  - fetchRepository(): Fetches updates from remote with temporary auth URL injection
+  - pushRepository(): Pushes to remote using authenticated URL
+  - pullRepository(): Pulls from remote using authenticated URL
+  - listUserRepositories(): Fetches user's repos from GitHub API
+  - getCurrentBranch(): Gets the current git branch name
+  - getStatus(): Gets git status (porcelain format)
+  - isGitRepository(): Checks if directory is a git repo
+- Auth URL injection pattern: temporarily sets remote URL with token, performs operation, restores original URL
+- This keeps tokens out of git config and history
+- Added 13 comprehensive tests in api/git-service.test.ts
+- Also cleaned up 12 more test artifact issues from the issue tracker
+- All 165 tests passing

@@ -130,3 +130,17 @@ Added POST /api/issues endpoint to create new issues via the API:
 - Returns 400 for validation errors, 500 for bd command errors
 - Includes CORS headers consistent with other endpoints
 - Added 5 integration tests: title-only creation, full fields, missing title, empty title, CORS headers
+
+## 2026-01-14: Add issue creation UI (bead-feeder-maj)
+
+Built a UI for creating new issues with a floating action button and modal:
+- Created src/components/CreateIssueModal.tsx with form fields for title, description, type, and priority
+- Created src/components/FloatingActionButton.tsx as a circular FAB in the bottom-right corner
+- Integrated both components into DagView page
+- Modal features: accessible dialog with role="dialog" and aria attributes, escape key to close, backdrop click to close
+- Form validates that title is required before submission
+- Submits to POST /api/issues endpoint, shows error messages on failure
+- Button shows "Creating..." state while submitting
+- Added src/vite-env.d.ts for Vite environment type definitions (VITE_API_URL)
+- Added 11 tests for CreateIssueModal covering form interactions, validation, submission, and error handling
+- Added 5 tests for FloatingActionButton covering rendering and click behavior

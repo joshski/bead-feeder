@@ -218,3 +218,23 @@ Created Anthropic tool definitions for LLM-driven graph manipulation:
 - Updated vitest.config.ts to include api/**/*.test.ts for running API tests
 - Added 26 comprehensive tests in api/llm-tools.test.ts covering all tool definitions
 - All 129 tests passing (108 unit + 21 API server tests)
+
+## 2026-01-14: Execute LLM tool calls and update graph (bead-feeder-zic)
+
+Implemented LLM tool execution and real-time graph updates:
+- Created api/tool-executor.ts with executeTool() function that maps tool names to bd CLI commands
+- Supports all 5 tools: create_issue, add_dependency, remove_dependency, update_issue, close_issue
+- Each tool executor constructs proper bd command args and returns structured results
+- Updated /api/chat endpoint with full agentic loop:
+  - Added SYSTEM_PROMPT with context about the beads issue tracking system
+  - Configured Anthropic API to use llmTools for tool calling
+  - Implemented while loop that continues until stop_reason !== 'tool_use'
+  - Executes tool calls via executeTool() and feeds results back to the model
+  - Sends graphUpdated event to frontend when tools were used
+- Updated DagView to fetch real data from /api/graph instead of sample data
+- Integrated ChatPanel into DagView with side-by-side layout
+- Connected chat to /api/chat endpoint with SSE streaming
+- Frontend refreshes graph when graphUpdated event is received
+- Uses existing transformers (issuesToNodes, dependenciesToEdges) and applyDagLayout for visualization
+- Added 7 tests in api/tool-executor.test.ts covering all tool execution paths
+- All 136 tests passing

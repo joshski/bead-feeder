@@ -1,5 +1,13 @@
 import { spawn } from 'node:child_process'
 import Anthropic from '@anthropic-ai/sdk'
+import type {
+  ContentBlock,
+  MessageParam,
+  ToolResultBlockParam,
+  ToolUseBlock,
+} from '@anthropic-ai/sdk/resources/messages'
+import { llmTools } from './llm-tools'
+import { executeTool } from './tool-executor'
 
 const PORT = process.env.PORT || 3001
 const anthropic = new Anthropic()
@@ -8,6 +16,19 @@ interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }
+
+const SYSTEM_PROMPT = `You are an AI assistant that helps users manage their project's dependency graph using the beads issue tracking system.
+
+You have access to tools that let you:
+- Create new issues (tasks, bugs, features)
+- Add dependencies between issues (to show that one issue blocks another)
+- Remove dependencies
+- Update issue properties (title, description, type, priority, status)
+- Close issues when they are completed
+
+When users ask you to perform these actions, use the appropriate tools. After using a tool, briefly confirm what you did.
+
+Keep your responses concise and helpful. When listing or discussing issues, use their issue IDs so users can reference them.`
 
 async function runBdCommand(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -261,27 +282,104 @@ const server = Bun.serve({
           )
         }
 
-        const stream = anthropic.messages.stream({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          messages: messages.map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
-        })
+        // Convert chat messages to Anthropic format
+        const anthropicMessages: MessageParam[] = messages.map(m => ({
+          role: m.role,
+          content: m.content,
+        }))
 
         const responseStream = new ReadableStream({
           async start(controller) {
             const encoder = new TextEncoder()
-            for await (const event of stream) {
-              if (
-                event.type === 'content_block_delta' &&
-                event.delta.type === 'text_delta'
-              ) {
-                const data = `data: ${JSON.stringify({ text: event.delta.text })}\n\n`
-                controller.enqueue(encoder.encode(data))
+            const currentMessages = [...anthropicMessages]
+            const toolsUsed: string[] = []
+
+            // Agentic loop - keep running until no more tool calls
+            while (true) {
+              const stream = anthropic.messages.stream({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 1024,
+                system: SYSTEM_PROMPT,
+                messages: currentMessages,
+                tools: llmTools,
+              })
+
+              // Collect the full response
+              let textContent = ''
+              const toolUseBlocks: ToolUseBlock[] = []
+              let stopReason: string | null = null
+
+              for await (const event of stream) {
+                if (
+                  event.type === 'content_block_delta' &&
+                  event.delta.type === 'text_delta'
+                ) {
+                  textContent += event.delta.text
+                  const data = `data: ${JSON.stringify({ text: event.delta.text })}\n\n`
+                  controller.enqueue(encoder.encode(data))
+                }
+
+                if (event.type === 'message_delta') {
+                  stopReason = event.delta.stop_reason
+                }
               }
+
+              // Get the final message to extract tool use blocks
+              const finalMessage = await stream.finalMessage()
+              for (const block of finalMessage.content) {
+                if (block.type === 'tool_use') {
+                  toolUseBlocks.push(block)
+                }
+              }
+
+              // If no tool use, we're done
+              if (stopReason !== 'tool_use' || toolUseBlocks.length === 0) {
+                break
+              }
+
+              // Execute tools and build tool results
+              const toolResults: ToolResultBlockParam[] = []
+              for (const toolUse of toolUseBlocks) {
+                toolsUsed.push(toolUse.name)
+                const result = await executeTool(toolUse.name, toolUse.input)
+
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: toolUse.id,
+                  content: result.success
+                    ? JSON.stringify(result.result)
+                    : `Error: ${result.error}`,
+                  is_error: !result.success,
+                })
+              }
+
+              // Add assistant message with content blocks
+              const assistantContent: ContentBlock[] = []
+              if (textContent) {
+                assistantContent.push({ type: 'text', text: textContent })
+              }
+              for (const toolUse of toolUseBlocks) {
+                assistantContent.push(toolUse)
+              }
+
+              currentMessages.push({
+                role: 'assistant',
+                content: assistantContent,
+              })
+
+              // Add tool results as user message
+              currentMessages.push({
+                role: 'user',
+                content: toolResults,
+              })
             }
+
+            // Send graph update notification if tools were used
+            if (toolsUsed.length > 0) {
+              const graphUpdate = `data: ${JSON.stringify({ graphUpdated: true, toolsUsed })}\n\n`
+              controller.enqueue(encoder.encode(graphUpdate))
+            }
+
             controller.enqueue(encoder.encode('data: [DONE]\n\n'))
             controller.close()
           },

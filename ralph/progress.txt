@@ -61,3 +61,15 @@ Built a custom React Flow node component for displaying issues:
 - Added @testing-library/jest-dom for DOM matchers
 - Enabled vitest globals for testing
 - Created comprehensive tests in src/components/IssueNode.test.tsx
+
+## 2026-01-14: Create API endpoint to list issues (bead-feeder-o15)
+
+Built backend API endpoint that calls 'bd list --json' and returns issues:
+- Created api/server.ts with Bun HTTP server
+- GET /api/issues endpoint executes 'bd list --json' and returns JSON response
+- Added CORS headers for frontend integration (Access-Control-Allow-Origin: *)
+- OPTIONS preflight handler for CORS
+- Error handling returns 500 with error message
+- 404 for unknown routes
+- Added dev:api script to package.json for running the server
+- Created api/server.test.ts with integration tests (server startup, response format, CORS)

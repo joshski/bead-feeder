@@ -105,3 +105,16 @@ Created data transformer to convert beads dependency relationships into React Fl
 - Edge ID format: `{source}-{target}` for uniqueness
 - Uses smoothstep edge type for curved connections
 - Added comprehensive tests in src/transformers/dependencyToEdge.test.ts (11 tests)
+
+## 2026-01-14: Implement DAG layout algorithm (bead-feeder-8gq)
+
+Implemented automatic hierarchical positioning of nodes using dagre:
+- Installed dagre v0.8.5 and @types/dagre for TypeScript support
+- Created src/transformers/dagLayout.ts with applyDagLayout() function
+- Uses dagre library for hierarchical/layered graph layout algorithm
+- Supports TB (top-to-bottom) and LR (left-to-right) layout directions
+- Nodes with no dependencies positioned at top/left, dependents below/right
+- Configurable options: direction, nodeSpacingX/Y, nodeWidth, nodeHeight
+- Converts dagre center-based positions to React Flow top-left positions
+- Added comprehensive tests in src/transformers/dagLayout.test.ts (11 tests)
+- Tests cover: empty graphs, single nodes, TB/LR layouts, multi-level dependencies, diamond patterns, isolated nodes

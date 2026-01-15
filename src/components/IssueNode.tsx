@@ -71,7 +71,7 @@ function IssueNode({ data }: NodeProps) {
       data-issue-type={issueData.type}
       data-issue-priority={issueData.priority}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Left} />
 
       <div
         style={{
@@ -126,7 +126,7 @@ function IssueNode({ data }: NodeProps) {
         {statusLabels[issueData.status]}
       </div>
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Right} />
     </button>
   )
 }

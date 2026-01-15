@@ -852,3 +852,13 @@ Changed the DAG layout default direction from top-to-bottom (TB) to left-to-righ
 - Nodes with no dependencies now appear on the left, dependent nodes appear to the right
 - This creates a horizontal flow that is easier to read and follows the conventional direction of dependency graphs
 - All 261 tests passing, e2e test passes
+
+## 2026-01-15: Make dependencies connect at left/right of cards (bead-0bl)
+
+Changed edge connection points to match horizontal (LR) layout direction:
+- Updated src/components/IssueNode.tsx Handle positions
+- Changed target Handle from Position.Top to Position.Left
+- Changed source Handle from Position.Bottom to Position.Right
+- Edges now connect horizontally: blockers on the left, blocked issues on the right
+- Edges already use smoothstep type (curved lines) - no change needed
+- All 261 tests passing, e2e test passes

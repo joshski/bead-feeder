@@ -912,3 +912,43 @@ Adopted shadcn/ui component library for consistent styling and improved maintain
 - 259 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Move chat functionality into Add issue dialog (bead-113)
+
+Integrated the chat functionality into the CreateIssueModal instead of having it as a separate sidebar panel:
+
+**Changes to CreateIssueModal.tsx:**
+- Added chat props: chatMessages, onSendMessage, isChatLoading
+- Expanded dialog to 800px width to accommodate side-by-side layout
+- Added DialogDescription for accessibility
+- Left side: Form fields (title, description, type, priority)
+- Right side: AI Assistant chat panel with message history and input
+- Chat supports markdown rendering via react-markdown
+- Loading indicator with animated dots
+- Enter to send, Shift+Enter for new line
+- Empty state message: "Ask AI to help create issues"
+
+**Changes to DagView.tsx:**
+- Removed ChatPanel from the sidebar layout
+- Now uses full width for DAG canvas
+- Passes chat state and handlers to CreateIssueModal
+- ChatMessage type now exported from CreateIssueModal
+
+**Removed Files:**
+- Deleted src/components/ChatPanel.tsx (functionality moved to CreateIssueModal)
+- Deleted src/components/ChatPanel.test.tsx
+
+**Test Updates:**
+- Consolidated chat tests into CreateIssueModal.test.tsx
+- Added 16 new chat functionality tests covering:
+  - Message rendering (user/assistant)
+  - Markdown rendering
+  - Send message interactions (click, Enter key, form submit)
+  - Empty/whitespace message validation
+  - Loading state behavior
+  - Multiple message ordering
+
+**Results:**
+- 259 unit tests passing (same count - removed ChatPanel tests, added to CreateIssueModal tests)
+- E2e test passes
+- Build, lint, and all quality gates pass

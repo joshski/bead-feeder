@@ -1,8 +1,8 @@
 import type { Connection, Edge, Node } from '@xyflow/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import ChatPanel, { type ChatMessage } from '../components/ChatPanel'
 import CreateIssueModal, {
+  type ChatMessage,
   type CreateIssueData,
 } from '../components/CreateIssueModal'
 import DagCanvas from '../components/DagCanvas'
@@ -297,31 +297,25 @@ function DagView() {
   return (
     <div
       style={{
-        display: 'flex',
         width: '100%',
         height: 'calc(100vh - 100px)',
+        position: 'relative',
       }}
     >
-      <div style={{ flex: 1, position: 'relative' }}>
-        <DagCanvas nodes={nodes} edges={edges} onConnect={handleConnect} />
-        <FloatingActionButton onClick={() => setIsModalOpen(true)} />
-        <CreateIssueModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleCreateIssue}
-        />
-        <IssueDetailModal
-          issue={selectedIssue}
-          onClose={() => setSelectedIssue(null)}
-        />
-      </div>
-      <div style={{ width: '350px', flexShrink: 0 }}>
-        <ChatPanel
-          messages={chatMessages}
-          onSendMessage={handleSendMessage}
-          isLoading={isChatLoading}
-        />
-      </div>
+      <DagCanvas nodes={nodes} edges={edges} onConnect={handleConnect} />
+      <FloatingActionButton onClick={() => setIsModalOpen(true)} />
+      <CreateIssueModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateIssue}
+        chatMessages={chatMessages}
+        onSendMessage={handleSendMessage}
+        isChatLoading={isChatLoading}
+      />
+      <IssueDetailModal
+        issue={selectedIssue}
+        onClose={() => setSelectedIssue(null)}
+      />
     </div>
   )
 }

@@ -799,3 +799,25 @@ Clicking an issue node now opens a modal overlay instead of navigating away from
   - Tests for all close mechanisms (X button, Close button, backdrop)
   - Tests for different status, type, and priority variants
 - All 262 tests passing, e2e test passes
+
+## 2026-01-15: Fix git service tests corrupting local .git/config (bead-b52)
+
+Fixed the bug where running tests via ./check corrupted the local .git/config file:
+
+**Root Cause:**
+- The sync-queue tests (api/sync-queue.test.ts) set test tokens and called enqueuePush/enqueuePull
+- These operations triggered git-service functions (fetchRepository, pushRepository, pullRepository)
+- These functions temporarily set the remote URL with the auth token, performed the operation, and restored it
+- However, since cwd defaulted to process.cwd() (the actual project directory), the real .git/config was being modified
+- If a test failed or the restore step didn't complete, the config was left corrupted with token in the URL
+
+**Fix Applied:**
+- Updated api/sync-queue.test.ts to mock all git-service functions using vi.hoisted() and vi.mock()
+- Mocked functions: fetchRepository, pushRepository, pullRepository, compareBranches, getCurrentBranch, hasConflicts, abortMerge, resolveConflictsTheirs
+- All mocks return success values by default
+- Added vi.clearAllMocks() and mock reset logic in beforeEach
+- Tests no longer execute real git operations against the project directory
+
+**Note:**
+- git-service.test.ts was left unchanged as it only tests read-only operations (isGitRepository, getCurrentBranch, getStatus, compareBranches, hasConflicts) which don't modify .git/config
+- All 262 tests passing, e2e test passes

@@ -1,10 +1,51 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Create mock git-service functions using vi.hoisted to allow use in vi.mock
+const { mockGitService } = vi.hoisted(() => ({
+  mockGitService: {
+    fetchRepository: vi.fn().mockResolvedValue({ success: true }),
+    pushRepository: vi.fn().mockResolvedValue({ success: true }),
+    pullRepository: vi.fn().mockResolvedValue({ success: true }),
+    compareBranches: vi.fn().mockResolvedValue({
+      success: true,
+      status: { ahead: 0, behind: 0, diverged: false },
+    }),
+    getCurrentBranch: vi
+      .fn()
+      .mockResolvedValue({ success: true, output: 'main' }),
+    hasConflicts: vi.fn().mockResolvedValue(false),
+    abortMerge: vi.fn().mockResolvedValue({ success: true }),
+    resolveConflictsTheirs: vi.fn().mockResolvedValue({ success: true }),
+  },
+}))
+
+// Mock the git-service module to prevent tests from corrupting local .git/config
+vi.mock('./git-service', () => mockGitService)
+
 import { getSyncQueue, resetSyncQueue, SyncQueue } from './sync-queue'
 
 describe('SyncQueue', () => {
   let queue: SyncQueue
 
   beforeEach(() => {
+    // Reset all mocks
+    vi.clearAllMocks()
+    // Reset mock implementations to default success values
+    mockGitService.fetchRepository.mockResolvedValue({ success: true })
+    mockGitService.pushRepository.mockResolvedValue({ success: true })
+    mockGitService.pullRepository.mockResolvedValue({ success: true })
+    mockGitService.compareBranches.mockResolvedValue({
+      success: true,
+      status: { ahead: 0, behind: 0, diverged: false },
+    })
+    mockGitService.getCurrentBranch.mockResolvedValue({
+      success: true,
+      output: 'main',
+    })
+    mockGitService.hasConflicts.mockResolvedValue(false)
+    mockGitService.abortMerge.mockResolvedValue({ success: true })
+    mockGitService.resolveConflictsTheirs.mockResolvedValue({ success: true })
+
     resetSyncQueue()
     queue = new SyncQueue({ debounceMs: 50, pushIntervalMs: 100 })
   })

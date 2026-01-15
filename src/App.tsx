@@ -19,13 +19,14 @@ function App() {
   } = useSyncStatus()
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <header
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '0 16px',
+          flexShrink: 0,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -77,7 +78,7 @@ function App() {
           )}
         </div>
       </header>
-      <main>
+      <main style={{ flex: 1, minHeight: 0 }}>
         <Outlet />
       </main>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

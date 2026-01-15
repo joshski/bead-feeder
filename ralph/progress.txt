@@ -1017,3 +1017,29 @@ Removed the minimap from the React Flow DAG visualization:
 - All 258 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Stretch React Flow component to bottom of window (bead-uln)
+
+Fixed the DAG view to use the full available vertical space by stretching to the bottom of the window:
+
+**Changes:**
+1. Updated src/App.tsx:
+   - Added `display: flex`, `flexDirection: column`, `height: 100vh` to root div
+   - Added `flexShrink: 0` to header to prevent it from shrinking
+   - Added `flex: 1`, `minHeight: 0` to main element to fill remaining space
+
+2. Updated src/pages/DagView.tsx:
+   - Changed container height from `calc(100vh - 100px)` to `100%`
+   - Container now inherits the full height from its parent (main element)
+
+**Why this approach:**
+- The previous hardcoded `calc(100vh - 100px)` assumed a fixed 100px header height
+- Using flexbox with `flex: 1` on main automatically fills remaining space regardless of header height
+- `minHeight: 0` on main is needed for flex children to shrink below their content size
+
+**Results:**
+- React Flow canvas now stretches to the bottom of the window
+- No more padding/gap at the bottom
+- All 258 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

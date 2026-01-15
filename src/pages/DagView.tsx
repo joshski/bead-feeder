@@ -298,7 +298,7 @@ function DagView() {
     <div
       style={{
         width: '100%',
-        height: 'calc(100vh - 100px)',
+        height: '100%',
         position: 'relative',
       }}
     >

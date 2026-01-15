@@ -42,7 +42,7 @@ describe('dependencyToEdge', () => {
     expect(edge.target).toBe('blocked-issue')
   })
 
-  it('uses smoothstep edge type', () => {
+  it('uses bezier edge type', () => {
     const dependency: BdDependency = {
       issue_id: 'issue-1',
       depends_on_id: 'issue-2',
@@ -51,7 +51,7 @@ describe('dependencyToEdge', () => {
 
     const edge = dependencyToEdge(dependency)
 
-    expect(edge.type).toBe('smoothstep')
+    expect(edge.type).toBe('default')
   })
 
   it('creates non-animated edges', () => {
@@ -154,7 +154,7 @@ describe('dependenciesToEdges', () => {
     expect(edges.map(e => e.target)).toEqual(['child-1', 'child-2'])
   })
 
-  it('all edges use smoothstep type', () => {
+  it('all edges use bezier type', () => {
     const dependencies: BdDependency[] = [
       { issue_id: 'a', depends_on_id: 'b', type: 'blocks' },
       { issue_id: 'c', depends_on_id: 'd', type: 'blocks' },
@@ -162,6 +162,6 @@ describe('dependenciesToEdges', () => {
 
     const edges = dependenciesToEdges(dependencies)
 
-    expect(edges.every(e => e.type === 'smoothstep')).toBe(true)
+    expect(edges.every(e => e.type === 'default')).toBe(true)
   })
 })

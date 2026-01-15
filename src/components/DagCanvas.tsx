@@ -62,7 +62,7 @@ function DagCanvasInner({
       dagLog(`New connection: ${connection.source} → ${connection.target}`)
 
       // Add the edge to the local state for immediate visual feedback
-      setEdges(eds => addEdge({ ...connection, type: 'smoothstep' }, eds))
+      setEdges(eds => addEdge({ ...connection, type: 'default' }, eds))
 
       // Call external handler if provided
       if (externalOnConnect) {

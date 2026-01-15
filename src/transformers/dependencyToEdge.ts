@@ -21,7 +21,7 @@ export function dependencyToEdge(dependency: BdDependency): Edge {
     id: `${dependency.depends_on_id}-${dependency.issue_id}`,
     source: dependency.depends_on_id,
     target: dependency.issue_id,
-    type: 'smoothstep',
+    type: 'default',
     animated: false,
   }
 }

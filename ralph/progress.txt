@@ -952,3 +952,29 @@ Integrated the chat functionality into the CreateIssueModal instead of having it
 - 259 unit tests passing (same count - removed ChatPanel tests, added to CreateIssueModal tests)
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Improve DAG edge routing with bezier curves and increased spacing (bead-3f5)
+
+Improved the visual appearance of dependency edges in the DAG view:
+
+**Changes:**
+1. Changed edge type from `smoothstep` to `default` (bezier curves):
+   - Updated `src/transformers/dependencyToEdge.ts` line 24
+   - Updated `src/components/DagCanvas.tsx` line 65 for dynamically added edges
+   - Bezier curves provide smoother, more natural-looking connections that handle fanning better than stepped edges
+
+2. Increased node spacing to reduce edge crossings:
+   - Updated `src/transformers/dagLayout.ts` DEFAULT_OPTIONS
+   - Changed `nodeSpacingX` from 20 to 80 (horizontal gap between ranks)
+   - Changed `nodeSpacingY` from 20 to 50 (vertical gap between nodes in same rank)
+   - Updated JSDoc comment for `nodeSpacingX` to reflect new default (80)
+
+3. Updated tests in `src/transformers/dependencyToEdge.test.ts`:
+   - Renamed "uses smoothstep edge type" to "uses bezier edge type"
+   - Renamed "all edges use smoothstep type" to "all edges use bezier type"
+   - Updated assertions to expect `default` instead of `smoothstep`
+
+**Results:**
+- 259 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

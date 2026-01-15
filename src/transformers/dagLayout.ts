@@ -13,7 +13,7 @@ export interface DagLayoutOptions {
    */
   direction?: 'TB' | 'LR'
   /**
-   * Horizontal spacing between nodes (default: 50)
+   * Horizontal spacing between nodes (default: 80)
    */
   nodeSpacingX?: number
   /**
@@ -32,8 +32,8 @@ export interface DagLayoutOptions {
 
 const DEFAULT_OPTIONS: Required<DagLayoutOptions> = {
   direction: 'LR',
-  nodeSpacingX: 20,
-  nodeSpacingY: 20,
+  nodeSpacingX: 80,
+  nodeSpacingY: 50,
   nodeWidth: 250,
   nodeHeight: 100,
 }

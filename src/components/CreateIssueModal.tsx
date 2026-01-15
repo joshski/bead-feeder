@@ -1,4 +1,22 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import type { IssueType } from './IssueNode'
 
 interface CreateIssueModalProps {
@@ -39,8 +57,6 @@ function CreateIssueModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!isOpen) return null
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -70,277 +86,118 @@ function CreateIssueModal({
     }
   }
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose()
-    }
-  }
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={handleBackdropClick}
-      onKeyDown={handleKeyDown}
-      data-testid="modal-backdrop"
-    >
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '12px',
-          padding: '24px',
-          width: '100%',
-          maxWidth: '480px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-        }}
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+      <DialogContent
         data-testid="create-issue-modal"
+        className="sm:max-w-[480px]"
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-          }}
-        >
-          <h2
-            id="modal-title"
-            style={{ margin: 0, fontSize: '20px', color: '#1f2937' }}
-          >
-            Create Issue
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '4px',
-            }}
-            aria-label="Close modal"
-            data-testid="close-modal-button"
-          >
-            ×
-          </button>
-        </div>
+        <DialogHeader>
+          <DialogTitle>Create Issue</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label
-              htmlFor="title"
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#374151',
-              }}
-            >
-              Title *
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
               id="title"
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Enter issue title"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-              }}
               data-testid="title-input"
             />
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label
-              htmlFor="description"
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#374151',
-              }}
-            >
-              Description
-            </label>
-            <textarea
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
               id="description"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Enter issue description (optional)"
               rows={3}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
               data-testid="description-input"
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <label
-                htmlFor="type"
-                style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#374151',
-                }}
-              >
-                Type
-              </label>
-              <select
-                id="type"
+          <div className="flex gap-4">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="type">Type</Label>
+              <Select
                 value={type}
-                onChange={e => setType(e.target.value as IssueType)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: '#ffffff',
-                  boxSizing: 'border-box',
-                }}
-                data-testid="type-select"
+                onValueChange={value => setType(value as IssueType)}
               >
-                {typeOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.icon} {opt.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="type"
+                  className="w-full"
+                  data-testid="type-select"
+                >
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.icon} {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div style={{ flex: 1 }}>
-              <label
-                htmlFor="priority"
-                style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#374151',
-                }}
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select
+                value={priority.toString()}
+                onValueChange={value => setPriority(Number(value))}
               >
-                Priority
-              </label>
-              <select
-                id="priority"
-                value={priority}
-                onChange={e => setPriority(Number(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: '#ffffff',
-                  boxSizing: 'border-box',
-                }}
-                data-testid="priority-select"
-              >
-                {priorityOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="priority"
+                  className="w-full"
+                  data-testid="priority-select"
+                >
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value.toString()}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {error && (
             <div
-              style={{
-                padding: '10px 12px',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: '6px',
-                color: '#dc2626',
-                fontSize: '14px',
-                marginBottom: '16px',
-              }}
+              className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
               data-testid="error-message"
             >
               {error}
             </div>
           )}
 
-          <div
-            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}
-          >
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              style={{
-                padding: '10px 20px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                backgroundColor: '#ffffff',
-                fontSize: '14px',
-                cursor: 'pointer',
-                color: '#374151',
-              }}
               data-testid="cancel-button"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              style={{
-                padding: '10px 20px',
-                border: 'none',
-                borderRadius: '6px',
-                backgroundColor: isSubmitting ? '#9ca3af' : '#3b82f6',
-                color: '#ffffff',
-                fontSize: '14px',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                fontWeight: 500,
-              }}
               data-testid="submit-button"
             >
               {isSubmitting ? 'Creating...' : 'Create Issue'}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

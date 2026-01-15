@@ -57,10 +57,16 @@ describe('IssueDetailModal', () => {
     )
   })
 
-  it('calls onClose when close button is clicked', () => {
+  it('calls onClose when X button is clicked', () => {
     const onClose = vi.fn()
     render(<IssueDetailModal issue={mockIssue} onClose={onClose} />)
-    fireEvent.click(screen.getByTestId('close-issue-detail-button'))
+    // shadcn/ui Dialog X button has data-slot="dialog-close"
+    const closeButtons = screen.getAllByRole('button', { name: 'Close' })
+    // The X button is the one without data-testid (the first Close button)
+    const xButton = closeButtons.find(btn => !btn.hasAttribute('data-testid'))
+    if (xButton) {
+      fireEvent.click(xButton)
+    }
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -68,13 +74,6 @@ describe('IssueDetailModal', () => {
     const onClose = vi.fn()
     render(<IssueDetailModal issue={mockIssue} onClose={onClose} />)
     fireEvent.click(screen.getByTestId('close-button'))
-    expect(onClose).toHaveBeenCalled()
-  })
-
-  it('calls onClose when backdrop is clicked', () => {
-    const onClose = vi.fn()
-    render(<IssueDetailModal issue={mockIssue} onClose={onClose} />)
-    fireEvent.click(screen.getByTestId('issue-detail-backdrop'))
     expect(onClose).toHaveBeenCalled()
   })
 

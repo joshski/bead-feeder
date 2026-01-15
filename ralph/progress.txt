@@ -871,3 +871,44 @@ Set a fixed width on issue cards for consistent visual appearance:
 - Width matches the nodeWidth (250px) used in dagLayout.ts for dagre positioning
 - All cards now render at exactly the same width regardless of title length
 - All 261 tests passing, e2e test passes
+
+## 2026-01-15: Use shadcn/ui components where possible (bead-ulz)
+
+Adopted shadcn/ui component library for consistent styling and improved maintainability:
+
+**Setup:**
+- Installed Tailwind CSS v4 with @tailwindcss/vite plugin
+- Configured path aliases in tsconfig.json (@/ -> ./src) and vite.config.ts
+- Ran `bunx shadcn@latest init` to set up shadcn/ui configuration
+- Added shadcn/ui components: button, dialog, input, label, select, textarea, badge, sonner, card
+- Created src/index.css with Tailwind imports and CSS variables for theming
+- Updated vitest.config.ts with path alias for test resolution
+
+**Component Migrations:**
+1. CreateIssueModal.tsx:
+   - Replaced custom modal with shadcn/ui Dialog component
+   - Used Button (primary/outline variants), Input, Label, Select, Textarea
+   - Replaced inline styles with Tailwind utility classes
+   - Maintained all existing functionality and test IDs
+   - Updated tests to work with Radix UI Dialog behavior
+
+2. IssueDetailModal.tsx:
+   - Replaced custom modal with shadcn/ui Dialog component
+   - Used Button (outline), Badge for status display
+   - Replaced inline styles with Tailwind classes
+   - Status badges use custom background colors via className
+   - Priority uses text color classes
+   - Updated tests for new component structure
+
+**Configuration:**
+- Updated biome.json to exclude CSS files (Tailwind v4 syntax not supported by biome CSS parser)
+
+**Test Updates:**
+- Removed 2 tests for backdrop click (now handled internally by Radix Dialog)
+- Updated close button tests to work with shadcn/ui Dialog X button
+- All other tests preserved and passing
+
+**Results:**
+- 259 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

@@ -1,7 +1,14 @@
 {
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!node_modules", "!dist", "!.claude", "!.beads"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!dist",
+      "!.claude",
+      "!.beads",
+      "!**/*.css"
+    ]
   },
   "linter": {
     "rules": {

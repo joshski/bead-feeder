@@ -978,3 +978,27 @@ Improved the visual appearance of dependency edges in the DAG view:
 - 259 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Improve DAG card layout (bead-5m0)
+
+Improved the layout of cards in the DAG visualization:
+
+**Changes to src/components/IssueNode.tsx:**
+- Moved status badge from bottom to top-right corner of each card
+- Restructured layout to place type icon and priority on left, status on right in the header row
+- Removed title margin-bottom since status badge no longer below it
+- Increased card width from 250px to 300px to accommodate longer issue names
+
+**Changes to src/transformers/dagLayout.ts:**
+- Increased nodeSpacingX from 80 to 120 for wider horizontal spacing between cards
+- Increased nodeWidth from 250 to 300 to match the new card width
+- Decreased nodeHeight from 100 to 80 since cards are now shorter (status moved to header)
+- Updated JSDoc comments to reflect new default values
+
+**Results:**
+- Cards are now more compact vertically with status in header
+- Cards are wider to fit longer issue titles
+- Cards are spread further apart horizontally for better readability
+- All 259 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

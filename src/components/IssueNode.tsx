@@ -59,7 +59,7 @@ function IssueNode({ data }: NodeProps) {
         border: `2px solid ${statusColors[issueData.status]}`,
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
         cursor: 'pointer',
-        width: '250px',
+        width: '300px',
         textAlign: 'left',
         display: 'block',
         position: 'relative',
@@ -76,23 +76,39 @@ function IssueNode({ data }: NodeProps) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'space-between',
           marginBottom: '8px',
         }}
       >
-        <span style={{ fontSize: '14px' }} data-testid="issue-type">
-          {typeIcons[issueData.type]}
-        </span>
-        <span
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '14px' }} data-testid="issue-type">
+            {typeIcons[issueData.type]}
+          </span>
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: priorityColors[issueData.priority],
+            }}
+            data-testid="issue-priority"
+          >
+            {issueData.priority}
+          </span>
+        </div>
+        <div
           style={{
-            fontSize: '12px',
-            fontWeight: 600,
-            color: priorityColors[issueData.priority],
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            backgroundColor: statusColors[issueData.status],
+            color: '#ffffff',
+            fontSize: '11px',
+            fontWeight: 500,
           }}
-          data-testid="issue-priority"
+          data-testid="issue-status"
         >
-          {issueData.priority}
-        </span>
+          {statusLabels[issueData.status]}
+        </div>
       </div>
 
       <div
@@ -100,7 +116,6 @@ function IssueNode({ data }: NodeProps) {
           fontSize: '14px',
           fontWeight: 500,
           color: '#1f2937',
-          marginBottom: '8px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -108,21 +123,6 @@ function IssueNode({ data }: NodeProps) {
         data-testid="issue-title"
       >
         {issueData.title}
-      </div>
-
-      <div
-        style={{
-          display: 'inline-block',
-          padding: '2px 8px',
-          borderRadius: '12px',
-          backgroundColor: statusColors[issueData.status],
-          color: '#ffffff',
-          fontSize: '11px',
-          fontWeight: 500,
-        }}
-        data-testid="issue-status"
-      >
-        {statusLabels[issueData.status]}
       </div>
 
       <Handle type="source" position={Position.Right} />

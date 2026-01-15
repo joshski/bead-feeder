@@ -13,6 +13,7 @@ import {
   dependenciesToEdges,
 } from '../transformers/dependencyToEdge'
 import { type BdIssue, issuesToNodes } from '../transformers/issueToNode'
+import { dagError, dagLog, logGraphSummary } from '../utils/dagLogger'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -68,20 +69,30 @@ async function fetchGraph(
     url.searchParams.set('owner', owner)
     url.searchParams.set('repo', repo)
   }
+
+  dagLog(`Fetching graph from ${url.toString()}`)
+
   // Only include credentials when fetching from GitHub (requires auth)
   const fetchOptions: RequestInit =
     owner && repo ? { credentials: 'include' } : {}
   const response = await fetch(url.toString(), fetchOptions)
   if (!response.ok) {
+    dagError(`Failed to fetch graph: ${response.status} ${response.statusText}`)
     throw new Error('Failed to fetch graph')
   }
   const graphs: GraphApiResponse[] = await response.json()
+
+  dagLog(`Received ${graphs.length} graph entries from API`)
 
   // Collect all unique issues and dependencies from all graph entries
   const issueMap = new Map<string, BdIssue>()
   const allDependencies: BdDependency[] = []
 
   for (const graph of graphs) {
+    dagLog(`Processing graph entry with root: ${graph.Root?.id ?? 'none'}`, {
+      issueCount: graph.Issues?.length ?? 0,
+      dependencyCount: graph.Dependencies?.length ?? 0,
+    })
     for (const issue of graph.Issues) {
       issueMap.set(issue.id, issue)
     }
@@ -91,11 +102,27 @@ async function fetchGraph(
   }
 
   const issues = Array.from(issueMap.values())
+  dagLog(
+    `Collected ${issues.length} unique issues, ${allDependencies.length} dependencies`
+  )
+
   const nodes = issuesToNodes(issues)
   const edges = dependenciesToEdges(allDependencies)
 
+  logGraphSummary(
+    issues.length,
+    allDependencies.length,
+    nodes.length,
+    edges.length
+  )
+
   // Apply DAG layout for proper hierarchical positioning
   const layoutedNodes = applyDagLayout(nodes, edges)
+
+  dagLog('Graph fetch complete', {
+    nodeCount: layoutedNodes.length,
+    edgeCount: edges.length,
+  })
 
   return { nodes: layoutedNodes, edges }
 }
@@ -110,12 +137,16 @@ function DagView() {
 
   // Fetch graph data on mount and provide refresh function
   const refreshGraph = useCallback(async () => {
+    dagLog('Refreshing graph data')
     try {
       const { nodes: newNodes, edges: newEdges } = await fetchGraph(owner, repo)
+      dagLog(
+        `Setting state: ${newNodes.length} nodes, ${newEdges.length} edges`
+      )
       setNodes(newNodes)
       setEdges(newEdges)
     } catch (error) {
-      console.error('Failed to fetch graph:', error)
+      dagError('Failed to fetch graph', error)
     }
   }, [owner, repo])
 

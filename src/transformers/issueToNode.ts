@@ -5,6 +5,7 @@ import type {
   IssueStatus,
   IssueType,
 } from '../components/IssueNode'
+import { dagLog, dagWarn } from '../utils/dagLogger'
 
 /**
  * Raw issue data from the bd API
@@ -36,6 +37,7 @@ function mapStatus(status: string): IssueStatus {
     case 'closed':
       return 'closed'
     default:
+      dagWarn(`Unknown status "${status}", defaulting to "open"`)
       return 'open'
   }
 }
@@ -52,6 +54,7 @@ function mapType(issueType: string): IssueType {
     case 'feature':
       return 'feature'
     default:
+      dagWarn(`Unknown issue type "${issueType}", defaulting to "task"`)
       return 'task'
   }
 }
@@ -70,6 +73,7 @@ function mapPriority(priority: number): IssuePriority {
     case 3:
       return 'P3'
     default:
+      dagWarn(`Unknown priority ${priority}, defaulting to "P2"`)
       return 'P2'
   }
 }
@@ -139,7 +143,9 @@ export function issuesToNodes(
 ): Node<IssueNodeData>[] {
   const opts = { ...DEFAULT_OPTIONS, ...options }
 
-  return issues.map((issue, index) => {
+  dagLog(`Transforming ${issues.length} issues to nodes`)
+
+  const nodes = issues.map((issue, index) => {
     const row = Math.floor(index / opts.nodesPerRow)
     const col = index % opts.nodesPerRow
     const position = {
@@ -148,4 +154,11 @@ export function issuesToNodes(
     }
     return issueToNode(issue, position)
   })
+
+  dagLog(`Created ${nodes.length} nodes`, {
+    ids: nodes.map(n => n.id),
+    positions: nodes.map(n => ({ id: n.id, ...n.position })),
+  })
+
+  return nodes
 }

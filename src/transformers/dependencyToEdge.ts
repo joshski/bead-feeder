@@ -1,4 +1,5 @@
 import type { Edge } from '@xyflow/react'
+import { dagLog, dagWarn } from '../utils/dagLogger'
 
 /**
  * Raw dependency data from the bd graph API
@@ -29,5 +30,22 @@ export function dependencyToEdge(dependency: BdDependency): Edge {
  * Transforms an array of bd dependencies to React Flow edges
  */
 export function dependenciesToEdges(dependencies: BdDependency[]): Edge[] {
-  return dependencies.map(dependencyToEdge)
+  dagLog(`Transforming ${dependencies.length} dependencies to edges`)
+
+  const edges = dependencies.map(dependencyToEdge)
+
+  // Check for any edges with missing source/target
+  const invalidEdges = edges.filter(e => !e.source || !e.target)
+  if (invalidEdges.length > 0) {
+    dagWarn(
+      `Found ${invalidEdges.length} edges with missing source/target`,
+      invalidEdges
+    )
+  }
+
+  dagLog(`Created ${edges.length} edges`, {
+    connections: edges.map(e => `${e.source} → ${e.target}`),
+  })
+
+  return edges
 }

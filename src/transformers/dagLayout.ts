@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/react'
 import dagre from 'dagre'
+import { dagLog, dagWarn, logLayoutComputed } from '../utils/dagLogger'
 
 /**
  * Options for configuring DAG layout
@@ -52,10 +53,14 @@ export function applyDagLayout<T extends Record<string, unknown>>(
   edges: Edge[],
   options: DagLayoutOptions = {}
 ): Node<T>[] {
+  dagLog(`Applying DAG layout: ${nodes.length} nodes, ${edges.length} edges`)
+
   if (nodes.length === 0) {
+    dagLog('Empty node array, returning empty result')
     return []
   }
 
+  const startTime = performance.now()
   const opts = { ...DEFAULT_OPTIONS, ...options }
 
   // Create a new dagre graph
@@ -70,23 +75,40 @@ export function applyDagLayout<T extends Record<string, unknown>>(
   })
 
   // Add nodes to the dagre graph
+  const nodeIds = new Set<string>()
   for (const node of nodes) {
+    nodeIds.add(node.id)
     dagreGraph.setNode(node.id, {
       width: opts.nodeWidth,
       height: opts.nodeHeight,
     })
   }
 
-  // Add edges to the dagre graph
+  // Add edges to the dagre graph, checking for validity
+  let skippedEdges = 0
   for (const edge of edges) {
+    if (!nodeIds.has(edge.source)) {
+      dagWarn(`Edge source "${edge.source}" not found in nodes, skipping edge`)
+      skippedEdges++
+      continue
+    }
+    if (!nodeIds.has(edge.target)) {
+      dagWarn(`Edge target "${edge.target}" not found in nodes, skipping edge`)
+      skippedEdges++
+      continue
+    }
     dagreGraph.setEdge(edge.source, edge.target)
+  }
+
+  if (skippedEdges > 0) {
+    dagWarn(`Skipped ${skippedEdges} edges due to missing nodes`)
   }
 
   // Run the layout algorithm
   dagre.layout(dagreGraph)
 
   // Map the dagre positions back to React Flow nodes
-  return nodes.map(node => {
+  const layoutedNodes = nodes.map(node => {
     const dagreNode = dagreGraph.node(node.id)
     return {
       ...node,
@@ -97,4 +119,17 @@ export function applyDagLayout<T extends Record<string, unknown>>(
       },
     }
   })
+
+  const durationMs = performance.now() - startTime
+  logLayoutComputed(nodes.length, opts.direction, durationMs)
+
+  dagLog('Layout positions', {
+    nodes: layoutedNodes.map(n => ({
+      id: n.id,
+      x: n.position.x,
+      y: n.position.y,
+    })),
+  })
+
+  return layoutedNodes
 }

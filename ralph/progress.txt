@@ -605,3 +605,30 @@ Made e2e test deterministic by removing AI verification:
 - Test now relies solely on Playwright assertions for DOM state verification
 - Screenshot is still taken on success for manual review if needed
 - All 245 tests passing
+
+## 2026-01-15: Add debug logging to DAG rendering code (bead-feeder-yjy)
+
+Added permanent debug logging throughout the DAG rendering pipeline:
+- Created src/utils/dagLogger.ts with logging utilities:
+  - dagLog(): Debug-level logging, enabled via localStorage.setItem('DAG_DEBUG', 'true')
+  - dagWarn(): Warning-level logging (always visible)
+  - dagError(): Error-level logging (always visible)
+  - logGraphSummary(): Logs issue/dependency/node/edge counts
+  - logLayoutComputed(): Logs layout timing and configuration
+- Added logging to src/transformers/issueToNode.ts:
+  - Warns on unknown status, type, or priority values with defaults used
+  - Logs node creation with IDs and positions
+- Added logging to src/transformers/dependencyToEdge.ts:
+  - Logs edge creation with connections
+  - Warns on invalid edges with missing source/target
+- Added logging to src/transformers/dagLayout.ts:
+  - Logs layout computation with timing (performance.now())
+  - Warns on skipped edges due to missing nodes
+  - Logs final node positions
+- Added logging to src/pages/DagView.tsx:
+  - Logs graph fetch URL, response, and processing steps
+  - Logs state updates when nodes/edges change
+- Added logging to src/components/DagCanvas.tsx:
+  - Logs render with node/edge counts
+  - Logs prop syncing and new connections
+- All 245 tests passing

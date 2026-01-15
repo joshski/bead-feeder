@@ -1065,3 +1065,25 @@ Improved the whitespace and spacing in the header component for better visual ba
 - All 258 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Show logout button in user popover (bead-248)
+
+Moved the logout button into a popover menu that appears when clicking on the user's name/avatar:
+
+**Changes:**
+- Added shadcn/ui popover component via `bunx shadcn@latest add popover`
+- Updated src/App.tsx:
+  - Imported Popover, PopoverContent, PopoverTrigger from shadcn/ui
+  - Imported Button from shadcn/ui
+  - Replaced standalone logout button with a Popover component
+  - User avatar and name now act as the PopoverTrigger
+  - PopoverContent displays: display name, @username, horizontal rule, and Logout button
+  - Added data-testid attributes for testing (user-menu-trigger, logout-button)
+  - Used Tailwind classes for styling the trigger and popover content
+
+**Results:**
+- Clicking user avatar/name opens a popover menu
+- Logout button is now inside the popover (cleaner header)
+- All 258 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

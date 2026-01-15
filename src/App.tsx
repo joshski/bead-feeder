@@ -2,6 +2,12 @@ import { Link, Outlet, useParams } from 'react-router'
 import GitHubLoginButton from './components/GitHubLoginButton'
 import SyncStatusIndicator from './components/SyncStatusIndicator'
 import ToastContainer from './components/Toast'
+import { Button } from './components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from './components/ui/popover'
 import { useAuth } from './context/AuthContext'
 import { useSyncStatus } from './context/SyncContext'
 
@@ -56,31 +62,42 @@ function App() {
         </div>
         <div>
           {isLoading ? null : user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <img
-                src={user.avatar_url}
-                alt={user.login}
-                style={{ width: 32, height: 32, borderRadius: '50%' }}
-              />
-              <span style={{ color: '#374151' }}>
-                {user.name || user.login}
-              </span>
-              <button
-                type="button"
-                onClick={logout}
-                style={{
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  backgroundColor: 'white',
-                  color: '#374151',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Logout
-              </button>
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-3 cursor-pointer bg-transparent border-none p-0"
+                  data-testid="user-menu-trigger"
+                >
+                  <img
+                    src={user.avatar_url}
+                    alt={user.login}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span className="text-gray-700">
+                    {user.name || user.login}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48">
+                <div className="flex flex-col gap-2">
+                  <div className="text-sm font-medium">
+                    {user.name || user.login}
+                  </div>
+                  <div className="text-xs text-gray-500">@{user.login}</div>
+                  <hr className="my-2" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={logout}
+                    className="w-full"
+                    data-testid="logout-button"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           ) : (
             <GitHubLoginButton />
           )}

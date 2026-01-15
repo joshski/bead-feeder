@@ -1,10 +1,72 @@
+import { execSync } from 'node:child_process'
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
 import { expect, test } from '@playwright/test'
 
 // Test repository containing sample beads issues
 const TEST_REPO_OWNER = 'josh-beads-test-1'
 const TEST_REPO_NAME = 'bead-feeder-example-issues'
 
+// Shared state for cloned repository path (used within this test file)
+let clonedRepoPath: string | null = null
+
+/**
+ * Clone the test repository into a temporary directory.
+ * Returns the path to the cloned repository.
+ */
+function cloneTestRepo(
+  owner: string,
+  repo: string,
+  username: string,
+  password: string
+): string {
+  // Create a unique temp directory
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bead-feeder-e2e-'))
+
+  // Build authenticated URL (URL-encode password to handle special characters)
+  const encodedPassword = encodeURIComponent(password)
+  const authUrl = `https://${username}:${encodedPassword}@github.com/${owner}/${repo}.git`
+
+  // Clone the repository
+  try {
+    execSync(`git clone ${authUrl} ${tempDir}`, {
+      stdio: 'pipe', // Suppress output to avoid leaking credentials
+    })
+    console.log(`Cloned test repository to ${tempDir}`)
+    return tempDir
+  } catch (error) {
+    // Clean up temp directory on failure
+    fs.rmSync(tempDir, { recursive: true, force: true })
+    throw new Error(
+      `Failed to clone test repository: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
+}
+
+/**
+ * Clean up the cloned repository directory
+ */
+function cleanupClonedRepo(repoPath: string): void {
+  try {
+    fs.rmSync(repoPath, { recursive: true, force: true })
+    console.log(`Cleaned up cloned repository at ${repoPath}`)
+  } catch (error) {
+    console.warn(
+      `Failed to clean up ${repoPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
+}
+
 test.describe('Load beads issues from GitHub repository', () => {
+  // Clean up cloned repository after all tests complete
+  test.afterAll(async () => {
+    if (clonedRepoPath) {
+      cleanupClonedRepo(clonedRepoPath)
+      clonedRepoPath = null
+    }
+  })
+
   test('authenticates and displays issues from test repository', async ({
     page,
   }) => {
@@ -26,6 +88,22 @@ test.describe('Load beads issues from GitHub repository', () => {
         'TEST_GITHUB_REPOSITORY must be in format "owner/repo" (e.g., "josh-beads-test-1/bead-feeder-example-issues")'
       )
     }
+
+    // Step 0: Clone the test repository into a temp directory
+    await test.step('Clone test repository to temp directory', async () => {
+      clonedRepoPath = cloneTestRepo(owner, repo, username, password)
+      console.log(`Test repository cloned to: ${clonedRepoPath}`)
+
+      // Verify the .beads directory exists in the cloned repo
+      const beadsDir = path.join(clonedRepoPath, '.beads')
+      if (fs.existsSync(beadsDir)) {
+        console.log('.beads directory found in cloned repository')
+      } else {
+        console.warn(
+          '.beads directory not found in cloned repository - test may not find issues'
+        )
+      }
+    })
 
     // Step 1: Sign into GitHub first
     await test.step('Sign into GitHub', async () => {

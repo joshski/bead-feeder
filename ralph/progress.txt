@@ -632,3 +632,20 @@ Added permanent debug logging throughout the DAG rendering pipeline:
   - Logs render with node/edge counts
   - Logs prop syncing and new connections
 - All 245 tests passing
+
+## 2026-01-15: Clone test repo into temp directory (bead-feeder-2lh)
+
+Added functionality to clone the test repository into a temporary directory in the e2e test:
+- Added imports for execSync, fs, os, and path in e2e/load-beads-issues.spec.ts
+- Created cloneTestRepo() function that:
+  - Creates a unique temp directory using fs.mkdtempSync()
+  - Builds an authenticated GitHub URL with URL-encoded credentials
+  - Clones the repo using git clone via execSync
+  - Returns the path to the cloned repository
+  - Cleans up temp directory on failure
+- Created cleanupClonedRepo() function to remove the cloned directory
+- Added test.afterAll() hook to clean up the cloned repo after tests complete
+- Added "Clone test repository to temp directory" test step that runs before GitHub authentication
+- Verifies the .beads directory exists in the cloned repo (with warning if not found)
+- Module-scoped clonedRepoPath variable stores the path for use by subsequent test steps
+- All 245 tests passing

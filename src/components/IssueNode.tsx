@@ -26,12 +26,6 @@ const statusLabels: Record<IssueStatus, string> = {
   closed: 'Closed',
 }
 
-const typeIcons: Record<IssueType, string> = {
-  task: '☐',
-  bug: '🐛',
-  feature: '✨',
-}
-
 const priorityColors: Record<IssuePriority, string> = {
   P0: '#ef4444',
   P1: '#f97316',
@@ -80,21 +74,16 @@ function IssueNode({ data }: NodeProps) {
           marginBottom: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '14px' }} data-testid="issue-type">
-            {typeIcons[issueData.type]}
-          </span>
-          <span
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: priorityColors[issueData.priority],
-            }}
-            data-testid="issue-priority"
-          >
-            {issueData.priority}
-          </span>
-        </div>
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            color: priorityColors[issueData.priority],
+          }}
+          data-testid="issue-type-priority"
+        >
+          {issueData.priority} {issueData.type}
+        </span>
         <div
           style={{
             display: 'inline-block',

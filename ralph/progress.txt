@@ -1087,3 +1087,31 @@ Moved the logout button into a popover menu that appears when clicking on the us
 - All 258 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Replace issue type icon with text label (bead-45p)
+
+Replaced issue type icons with text labels for more explicit and readable type information:
+
+**Changes to src/components/IssueNode.tsx:**
+- Removed typeIcons mapping (☐, 🐛, ✨)
+- Merged priority and type display into a single span
+- Now shows combined text like "P1 bug", "P2 task", "P1 feature"
+- Changed data-testid from separate "issue-type" and "issue-priority" to combined "issue-type-priority"
+- Retained priority color coding for visual distinction
+
+**Changes to src/components/IssueDetailModal.tsx:**
+- Removed typeIcons mapping
+- Type field now shows just the text label ("Task", "Bug", "Feature") without icons
+
+**Test Updates:**
+- Updated src/components/IssueNode.test.tsx:
+  - Consolidated icon tests into combined type-priority label tests
+  - Reduced from 11 tests to 10 tests (merged 4 icon/priority tests into 3)
+- Updated src/components/IssueDetailModal.test.tsx:
+  - Updated expectations to check for text-only labels
+  - Renamed tests from "displays X type with icon" to "displays X type"
+
+**Results:**
+- All 257 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

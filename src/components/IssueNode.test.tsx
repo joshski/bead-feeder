@@ -60,24 +60,25 @@ describe('IssueNode', () => {
     expect(screen.getByTestId('issue-status')).toHaveTextContent('Closed')
   })
 
-  it('renders issue type icon', () => {
+  it('renders priority and type as combined text label', () => {
     renderIssueNode()
-    expect(screen.getByTestId('issue-type')).toHaveTextContent('🐛')
+    expect(screen.getByTestId('issue-type-priority')).toHaveTextContent(
+      'P1 bug'
+    )
   })
 
-  it('renders task type icon', () => {
+  it('renders task type with priority', () => {
     renderIssueNode({ ...defaultData, type: 'task' })
-    expect(screen.getByTestId('issue-type')).toHaveTextContent('☐')
+    expect(screen.getByTestId('issue-type-priority')).toHaveTextContent(
+      'P1 task'
+    )
   })
 
-  it('renders feature type icon', () => {
+  it('renders feature type with priority', () => {
     renderIssueNode({ ...defaultData, type: 'feature' })
-    expect(screen.getByTestId('issue-type')).toHaveTextContent('✨')
-  })
-
-  it('renders issue priority', () => {
-    renderIssueNode()
-    expect(screen.getByTestId('issue-priority')).toHaveTextContent('P1')
+    expect(screen.getByTestId('issue-type-priority')).toHaveTextContent(
+      'P1 feature'
+    )
   })
 
   it('calls onSelect callback on click when provided', () => {
@@ -97,6 +98,8 @@ describe('IssueNode', () => {
 
   it('renders with different priorities', () => {
     renderIssueNode({ ...defaultData, priority: 'P0' })
-    expect(screen.getByTestId('issue-priority')).toHaveTextContent('P0')
+    expect(screen.getByTestId('issue-type-priority')).toHaveTextContent(
+      'P0 bug'
+    )
   })
 })

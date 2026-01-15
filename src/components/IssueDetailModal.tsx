@@ -26,12 +26,6 @@ const statusLabels: Record<string, string> = {
   closed: 'Closed',
 }
 
-const typeIcons: Record<string, string> = {
-  task: '☐',
-  bug: '🐛',
-  feature: '✨',
-}
-
 const typeLabels: Record<string, string> = {
   task: 'Task',
   bug: 'Bug',
@@ -93,7 +87,6 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
                   Type
                 </div>
                 <div className="text-sm" data-testid="issue-detail-type">
-                  {typeIcons[issue.type] || '?'}{' '}
                   {typeLabels[issue.type] || issue.type}
                 </div>
               </div>

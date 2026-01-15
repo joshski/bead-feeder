@@ -45,9 +45,9 @@ describe('IssueDetailModal', () => {
     expect(screen.getByTestId('issue-detail-status')).toHaveTextContent('Open')
   })
 
-  it('displays issue type with icon', () => {
+  it('displays issue type', () => {
     render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
-    expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('☐ Task')
+    expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('Task')
   })
 
   it('displays issue priority', () => {
@@ -88,24 +88,22 @@ describe('IssueDetailModal', () => {
     )
   })
 
-  it('displays bug type with icon', () => {
+  it('displays bug type', () => {
     const bugIssue: IssueNodeData = {
       ...mockIssue,
       type: 'bug',
     }
     render(<IssueDetailModal issue={bugIssue} onClose={vi.fn()} />)
-    expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('🐛 Bug')
+    expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('Bug')
   })
 
-  it('displays feature type with icon', () => {
+  it('displays feature type', () => {
     const featureIssue: IssueNodeData = {
       ...mockIssue,
       type: 'feature',
     }
     render(<IssueDetailModal issue={featureIssue} onClose={vi.fn()} />)
-    expect(screen.getByTestId('issue-detail-type')).toHaveTextContent(
-      '✨ Feature'
-    )
+    expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('Feature')
   })
 
   it('displays P0 priority correctly', () => {

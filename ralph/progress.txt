@@ -1043,3 +1043,25 @@ Fixed the DAG view to use the full available vertical space by stretching to the
 - All 258 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Improve whitespace in header (bead-v9x)
+
+Improved the whitespace and spacing in the header component for better visual balance:
+
+**Changes to src/App.tsx:**
+- Added 12px vertical padding to header (was 0)
+- Increased horizontal padding to 24px (was 16px)
+- Added subtle bottom border (1px solid #e5e7eb) for visual separation from content
+- Increased gap between left-side elements to 20px (was 16px)
+- Reduced h1 font size to 1.25rem for better proportion
+- Improved text colors: repo path uses #374151, separator uses #9ca3af
+- Styled Logout button with border, 6px rounded corners, and consistent padding (6px 12px)
+- Increased gap between user info elements to 12px (was 8px)
+
+**Results:**
+- Header has better vertical breathing room
+- Visual separation between header and content is clearer
+- Logout button looks more like a proper button
+- All 258 unit tests passing
+- E2e test passes
+- Build, lint, and all quality gates pass

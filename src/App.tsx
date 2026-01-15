@@ -25,21 +25,22 @@ function App() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '0 16px',
+          padding: '12px 24px',
           flexShrink: 0,
+          borderBottom: '1px solid #e5e7eb',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <h1 style={{ margin: 0 }}>Bead Feeder</h1>
+            <h1 style={{ margin: 0, fontSize: '1.25rem' }}>Bead Feeder</h1>
           </Link>
           {owner && repo && (
             <>
               <nav
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <span style={{ color: '#666' }}>/</span>
-                <span style={{ fontWeight: 500 }}>
+                <span style={{ color: '#9ca3af' }}>/</span>
+                <span style={{ fontWeight: 500, color: '#374151' }}>
                   {owner}/{repo}
                 </span>
               </nav>
@@ -55,19 +56,26 @@ function App() {
         </div>
         <div>
           {isLoading ? null : user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <img
                 src={user.avatar_url}
                 alt={user.login}
                 style={{ width: 32, height: 32, borderRadius: '50%' }}
               />
-              <span>{user.name || user.login}</span>
+              <span style={{ color: '#374151' }}>
+                {user.name || user.login}
+              </span>
               <button
                 type="button"
                 onClick={logout}
                 style={{
-                  padding: '4px 8px',
+                  padding: '6px 12px',
                   cursor: 'pointer',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '0.875rem',
                 }}
               >
                 Logout

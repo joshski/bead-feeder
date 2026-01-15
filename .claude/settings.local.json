@@ -32,7 +32,9 @@
       "Bash(timeout 30 claude --dangerously-skip-permissions -p 'Look at this screenshot and describe what you see. Respond with just a JSON object: {\"\"description\"\": \"\"YOUR_DESCRIPTION\"\"}' '/workspaces/bead-feeder/screenshots/e2e-issues-loaded.png')",
       "Bash(timeout 60 claude --dangerously-skip-permissions -p 'Read the image at /workspaces/bead-feeder/screenshots/e2e-issues-loaded.png and describe what you see. Respond with just a JSON object: {\"\"description\"\": \"\"YOUR_DESCRIPTION\"\"}')",
       "Bash(time timeout 120 claude --dangerously-skip-permissions -p \"Read the image at /workspaces/bead-feeder/screenshots/e2e-issues-loaded.png and analyze it. This is a screenshot of a DAG visualization app. Count how many issue nodes are visible. Respond with ONLY a JSON object: {\"\"verified\"\": true or false, \"\"issueCount\"\": NUMBER, \"\"description\"\": \"\"DESCRIPTION\"\"}. Set verified to true if you can see at least one issue node.\")",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(bun --env-file=.env run test:e2e:load-issues)",
+      "Bash(bd show:*)"
     ]
   }
 }

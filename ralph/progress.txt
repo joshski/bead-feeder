@@ -725,3 +725,13 @@ Deleted the redundant e2e/github-login.spec.ts file:
   - Verifies issues load in the DAG view
 - Removed the duplicate test file to avoid maintenance overhead
 - All 245 tests still passing
+
+## 2026-01-15: Add playwright tests to ./check script (bead-869)
+
+Updated the ./check quality gates script to run playwright e2e tests:
+- Added `bun run test:e2e` to the end of the ./check script
+- Now ./check runs: build, lint, unit tests, and e2e tests
+- E2e tests use scripts/e2e.ts to start dev servers and run all playwright tests
+- Note: E2e tests currently fail due to pre-existing bug (bead-8k7) where dependency edges don't render for remote repos
+- Created P1 bug issue bead-8k7 to track the edge rendering problem
+- All 245 unit tests still passing

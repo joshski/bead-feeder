@@ -668,3 +668,23 @@ Added functionality to extract beads data from the cloned test repository using 
   - Asserts at least one dependency relationship exists
 - Added module-scoped extractedBeadsData variable for later comparison with DAG view
 - All 245 tests passing
+
+## 2026-01-15: Extract issues and dependencies data structure from DAG view (bead-feeder-3fw)
+
+Added functionality to extract issues and dependencies from the DAG view UI for comparison with CLI data:
+- Added data attributes to IssueNode component for easier DOM extraction:
+  - data-issue-id: The issue ID
+  - data-issue-status: The issue status (open, in_progress, closed)
+  - data-issue-type: The issue type (task, bug, feature)
+  - data-issue-priority: The issue priority (P0, P1, P2, P3)
+- Defined new interfaces in e2e test file: DagIssue, DagDependency, DagData
+- Added module-scoped extractedDagData variable to store extracted data
+- Added new test step "Extract issues and dependencies from DAG view" that:
+  - Iterates over all issue nodes using data-testid="issue-node" selector
+  - Extracts id, title, status, priority, and issue_type from data attributes
+  - Extracts dependencies from React Flow edges using .react-flow__edge selector
+  - Gets source (blocker) and target (blocked) from edge data attributes
+  - Logs extracted counts and details for debugging
+  - Asserts at least one issue was extracted from the DAG view
+- Data structure mirrors BeadsData for later comparison
+- All 245 tests passing

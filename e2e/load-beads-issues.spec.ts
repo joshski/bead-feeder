@@ -36,6 +36,28 @@ interface BeadsData {
 // Shared extracted data (available for later comparison with DAG view)
 let extractedBeadsData: BeadsData | null = null
 
+// Data structure representing issues and dependencies extracted from DAG view UI
+interface DagIssue {
+  id: string
+  title: string
+  status: string
+  priority: string
+  issue_type: string
+}
+
+interface DagDependency {
+  issue_id: string // blocked issue
+  depends_on_id: string // blocker issue
+}
+
+interface DagData {
+  issues: DagIssue[]
+  dependencies: DagDependency[]
+}
+
+// Shared extracted DAG data (available for comparison with beads CLI data)
+let extractedDagData: DagData | null = null
+
 /**
  * Clone the test repository into a temporary directory.
  * Returns the path to the cloned repository.
@@ -378,6 +400,88 @@ test.describe('Load beads issues from GitHub repository', () => {
         fullPage: true,
       })
       console.log(`Success screenshot saved to ${screenshotPath}`)
+    })
+
+    // Step 6: Extract issues and dependencies data structure from DAG view
+    await test.step('Extract issues and dependencies from DAG view', async () => {
+      // Extract issue data from DOM elements
+      const issueNodes = page.locator('[data-testid="issue-node"]')
+      const issueCount = await issueNodes.count()
+
+      const issues: DagIssue[] = []
+      for (let i = 0; i < issueCount; i++) {
+        const node = issueNodes.nth(i)
+
+        // Get data attributes from the issue node
+        const id = await node.getAttribute('data-issue-id')
+        const status = await node.getAttribute('data-issue-status')
+        const type = await node.getAttribute('data-issue-type')
+        const priority = await node.getAttribute('data-issue-priority')
+
+        // Get the title text from the title element
+        const titleElement = node.locator('[data-testid="issue-title"]')
+        const title = await titleElement.textContent()
+
+        if (id && title) {
+          issues.push({
+            id,
+            title,
+            status: status || 'open',
+            priority: priority || 'P2',
+            issue_type: type || 'task',
+          })
+        }
+      }
+
+      // Extract dependency data from React Flow edges
+      // React Flow renders edges with data-source and data-target attributes
+      // The edge direction in the DAG: source (blocker) -> target (blocked)
+      const edgeElements = page.locator('.react-flow__edge')
+      const edgeCount = await edgeElements.count()
+
+      const dependencies: DagDependency[] = []
+      for (let i = 0; i < edgeCount; i++) {
+        const edge = edgeElements.nth(i)
+
+        // Get source and target from data attributes
+        const source = await edge.getAttribute('data-source')
+        const target = await edge.getAttribute('data-target')
+
+        if (source && target) {
+          // In the DAG: source is the blocker (depends_on_id), target is the blocked (issue_id)
+          dependencies.push({
+            issue_id: target, // blocked issue
+            depends_on_id: source, // blocker issue
+          })
+        }
+      }
+
+      extractedDagData = { issues, dependencies }
+
+      console.log(
+        `Extracted ${extractedDagData.issues.length} issue(s) from DAG view`
+      )
+      console.log(
+        `Extracted ${extractedDagData.dependencies.length} dependency relationship(s) from DAG view`
+      )
+
+      // Log extracted issues for debugging
+      for (const issue of extractedDagData.issues) {
+        console.log(
+          `  - [${issue.id}] ${issue.title} (${issue.status}, ${issue.issue_type}, ${issue.priority})`
+        )
+      }
+
+      // Log extracted dependencies for debugging
+      for (const dep of extractedDagData.dependencies) {
+        console.log(`  - ${dep.depends_on_id} blocks ${dep.issue_id}`)
+      }
+
+      // Assert we extracted issues from the DAG view
+      expect(
+        extractedDagData.issues.length,
+        'Expected DAG view to display at least one issue'
+      ).toBeGreaterThan(0)
     })
   })
 })

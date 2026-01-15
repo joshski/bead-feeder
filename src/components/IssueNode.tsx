@@ -65,6 +65,10 @@ function IssueNode({ data }: NodeProps) {
         position: 'relative',
       }}
       data-testid="issue-node"
+      data-issue-id={issueData.issueId}
+      data-issue-status={issueData.status}
+      data-issue-type={issueData.type}
+      data-issue-priority={issueData.priority}
     >
       <Handle type="target" position={Position.Top} />
 

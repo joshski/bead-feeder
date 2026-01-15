@@ -762,3 +762,13 @@ Fixed the P1 bug where DAG view did not render dependency edges for remote repos
 - E2e test now passes: extracts 10 issues and 12 dependencies correctly
 - DAG view displays hierarchical layout with visible edges between dependent issues
 - ./check quality gates fully pass (build, lint, unit tests, e2e tests)
+
+## 2026-01-15: Reduce spacing between issues in DAG view (bead-p5d)
+
+Reduced the node spacing in the DAG layout to make the view more compact:
+- Updated src/transformers/dagLayout.ts DEFAULT_OPTIONS
+- Changed nodeSpacingX from 50 to 20
+- Changed nodeSpacingY from 50 to 20
+- This reduces the horizontal and vertical gap between issue nodes by 60%
+- More issues now visible in the same viewport area
+- All 247 tests passing, e2e test passes

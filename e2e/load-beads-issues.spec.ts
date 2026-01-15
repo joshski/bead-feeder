@@ -371,11 +371,15 @@ test.describe('Load beads issues from GitHub repository', () => {
       // Verify the repo name is shown in the header
       await expect(page.getByText(`${owner}/${repo}`)).toBeVisible()
 
-      // Verify sync status shows "Synced"
-      await expect(page.getByText('Synced')).toBeVisible({ timeout: 10000 })
-
-      // Check for issue nodes (may be empty if test repo has no issues)
+      // Wait for issue nodes to appear in the DAG view
+      // This is the actual indicator that graph data has been fetched and rendered
+      // The 'Synced' status is for git sync, not graph fetch - waiting for it causes race conditions
       const issueNodes = page.locator('[data-testid="issue-node"]')
+
+      // We know from CLI extraction that issues exist, so wait for at least one to appear
+      // Use a longer timeout since graph fetch and rendering may take time
+      await expect(issueNodes.first()).toBeVisible({ timeout: 30000 })
+
       const issueCount = await issueNodes.count()
       console.log(`Found ${issueCount} issue(s) displayed in the DAG view`)
 

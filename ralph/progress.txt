@@ -703,3 +703,14 @@ Added final test step to compare beads CLI data with DAG view data:
 - Assertions fail with descriptive messages if data doesn't match
 - Successfully logs "✓ All CLI issues and dependencies match DAG view" on pass
 - All 245 tests passing
+
+## 2026-01-15: Fix E2E test race condition between sync and DAG rendering (bead-e71)
+
+Fixed intermittent e2e test failure where issues don't appear in DAG view after sync completes:
+- Root cause: Test was waiting for 'Synced' text (git sync status) but this is independent of graph data fetch
+- Graph data is fetched via separate useEffect in DagView, creating a race condition
+- Fixed by waiting for actual issue nodes to appear instead of sync status
+- Changed test step 'Verify DAG view loaded' to wait for '[data-testid="issue-node"]' first visible
+- Increased timeout to 30000ms to allow time for graph fetch and rendering
+- Removed unreliable 'Synced' status check which was causing false positives
+- All 245 tests passing

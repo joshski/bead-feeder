@@ -7,6 +7,7 @@ import type {
   ToolUseBlock,
 } from '@anthropic-ai/sdk/resources/messages'
 import { type BdIssue, buildGraphsFromIssues } from './buildGraphsFromIssues'
+import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import { listUserRepositories } from './git-service'
 import { llmTools } from './llm-tools'
 import * as log from './logger'
@@ -396,6 +397,19 @@ async function handleRequest(req: Request): Promise<Response> {
             },
           }
         )
+      }
+
+      // Use fake chat handler in fake mode (for e2e testing without AI costs)
+      if (isFakeModeEnabled()) {
+        const fakeStream = createFakeChatStream(messages)
+        return new Response(fakeStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
       }
 
       // Convert chat messages to Anthropic format

@@ -74,11 +74,16 @@ async function main() {
   console.log(`${COLORS.e2e}[e2e]${COLORS.reset} Starting dev servers...`)
 
   // Start the dev servers using the existing dev script
+  // Enable FAKE_MODE for e2e tests to avoid real AI API calls and GitHub pushes
   const devProc = spawn({
     cmd: ['bun', 'run', 'scripts/dev.ts'],
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),
+    env: {
+      ...process.env,
+      FAKE_MODE: 'true',
+    },
   })
 
   const cleanup = () => {

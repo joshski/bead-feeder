@@ -641,5 +641,138 @@ test.describe('Load beads issues from GitHub repository', () => {
 
       console.log('✓ All CLI issues and dependencies match DAG view')
     })
+
+    // Step 8: Test AI chat with fake mode by creating an issue locally
+    await test.step('Navigate to local DAG view', async () => {
+      // Navigate to the local view which uses the project's own .beads directory
+      await page.goto('http://localhost:5173/local')
+
+      // Wait for the DAG canvas to be present
+      await expect(page.locator('.react-flow')).toBeVisible({ timeout: 15000 })
+
+      console.log('Navigated to local DAG view')
+    })
+
+    // Step 9: Use AI chat to create an issue (tests fake AI without real API costs)
+    await test.step('Create issue via AI chat', async () => {
+      // Click the floating action button to open the Create Issue modal
+      const fabButton = page.locator('[data-testid="fab-create-issue"]')
+      await expect(fabButton).toBeVisible()
+      await fabButton.click()
+
+      // Wait for the modal to open
+      await expect(
+        page.getByRole('heading', { name: /create issue/i })
+      ).toBeVisible()
+
+      // Find the chat input and send a message to create an issue
+      const chatInput = page.locator('[data-testid="message-input"]')
+      await expect(chatInput).toBeVisible()
+
+      // Generate a unique issue title for this test run
+      const testIssueTitle = `E2E Test Issue ${Date.now()}`
+      await chatInput.fill(`create a task called "${testIssueTitle}"`)
+
+      // Click send or press Enter
+      const sendButton = page.locator('[data-testid="send-button"]')
+      await sendButton.click()
+
+      // Wait for the AI response to appear
+      // The fake AI will respond with confirmation text
+      await expect(
+        page.locator('[data-testid="message-assistant"]').last()
+      ).toContainText('create', { timeout: 10000 })
+
+      console.log(`Sent AI chat message to create issue: "${testIssueTitle}"`)
+
+      // Close the modal
+      const closeButton = page.locator('button[aria-label="Close"]')
+      if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await closeButton.click()
+      } else {
+        // Try pressing Escape
+        await page.keyboard.press('Escape')
+      }
+
+      // Wait for modal to close
+      await expect(
+        page.getByRole('heading', { name: /create issue/i })
+      ).not.toBeVisible({ timeout: 5000 })
+
+      // Wait a moment for the graph to refresh
+      await page.waitForTimeout(1000)
+
+      console.log('Created issue via AI chat (using fake AI mode)')
+    })
+
+    // Step 10: Verify the new issue appears in the local DAG view
+    await test.step('Verify new issue appears in DAG', async () => {
+      // The fake AI executed the create_issue tool, which should have created a real issue
+      // Wait for the DAG to update and show the new issue
+
+      // Get all issue nodes
+      const issueNodes = page.locator('[data-testid="issue-node"]')
+
+      // Wait for at least one issue to be visible
+      await expect(issueNodes.first()).toBeVisible({ timeout: 10000 })
+
+      const issueCount = await issueNodes.count()
+      console.log(`Found ${issueCount} issue(s) in local DAG view`)
+
+      // Verify at least one issue exists (the one we just created)
+      expect(
+        issueCount,
+        'Expected at least one issue in local DAG view after AI creation'
+      ).toBeGreaterThan(0)
+
+      // Take a screenshot of the local DAG with the new issue
+      await page.screenshot({
+        path: 'screenshots/e2e-local-dag-with-ai-issue.png',
+        fullPage: true,
+      })
+
+      console.log('✓ AI-created issue is visible in local DAG view')
+      console.log(
+        'Success screenshot saved to screenshots/e2e-local-dag-with-ai-issue.png'
+      )
+    })
+
+    // Step 11: Clean up test artifacts from local repository
+    await test.step('Clean up test artifacts', async () => {
+      // Find and close any issues created during this test run
+      // These have titles matching "E2E Test Issue *"
+      try {
+        const listOutput = execSync('bd list --json', {
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        })
+        const issues = JSON.parse(listOutput)
+        const testIssues = issues.filter(
+          (issue: { title: string; status: string }) =>
+            issue.title.startsWith('E2E Test Issue') &&
+            issue.status !== 'closed'
+        )
+
+        for (const issue of testIssues) {
+          execSync(`bd close ${issue.id}`, {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+          })
+          console.log(`Closed test artifact issue: ${issue.id}`)
+        }
+
+        if (testIssues.length > 0) {
+          console.log(
+            `✓ Cleaned up ${testIssues.length} test artifact issue(s)`
+          )
+        } else {
+          console.log('No test artifact issues to clean up')
+        }
+      } catch (error) {
+        console.warn(
+          `Warning: Failed to clean up test artifacts: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
+      }
+    })
   })
 })

@@ -50,6 +50,7 @@ async function main() {
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),
+    env: process.env,
   })
 
   const apiProc = spawn({
@@ -57,6 +58,7 @@ async function main() {
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),
+    env: process.env,
   })
 
   // Handle process termination

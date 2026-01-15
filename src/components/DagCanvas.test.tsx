@@ -21,13 +21,6 @@ describe('DagCanvas', () => {
     expect(controls).toBeDefined()
   })
 
-  it('renders minimap', () => {
-    render(<DagCanvas nodes={[]} edges={[]} />)
-
-    const minimap = document.querySelector('.react-flow__minimap')
-    expect(minimap).toBeDefined()
-  })
-
   it('accepts an onConnect callback prop', () => {
     const onConnect = vi.fn()
     const nodes = [

@@ -11,7 +11,6 @@ import {
   Background,
   BackgroundVariant,
   Controls,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
@@ -93,7 +92,6 @@ function DagCanvasInner({
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
         <Controls showZoom showFitView showInteractive />
-        <MiniMap zoomable pannable />
       </ReactFlow>
     </div>
   )

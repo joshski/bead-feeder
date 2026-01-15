@@ -649,3 +649,22 @@ Added functionality to clone the test repository into a temporary directory in t
 - Verifies the .beads directory exists in the cloned repo (with warning if not found)
 - Module-scoped clonedRepoPath variable stores the path for use by subsequent test steps
 - All 245 tests passing
+
+## 2026-01-15: Extract issues and dependencies from cloned repo using beads CLI (bead-feeder-5g3)
+
+Added functionality to extract beads data from the cloned test repository using CLI commands:
+- Defined interfaces for extracted data: BeadsIssue, BeadsDependency, BeadsData
+- Created extractBeadsData() function that:
+  - Runs `bd list --json` in the cloned repo directory to get all issues
+  - Runs `bd graph --all --json` to get all dependency relationships
+  - Collects unique dependencies using Map to avoid duplicates
+  - Returns structured data with issues array and dependencies array
+- Added new test step "Extract issues and dependencies from cloned repo" that:
+  - Calls extractBeadsData() after cloning the repo
+  - Logs the number of issues and dependencies found
+  - Logs each issue ID, title, and status for debugging
+  - Logs each dependency relationship (blocker blocks blocked)
+  - Asserts at least one issue exists in the test repository
+  - Asserts at least one dependency relationship exists
+- Added module-scoped extractedBeadsData variable for later comparison with DAG view
+- All 245 tests passing

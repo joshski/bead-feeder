@@ -11,6 +11,31 @@ const TEST_REPO_NAME = 'bead-feeder-example-issues'
 // Shared state for cloned repository path (used within this test file)
 let clonedRepoPath: string | null = null
 
+// Data structure representing issues and their dependencies extracted from beads CLI
+interface BeadsIssue {
+  id: string
+  title: string
+  status: string
+  priority: number
+  issue_type: string
+  dependency_count: number
+  dependent_count: number
+}
+
+interface BeadsDependency {
+  issue_id: string
+  depends_on_id: string
+  type: string
+}
+
+interface BeadsData {
+  issues: BeadsIssue[]
+  dependencies: BeadsDependency[]
+}
+
+// Shared extracted data (available for later comparison with DAG view)
+let extractedBeadsData: BeadsData | null = null
+
 /**
  * Clone the test repository into a temporary directory.
  * Returns the path to the cloned repository.
@@ -55,6 +80,53 @@ function cleanupClonedRepo(repoPath: string): void {
     console.warn(
       `Failed to clean up ${repoPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
     )
+  }
+}
+
+/**
+ * Extract issues and dependencies from a beads repository using the CLI.
+ * Runs `bd list --json` and `bd graph --all --json` in the specified directory.
+ */
+function extractBeadsData(repoPath: string): BeadsData {
+  // Run bd list --json to get all issues
+  const listOutput = execSync('bd list --json', {
+    cwd: repoPath,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+
+  const issues: BeadsIssue[] = JSON.parse(listOutput)
+
+  // Run bd graph --all --json to get dependencies
+  const graphOutput = execSync('bd graph --all --json', {
+    cwd: repoPath,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+
+  const graphData = JSON.parse(graphOutput)
+
+  // Collect all unique dependencies from all graph entries
+  const dependencyMap = new Map<string, BeadsDependency>()
+  for (const entry of graphData) {
+    if (entry.Dependencies) {
+      for (const dep of entry.Dependencies) {
+        // Use a unique key to avoid duplicates
+        const key = `${dep.issue_id}-${dep.depends_on_id}`
+        if (!dependencyMap.has(key)) {
+          dependencyMap.set(key, {
+            issue_id: dep.issue_id,
+            depends_on_id: dep.depends_on_id,
+            type: dep.type,
+          })
+        }
+      }
+    }
+  }
+
+  return {
+    issues,
+    dependencies: Array.from(dependencyMap.values()),
   }
 }
 
@@ -103,6 +175,44 @@ test.describe('Load beads issues from GitHub repository', () => {
           '.beads directory not found in cloned repository - test may not find issues'
         )
       }
+    })
+
+    // Step 0.5: Extract issues and dependencies from cloned repo using beads CLI
+    await test.step('Extract issues and dependencies from cloned repo', async () => {
+      if (!clonedRepoPath) {
+        throw new Error('Repository was not cloned')
+      }
+
+      extractedBeadsData = extractBeadsData(clonedRepoPath)
+
+      console.log(
+        `Extracted ${extractedBeadsData.issues.length} issue(s) from beads CLI`
+      )
+      console.log(
+        `Extracted ${extractedBeadsData.dependencies.length} dependency relationship(s) from beads CLI`
+      )
+
+      // Log issue titles for debugging
+      for (const issue of extractedBeadsData.issues) {
+        console.log(`  - [${issue.id}] ${issue.title} (${issue.status})`)
+      }
+
+      // Log dependencies for debugging
+      for (const dep of extractedBeadsData.dependencies) {
+        console.log(`  - ${dep.depends_on_id} blocks ${dep.issue_id}`)
+      }
+
+      // Assert that we have some issues
+      expect(
+        extractedBeadsData.issues.length,
+        'Expected test repository to have at least one issue'
+      ).toBeGreaterThan(0)
+
+      // Assert that we have some dependencies (test repo should have some)
+      expect(
+        extractedBeadsData.dependencies.length,
+        'Expected test repository to have at least one dependency relationship'
+      ).toBeGreaterThan(0)
     })
 
     // Step 1: Sign into GitHub first

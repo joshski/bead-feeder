@@ -862,3 +862,12 @@ Changed edge connection points to match horizontal (LR) layout direction:
 - Edges now connect horizontally: blockers on the left, blocked issues on the right
 - Edges already use smoothstep type (curved lines) - no change needed
 - All 261 tests passing, e2e test passes
+
+## 2026-01-15: Make cards in the DAG view have uniform width (bead-h0o)
+
+Set a fixed width on issue cards for consistent visual appearance:
+- Updated src/components/IssueNode.tsx button style
+- Changed from minWidth: '180px', maxWidth: '250px' to width: '250px'
+- Width matches the nodeWidth (250px) used in dagLayout.ts for dagre positioning
+- All cards now render at exactly the same width regardless of title length
+- All 261 tests passing, e2e test passes

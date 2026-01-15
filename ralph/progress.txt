@@ -772,3 +772,30 @@ Reduced the node spacing in the DAG layout to make the view more compact:
 - This reduces the horizontal and vertical gap between issue nodes by 60%
 - More issues now visible in the same viewport area
 - All 247 tests passing, e2e test passes
+
+## 2026-01-15: Show issue detail in modal instead of replacing DAG view (bead-2wl)
+
+Clicking an issue node now opens a modal overlay instead of navigating away from the DAG view:
+- Created src/components/IssueDetailModal.tsx component:
+  - Displays issue title, ID, status, type with icon, and priority
+  - Status colors match IssueNode (open=blue, in_progress=amber, closed=green)
+  - Type displayed with icons (task=☐, bug=🐛, feature=✨)
+  - Priority shows full label (P0 - Critical, P1 - High, etc.)
+  - Close via X button, Close button, backdrop click, or Escape key
+  - Accessible with role="dialog" and aria attributes
+- Updated src/components/IssueNode.tsx:
+  - Removed router navigation on click
+  - Added optional onSelect callback to IssueNodeData interface
+  - Click now calls onSelect(issueData) if provided
+- Updated src/pages/DagView.tsx:
+  - Added selectedIssue state and handleIssueSelect callback
+  - Injects onSelect callback into each node's data during graph refresh
+  - Integrated IssueDetailModal that opens when an issue is selected
+- Updated src/components/IssueNode.test.tsx:
+  - Removed router navigation test and mock
+  - Added tests for onSelect callback behavior
+- Created src/components/IssueDetailModal.test.tsx with 14 tests:
+  - Tests for rendering, display of all issue properties
+  - Tests for all close mechanisms (X button, Close button, backdrop)
+  - Tests for different status, type, and priority variants
+- All 262 tests passing, e2e test passes

@@ -7,6 +7,8 @@ import CreateIssueModal, {
 } from '../components/CreateIssueModal'
 import DagCanvas from '../components/DagCanvas'
 import FloatingActionButton from '../components/FloatingActionButton'
+import IssueDetailModal from '../components/IssueDetailModal'
+import type { IssueNodeData } from '../components/IssueNode'
 import { applyDagLayout } from '../transformers/dagLayout'
 import {
   type BdDependency,
@@ -134,21 +136,34 @@ function DagView() {
   const [edges, setEdges] = useState<Edge[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [isChatLoading, setIsChatLoading] = useState(false)
+  const [selectedIssue, setSelectedIssue] = useState<IssueNodeData | null>(null)
+
+  const handleIssueSelect = useCallback((issueData: IssueNodeData) => {
+    setSelectedIssue(issueData)
+  }, [])
 
   // Fetch graph data on mount and provide refresh function
   const refreshGraph = useCallback(async () => {
     dagLog('Refreshing graph data')
     try {
       const { nodes: newNodes, edges: newEdges } = await fetchGraph(owner, repo)
+      // Inject onSelect callback into each node's data
+      const nodesWithCallback = newNodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          onSelect: handleIssueSelect,
+        },
+      }))
       dagLog(
-        `Setting state: ${newNodes.length} nodes, ${newEdges.length} edges`
+        `Setting state: ${nodesWithCallback.length} nodes, ${newEdges.length} edges`
       )
-      setNodes(newNodes)
+      setNodes(nodesWithCallback)
       setEdges(newEdges)
     } catch (error) {
       dagError('Failed to fetch graph', error)
     }
-  }, [owner, repo])
+  }, [owner, repo, handleIssueSelect])
 
   useEffect(() => {
     refreshGraph()
@@ -294,6 +309,10 @@ function DagView() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleCreateIssue}
+        />
+        <IssueDetailModal
+          issue={selectedIssue}
+          onClose={() => setSelectedIssue(null)}
         />
       </div>
       <div style={{ width: '350px', flexShrink: 0 }}>

@@ -1,19 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ReactFlowProvider } from '@xyflow/react'
-import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { IssueNodeData } from './IssueNode'
 import IssueNode from './IssueNode'
-
-const mockNavigate = vi.fn()
-
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual('react-router')
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  }
-})
 
 const defaultData: IssueNodeData = {
   issueId: 'issue-123',
@@ -25,32 +14,26 @@ const defaultData: IssueNodeData = {
 
 function renderIssueNode(data: IssueNodeData = defaultData) {
   return render(
-    <MemoryRouter>
-      <ReactFlowProvider>
-        <IssueNode
-          id="test-node"
-          data={data as unknown as Record<string, unknown>}
-          type="issue"
-          dragging={false}
-          draggable={true}
-          zIndex={0}
-          isConnectable={true}
-          positionAbsoluteX={0}
-          positionAbsoluteY={0}
-          selectable={true}
-          deletable={false}
-          selected={false}
-        />
-      </ReactFlowProvider>
-    </MemoryRouter>
+    <ReactFlowProvider>
+      <IssueNode
+        id="test-node"
+        data={data as unknown as Record<string, unknown>}
+        type="issue"
+        dragging={false}
+        draggable={true}
+        zIndex={0}
+        isConnectable={true}
+        positionAbsoluteX={0}
+        positionAbsoluteY={0}
+        selectable={true}
+        deletable={false}
+        selected={false}
+      />
+    </ReactFlowProvider>
   )
 }
 
 describe('IssueNode', () => {
-  beforeEach(() => {
-    mockNavigate.mockClear()
-  })
-
   afterEach(() => {
     cleanup()
   })
@@ -97,10 +80,19 @@ describe('IssueNode', () => {
     expect(screen.getByTestId('issue-priority')).toHaveTextContent('P1')
   })
 
-  it('navigates to issue detail on click', () => {
-    renderIssueNode()
+  it('calls onSelect callback on click when provided', () => {
+    const onSelect = vi.fn()
+    const dataWithCallback: IssueNodeData = { ...defaultData, onSelect }
+    renderIssueNode(dataWithCallback)
     fireEvent.click(screen.getByTestId('issue-node'))
-    expect(mockNavigate).toHaveBeenCalledWith('/issues/issue-123')
+    expect(onSelect).toHaveBeenCalledWith(dataWithCallback)
+  })
+
+  it('does not throw when clicked without onSelect callback', () => {
+    renderIssueNode()
+    expect(() => {
+      fireEvent.click(screen.getByTestId('issue-node'))
+    }).not.toThrow()
   })
 
   it('renders with different priorities', () => {

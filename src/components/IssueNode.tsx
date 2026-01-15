@@ -1,6 +1,5 @@
 import type { NodeProps } from '@xyflow/react'
 import { Handle, Position } from '@xyflow/react'
-import { useNavigate } from 'react-router'
 
 export type IssueStatus = 'open' | 'in_progress' | 'closed'
 export type IssueType = 'task' | 'bug' | 'feature'
@@ -12,6 +11,7 @@ export interface IssueNodeData extends Record<string, unknown> {
   status: IssueStatus
   type: IssueType
   priority: IssuePriority
+  onSelect?: (data: IssueNodeData) => void
 }
 
 const statusColors: Record<IssueStatus, string> = {
@@ -40,11 +40,12 @@ const priorityColors: Record<IssuePriority, string> = {
 }
 
 function IssueNode({ data }: NodeProps) {
-  const navigate = useNavigate()
   const issueData = data as unknown as IssueNodeData
 
   const handleClick = () => {
-    navigate(`/issues/${issueData.issueId}`)
+    if (issueData.onSelect) {
+      issueData.onSelect(issueData)
+    }
   }
 
   return (

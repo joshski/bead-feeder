@@ -9,7 +9,7 @@ export interface DagLayoutOptions {
   /**
    * Direction of the graph layout
    * TB = top-to-bottom, LR = left-to-right
-   * Default: 'TB'
+   * Default: 'LR'
    */
   direction?: 'TB' | 'LR'
   /**
@@ -31,7 +31,7 @@ export interface DagLayoutOptions {
 }
 
 const DEFAULT_OPTIONS: Required<DagLayoutOptions> = {
-  direction: 'TB',
+  direction: 'LR',
   nodeSpacingX: 20,
   nodeSpacingY: 20,
   nodeWidth: 250,

@@ -843,3 +843,12 @@ Removed the behavior that checks each repository for a .beads directory at start
 - Repository list now loads instantly after fetching repos (no N+1 API calls)
 - Users can still select any repository and view issues (issues are fetched on demand when viewing)
 - All 261 tests passing, e2e test passes
+
+## 2026-01-15: Use a horizontal dagre layout with React Flow (bead-5a9)
+
+Changed the DAG layout default direction from top-to-bottom (TB) to left-to-right (LR):
+- Updated src/transformers/dagLayout.ts DEFAULT_OPTIONS.direction from 'TB' to 'LR'
+- Updated the JSDoc comment for the direction option to reflect the new default
+- Nodes with no dependencies now appear on the left, dependent nodes appear to the right
+- This creates a horizontal flow that is easier to read and follows the conventional direction of dependency graphs
+- All 261 tests passing, e2e test passes

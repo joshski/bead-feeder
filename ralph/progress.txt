@@ -735,3 +735,30 @@ Updated the ./check quality gates script to run playwright e2e tests:
 - Note: E2e tests currently fail due to pre-existing bug (bead-8k7) where dependency edges don't render for remote repos
 - Created P1 bug issue bead-8k7 to track the edge rendering problem
 - All 245 unit tests still passing
+
+## 2026-01-15: Fix DAG view dependency edges for remote repos (bead-8k7)
+
+Fixed the P1 bug where DAG view did not render dependency edges for remote repositories:
+
+**Root Cause:**
+- The `buildGraphsFromIssues` function expected `dependencies` to be an array of string IDs
+- But `issues.jsonl` stores dependencies as full objects with fields: `issue_id`, `depends_on_id`, `type`, `created_at`, `created_by`
+- This mismatch caused all dependencies to be silently ignored
+
+**Fixes Applied:**
+1. Updated `api/buildGraphsFromIssues.ts`:
+   - Added `IssueDependencyObject` interface for the object format
+   - Updated `BdIssue.dependencies` type to accept both string[] and object[] formats
+   - Modified dependency extraction logic to handle both formats
+   - Added 2 new tests for object format and mixed format dependencies
+
+2. Updated `e2e/load-beads-issues.spec.ts`:
+   - Fixed edge extraction to use React Flow v12's `aria-label` attribute
+   - React Flow v12 uses `aria-label="Edge from {source} to {target}"` not `data-source`/`data-target`
+   - Added console logging for edge count debugging
+
+**Results:**
+- All 247 unit tests passing (2 new tests added)
+- E2e test now passes: extracts 10 issues and 12 dependencies correctly
+- DAG view displays hierarchical layout with visible edges between dependent issues
+- ./check quality gates fully pass (build, lint, unit tests, e2e tests)

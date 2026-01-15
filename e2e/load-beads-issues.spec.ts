@@ -438,25 +438,31 @@ test.describe('Load beads issues from GitHub repository', () => {
       }
 
       // Extract dependency data from React Flow edges
-      // React Flow renders edges with data-source and data-target attributes
-      // The edge direction in the DAG: source (blocker) -> target (blocked)
+      // React Flow v12 uses aria-label="Edge from {source} to {target}" on edges
+      // and data-testid="rf__edge-{edge-id}" where edge-id is "{source}-{target}"
       const edgeElements = page.locator('.react-flow__edge')
       const edgeCount = await edgeElements.count()
+
+      console.log(`Found ${edgeCount} React Flow edge elements`)
 
       const dependencies: DagDependency[] = []
       for (let i = 0; i < edgeCount; i++) {
         const edge = edgeElements.nth(i)
 
-        // Get source and target from data attributes
-        const source = await edge.getAttribute('data-source')
-        const target = await edge.getAttribute('data-target')
+        // Get source and target from aria-label attribute
+        // Format: "Edge from {source} to {target}"
+        const ariaLabel = await edge.getAttribute('aria-label')
 
-        if (source && target) {
-          // In the DAG: source is the blocker (depends_on_id), target is the blocked (issue_id)
-          dependencies.push({
-            issue_id: target, // blocked issue
-            depends_on_id: source, // blocker issue
-          })
+        if (ariaLabel) {
+          const match = ariaLabel.match(/Edge from (.+) to (.+)/)
+          if (match) {
+            const source = match[1] // blocker (depends_on_id)
+            const target = match[2] // blocked (issue_id)
+            dependencies.push({
+              issue_id: target, // blocked issue
+              depends_on_id: source, // blocker issue
+            })
+          }
         }
       }
 

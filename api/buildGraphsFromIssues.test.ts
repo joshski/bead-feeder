@@ -142,4 +142,73 @@ describe('buildGraphsFromIssues', () => {
     // The function should use all issues as roots in this case
     expect(result).toHaveLength(2)
   })
+
+  it('handles object format dependencies from issues.jsonl', () => {
+    // issues.jsonl stores dependencies as full objects, not just IDs
+    const issues = [
+      { id: 'issue-1', title: 'Root Issue', status: 'open' },
+      {
+        id: 'issue-2',
+        title: 'Dependent Issue',
+        status: 'open',
+        dependencies: [
+          {
+            issue_id: 'issue-2',
+            depends_on_id: 'issue-1',
+            type: 'blocks',
+            created_at: '2026-01-13T19:58:06.826314971Z',
+            created_by: 'Josh Chisholm',
+          },
+        ],
+      },
+    ]
+
+    const result = buildGraphsFromIssues(issues)
+
+    // Should have one root (issue-1)
+    expect(result).toHaveLength(1)
+    expect(result[0].Root.id).toBe('issue-1')
+
+    // Should have one dependency extracted from the object
+    expect(result[0].Dependencies).toHaveLength(1)
+    expect(result[0].Dependencies[0]).toEqual({
+      issue_id: 'issue-2',
+      depends_on_id: 'issue-1',
+      type: 'blocks',
+    })
+  })
+
+  it('handles mixed string and object format dependencies', () => {
+    const issues = [
+      { id: 'root', title: 'Root', status: 'open' },
+      { id: 'mid', title: 'Mid', status: 'open', dependencies: ['root'] },
+      {
+        id: 'leaf',
+        title: 'Leaf',
+        status: 'open',
+        dependencies: [
+          {
+            issue_id: 'leaf',
+            depends_on_id: 'mid',
+            type: 'blocks',
+          },
+        ],
+      },
+    ]
+
+    const result = buildGraphsFromIssues(issues)
+
+    // root has no dependencies
+    expect(result).toHaveLength(1)
+    expect(result[0].Root.id).toBe('root')
+
+    // Should have two dependencies total
+    expect(result[0].Dependencies).toHaveLength(2)
+
+    const depPairs = result[0].Dependencies.map(
+      d => `${d.issue_id}->${d.depends_on_id}`
+    )
+    expect(depPairs).toContain('mid->root')
+    expect(depPairs).toContain('leaf->mid')
+  })
 })

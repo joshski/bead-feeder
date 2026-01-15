@@ -1,10 +1,20 @@
+// Dependency as stored in issues.jsonl (full object format)
+interface IssueDependencyObject {
+  issue_id: string
+  depends_on_id: string
+  type: string
+  created_at?: string
+  created_by?: string
+}
+
 export interface BdIssue {
   id: string
   title: string
   status: string
   type?: string
   priority?: number
-  dependencies?: string[]
+  // Dependencies can be either string IDs (old format) or full objects (new format)
+  dependencies?: (string | IssueDependencyObject)[]
 }
 
 export interface BdDependency {
@@ -32,8 +42,17 @@ export function buildGraphsFromIssues(issues: BdIssue[]): GraphApiResponse[] {
 
   for (const issue of issues) {
     if (issue.dependencies && Array.isArray(issue.dependencies)) {
-      dependsOnMap.set(issue.id, new Set(issue.dependencies))
-      for (const depId of issue.dependencies) {
+      // Extract dependency IDs - handle both string format and object format
+      const depIds: string[] = issue.dependencies.map(dep => {
+        if (typeof dep === 'string') {
+          return dep
+        }
+        // Object format: { issue_id, depends_on_id, type, ... }
+        return dep.depends_on_id
+      })
+
+      dependsOnMap.set(issue.id, new Set(depIds))
+      for (const depId of depIds) {
         if (!dependedByMap.has(depId)) {
           dependedByMap.set(depId, new Set())
         }

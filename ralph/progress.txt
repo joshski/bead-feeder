@@ -714,3 +714,14 @@ Fixed intermittent e2e test failure where issues don't appear in DAG view after 
 - Increased timeout to 30000ms to allow time for graph fetch and rendering
 - Removed unreliable 'Synced' status check which was causing false positives
 - All 245 tests passing
+
+## 2026-01-15: Delete redundant github-login.spec.ts (bead-r4u)
+
+Deleted the redundant e2e/github-login.spec.ts file:
+- The github-login.spec.ts test only signed into GitHub and took a screenshot
+- This functionality is already covered by e2e/load-beads-issues.spec.ts which:
+  - Signs into GitHub (Step 1)
+  - Completes the full OAuth flow with the Bead Feeder app
+  - Verifies issues load in the DAG view
+- Removed the duplicate test file to avoid maintenance overhead
+- All 245 tests still passing

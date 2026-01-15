@@ -688,3 +688,18 @@ Added functionality to extract issues and dependencies from the DAG view UI for 
   - Asserts at least one issue was extracted from the DAG view
 - Data structure mirrors BeadsData for later comparison
 - All 245 tests passing
+
+## 2026-01-15: Compare CLI and DAG data structures in test assertion (bead-feeder-hpi)
+
+Added final test step to compare beads CLI data with DAG view data:
+- Added "Compare CLI and DAG data structures" test step to e2e/load-beads-issues.spec.ts
+- Comparison verifies all CLI issues appear in DAG view
+- Compares issue properties: status, issue_type, and priority
+- Priority normalization: CLI uses numbers (0-3), DAG uses strings (P0-P3)
+- Status and type normalization: case-insensitive comparison
+- Compares all dependency relationships between CLI and DAG data
+- Creates lookup map for efficient issue-by-id access
+- Logs any missing issues, mismatched properties, or missing dependencies
+- Assertions fail with descriptive messages if data doesn't match
+- Successfully logs "✓ All CLI issues and dependencies match DAG view" on pass
+- All 245 tests passing

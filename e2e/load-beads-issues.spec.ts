@@ -483,5 +483,153 @@ test.describe('Load beads issues from GitHub repository', () => {
         'Expected DAG view to display at least one issue'
       ).toBeGreaterThan(0)
     })
+
+    // Step 7: Compare CLI and DAG data structures
+    await test.step('Compare CLI and DAG data structures', async () => {
+      if (!extractedBeadsData || !extractedDagData) {
+        throw new Error('Missing extracted data for comparison')
+      }
+
+      // Helper to normalize priority for comparison
+      // CLI returns priority as number (0-3), DAG returns as string (P0-P3)
+      const normalizePriority = (priority: number | string): string => {
+        if (typeof priority === 'number') {
+          return `P${priority}`
+        }
+        return priority
+      }
+
+      // Helper to normalize status for comparison
+      // Both should use same values, but normalize case
+      const normalizeStatus = (status: string): string => {
+        return status.toLowerCase()
+      }
+
+      // Helper to normalize issue type for comparison
+      const normalizeType = (type: string): string => {
+        return type.toLowerCase()
+      }
+
+      // Create lookup map for DAG issues
+      const dagIssueMap = new Map(
+        extractedDagData.issues.map(issue => [issue.id, issue])
+      )
+
+      // Compare issue counts
+      console.log(
+        `Comparing ${extractedBeadsData.issues.length} CLI issues with ${extractedDagData.issues.length} DAG issues`
+      )
+
+      // Check that all CLI issues appear in DAG view
+      const missingIssues: string[] = []
+      const mismatchedIssues: string[] = []
+
+      for (const cliIssue of extractedBeadsData.issues) {
+        const dagIssue = dagIssueMap.get(cliIssue.id)
+
+        if (!dagIssue) {
+          missingIssues.push(
+            `[${cliIssue.id}] ${cliIssue.title} - not found in DAG view`
+          )
+          continue
+        }
+
+        // Compare properties
+        const cliStatus = normalizeStatus(cliIssue.status)
+        const dagStatus = normalizeStatus(dagIssue.status)
+        if (cliStatus !== dagStatus) {
+          mismatchedIssues.push(
+            `[${cliIssue.id}] status: CLI="${cliStatus}" vs DAG="${dagStatus}"`
+          )
+        }
+
+        const cliType = normalizeType(cliIssue.issue_type)
+        const dagType = normalizeType(dagIssue.issue_type)
+        if (cliType !== dagType) {
+          mismatchedIssues.push(
+            `[${cliIssue.id}] type: CLI="${cliType}" vs DAG="${dagType}"`
+          )
+        }
+
+        const cliPriority = normalizePriority(cliIssue.priority)
+        const dagPriority = normalizePriority(dagIssue.priority)
+        if (cliPriority !== dagPriority) {
+          mismatchedIssues.push(
+            `[${cliIssue.id}] priority: CLI="${cliPriority}" vs DAG="${dagPriority}"`
+          )
+        }
+      }
+
+      // Log any missing issues
+      if (missingIssues.length > 0) {
+        console.log('Missing issues in DAG view:')
+        for (const msg of missingIssues) {
+          console.log(`  - ${msg}`)
+        }
+      }
+
+      // Log any mismatched properties
+      if (mismatchedIssues.length > 0) {
+        console.log('Mismatched issue properties:')
+        for (const msg of mismatchedIssues) {
+          console.log(`  - ${msg}`)
+        }
+      }
+
+      // Compare dependencies
+      console.log(
+        `Comparing ${extractedBeadsData.dependencies.length} CLI dependencies with ${extractedDagData.dependencies.length} DAG dependencies`
+      )
+
+      // Create dependency key for comparison
+      const makeDepKey = (issueId: string, dependsOnId: string) =>
+        `${issueId}->${dependsOnId}`
+
+      const cliDepKeys = new Set(
+        extractedBeadsData.dependencies.map(dep =>
+          makeDepKey(dep.issue_id, dep.depends_on_id)
+        )
+      )
+      const dagDepKeys = new Set(
+        extractedDagData.dependencies.map(dep =>
+          makeDepKey(dep.issue_id, dep.depends_on_id)
+        )
+      )
+
+      // Find missing dependencies in DAG view
+      const missingDeps: string[] = []
+      for (const key of cliDepKeys) {
+        if (!dagDepKeys.has(key)) {
+          missingDeps.push(key)
+        }
+      }
+
+      if (missingDeps.length > 0) {
+        console.log('Missing dependencies in DAG view:')
+        for (const dep of missingDeps) {
+          console.log(`  - ${dep}`)
+        }
+      }
+
+      // Assert all issues are present in DAG view
+      expect(
+        missingIssues,
+        `${missingIssues.length} issue(s) from CLI are missing in DAG view`
+      ).toHaveLength(0)
+
+      // Assert all properties match
+      expect(
+        mismatchedIssues,
+        `${mismatchedIssues.length} issue(s) have mismatched properties`
+      ).toHaveLength(0)
+
+      // Assert all dependencies are present in DAG view
+      expect(
+        missingDeps,
+        `${missingDeps.length} dependency relationship(s) from CLI are missing in DAG view`
+      ).toHaveLength(0)
+
+      console.log('✓ All CLI issues and dependencies match DAG view')
+    })
   })
 })

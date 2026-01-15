@@ -63,22 +63,12 @@ describe('RepositorySelector', () => {
       { owner: 'user2', repo: 'repo2', branch: 'develop' },
     ]
 
-    global.fetch = vi.fn(url => {
-      if (
-        (url as string).includes('/api/repos') &&
-        !(url as string).includes('has-beads')
-      ) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ repos: mockRepos }),
-        })
-      }
-      // has-beads endpoints
-      return Promise.resolve({
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ hasBeads: false }),
+        json: () => Promise.resolve({ repos: mockRepos }),
       })
-    }) as unknown as typeof fetch
+    ) as unknown as typeof fetch
 
     render(<RepositorySelector onSelect={mockOnSelect} />)
 
@@ -94,21 +84,12 @@ describe('RepositorySelector', () => {
   it('calls onSelect when a repository is clicked', async () => {
     const mockRepos = [{ owner: 'user1', repo: 'repo1', branch: 'main' }]
 
-    global.fetch = vi.fn(url => {
-      if (
-        (url as string).includes('/api/repos') &&
-        !(url as string).includes('has-beads')
-      ) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ repos: mockRepos }),
-        })
-      }
-      return Promise.resolve({
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ hasBeads: false }),
+        json: () => Promise.resolve({ repos: mockRepos }),
       })
-    }) as unknown as typeof fetch
+    ) as unknown as typeof fetch
 
     render(<RepositorySelector onSelect={mockOnSelect} />)
 
@@ -122,47 +103,7 @@ describe('RepositorySelector', () => {
       owner: 'user1',
       repo: 'repo1',
       branch: 'main',
-      hasBeads: false,
     })
-  })
-
-  it('separates repos with beads from repos without', async () => {
-    const mockRepos = [
-      { owner: 'user1', repo: 'with-beads', branch: 'main' },
-      { owner: 'user2', repo: 'without-beads', branch: 'main' },
-    ]
-
-    global.fetch = vi.fn(url => {
-      if (
-        (url as string).includes('/api/repos') &&
-        !(url as string).includes('has-beads')
-      ) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ repos: mockRepos }),
-        })
-      }
-      // has-beads check
-      if ((url as string).includes('with-beads')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ hasBeads: true }),
-        })
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ hasBeads: false }),
-      })
-    }) as unknown as typeof fetch
-
-    render(<RepositorySelector onSelect={mockOnSelect} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Repositories with Beads')).toBeInTheDocument()
-    })
-
-    expect(screen.getByText('user1/with-beads')).toBeInTheDocument()
-    expect(screen.getByText('user2/without-beads')).toBeInTheDocument()
   })
 
   it('retries fetch when retry button is clicked', async () => {

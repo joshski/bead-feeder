@@ -8,10 +8,6 @@ interface Repository {
   branch?: string
 }
 
-interface RepositoryWithBeads extends Repository {
-  hasBeads: boolean
-}
-
 interface RepositorySelectorProps {
   onSelect: (repo: Repository) => void
 }
@@ -19,44 +15,9 @@ interface RepositorySelectorProps {
 export default function RepositorySelector({
   onSelect,
 }: RepositorySelectorProps) {
-  const [repos, setRepos] = useState<RepositoryWithBeads[]>([])
+  const [repos, setRepos] = useState<Repository[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [checkingBeads, setCheckingBeads] = useState<Set<string>>(new Set())
-
-  const checkBeadsDirectory = useCallback(
-    async (owner: string, repo: string) => {
-      const key = `${owner}/${repo}`
-      setCheckingBeads(prev => new Set(prev).add(key))
-
-      try {
-        const response = await fetch(
-          `${API_URL}/api/repos/${owner}/${repo}/has-beads`,
-          { credentials: 'include' }
-        )
-
-        if (response.ok) {
-          const data = (await response.json()) as { hasBeads: boolean }
-          setRepos(prev =>
-            prev.map(r =>
-              r.owner === owner && r.repo === repo
-                ? { ...r, hasBeads: data.hasBeads }
-                : r
-            )
-          )
-        }
-      } catch {
-        // Silently ignore errors checking for .beads
-      } finally {
-        setCheckingBeads(prev => {
-          const next = new Set(prev)
-          next.delete(key)
-          return next
-        })
-      }
-    },
-    []
-  )
 
   const fetchRepos = useCallback(async () => {
     setIsLoading(true)
@@ -75,27 +36,17 @@ export default function RepositorySelector({
       }
 
       const data = (await response.json()) as { repos: Repository[] }
-      // Initialize repos without beads info yet
-      setRepos(data.repos.map(r => ({ ...r, hasBeads: false })))
-
-      // Check each repo for .beads directory
-      for (const repo of data.repos) {
-        checkBeadsDirectory(repo.owner, repo.repo)
-      }
+      setRepos(data.repos)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsLoading(false)
     }
-  }, [checkBeadsDirectory])
+  }, [])
 
   useEffect(() => {
     fetchRepos()
   }, [fetchRepos])
-
-  const beadsRepos = repos.filter(r => r.hasBeads)
-  const otherRepos = repos.filter(r => !r.hasBeads)
-  const isCheckingAny = checkingBeads.size > 0
 
   if (isLoading) {
     return (
@@ -120,52 +71,21 @@ export default function RepositorySelector({
     <div style={styles.container}>
       <h2 style={styles.heading}>Select a Repository</h2>
 
-      {beadsRepos.length > 0 && (
-        <section style={styles.section}>
-          <h3 style={styles.sectionHeading}>
-            Repositories with Beads
-            <span style={styles.badge}>{beadsRepos.length}</span>
-          </h3>
+      <section style={styles.section}>
+        <h3 style={styles.sectionHeading}>
+          Repositories
+          <span style={styles.badge}>{repos.length}</span>
+        </h3>
+        {repos.length === 0 ? (
+          <p style={styles.emptyMessage}>No repositories found.</p>
+        ) : (
           <ul style={styles.repoList}>
-            {beadsRepos.map(repo => (
+            {repos.map(repo => (
               <li key={`${repo.owner}/${repo.repo}`} style={styles.repoItem}>
                 <button
                   type="button"
                   onClick={() => onSelect(repo)}
                   style={styles.repoButton}
-                >
-                  <span style={styles.repoName}>
-                    {repo.owner}/{repo.repo}
-                  </span>
-                  {repo.branch && (
-                    <span style={styles.branch}>{repo.branch}</span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section style={styles.section}>
-        <h3 style={styles.sectionHeading}>
-          Other Repositories
-          {isCheckingAny && (
-            <span style={styles.checkingIndicator}>checking...</span>
-          )}
-        </h3>
-        {otherRepos.length === 0 && !isCheckingAny ? (
-          <p style={styles.emptyMessage}>
-            No other repositories found. All your repos have beads!
-          </p>
-        ) : (
-          <ul style={styles.repoList}>
-            {otherRepos.map(repo => (
-              <li key={`${repo.owner}/${repo.repo}`} style={styles.repoItem}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(repo)}
-                  style={styles.repoButtonSecondary}
                 >
                   <span style={styles.repoName}>
                     {repo.owner}/{repo.repo}
@@ -214,12 +134,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     fontWeight: 500,
   },
-  checkingIndicator: {
-    fontSize: '12px',
-    fontWeight: 400,
-    color: '#999',
-    fontStyle: 'italic',
-  },
   repoList: {
     listStyle: 'none',
     padding: 0,
@@ -236,18 +150,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 16px',
     backgroundColor: '#f0f9ff',
     border: '1px solid #bfdbfe',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s',
-  },
-  repoButtonSecondary: {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 16px',
-    backgroundColor: '#f5f5f5',
-    border: '1px solid #e5e5e5',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'background-color 0.15s',

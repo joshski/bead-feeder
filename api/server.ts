@@ -779,64 +779,6 @@ async function handleRequest(req: Request): Promise<Response> {
     })
   }
 
-  // Check if a repository has a .beads directory
-  const repoBeadsMatch = url.pathname.match(
-    /^\/api\/repos\/([^/]+)\/([^/]+)\/has-beads$/
-  )
-  if (repoBeadsMatch && req.method === 'GET') {
-    const token = getTokenFromCookies(req)
-
-    if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
-        {
-          status: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Credentials': 'true',
-          },
-        }
-      )
-    }
-
-    const [, owner, repo] = repoBeadsMatch
-
-    try {
-      // Check for .beads directory via GitHub Contents API
-      const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/.beads`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-          },
-        }
-      )
-
-      // 200 means directory exists, 404 means it doesn't
-      const hasBeads = response.ok
-
-      return new Response(JSON.stringify({ hasBeads, owner, repo }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error'
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      })
-    }
-  }
-
   // Conflict resolution endpoint
   if (url.pathname === '/api/sync/resolve' && req.method === 'POST') {
     const token = getTokenFromCookies(req)

@@ -821,3 +821,25 @@ Fixed the bug where running tests via ./check corrupted the local .git/config fi
 **Note:**
 - git-service.test.ts was left unchanged as it only tests read-only operations (isGitRepository, getCurrentBranch, getStatus, compareBranches, hasConflicts) which don't modify .git/config
 - All 262 tests passing, e2e test passes
+
+## 2026-01-15: Remove slow beads repository detection at startup (bead-zgj)
+
+Removed the behavior that checks each repository for a .beads directory at startup:
+
+**Changes:**
+- Removed GET /api/repos/:owner/:repo/has-beads endpoint from api/server.ts
+- Simplified src/components/RepositorySelector.tsx:
+  - Removed checkBeadsDirectory() function and related state (checkingBeads)
+  - Removed RepositoryWithBeads interface (repos no longer track hasBeads)
+  - Removed the dual-section UI (Repositories with Beads / Other Repositories)
+  - Now displays a single flat list of all repositories
+  - Removed unused styles: checkingIndicator, repoButtonSecondary
+- Updated src/components/RepositorySelector.test.tsx:
+  - Removed test for separating repos with/without beads
+  - Simplified fetch mocks (no longer need to mock has-beads endpoint)
+  - Updated onSelect expectation to not include hasBeads property
+
+**Impact:**
+- Repository list now loads instantly after fetching repos (no N+1 API calls)
+- Users can still select any repository and view issues (issues are fetched on demand when viewing)
+- All 261 tests passing, e2e test passes

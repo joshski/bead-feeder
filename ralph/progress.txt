@@ -1115,3 +1115,38 @@ Replaced issue type icons with text labels for more explicit and readable type i
 - All 257 unit tests passing
 - E2e test passes
 - Build, lint, and all quality gates pass
+
+## 2026-01-15: Remove form-based issue creation (bead-gk3)
+
+Removed the form fields from the Create Issue modal, keeping only the AI chat interface:
+
+**Changes to src/components/CreateIssueModal.tsx:**
+- Removed form section with title, description, type, and priority fields
+- Removed onSubmit prop and CreateIssueData export
+- Removed unused imports: Input, Label, Select components, Textarea, DialogFooter
+- Removed form state variables: title, description, type, priority, isSubmitting, error
+- Simplified dialog to just contain the AI Assistant chat panel
+- Reduced dialog width from 800px to 500px (single panel instead of side-by-side)
+- Updated dialog description from "Fill in the form or chat with AI" to "Chat with AI to create issues"
+
+**Changes to src/pages/DagView.tsx:**
+- Removed CreateIssueData import
+- Removed createIssue() function
+- Removed handleCreateIssue() callback
+- Removed onSubmit prop from CreateIssueModal
+
+**Test Updates:**
+- Removed 7 form-related tests from CreateIssueModal.test.tsx:
+  - "renders all form fields"
+  - "calls onClose when cancel button is clicked"
+  - "shows error when submitting without title"
+  - "calls onSubmit with form data when valid"
+  - "shows error when onSubmit fails"
+  - "disables submit button while submitting"
+  - "resets form after successful submission"
+- Kept all 16 chat functionality tests
+
+**Results:**
+- 250 unit tests passing (down from 257 due to removed form tests)
+- E2e test passes
+- Build, lint, and all quality gates pass

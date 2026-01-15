@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import CreateIssueModal, {
   type ChatMessage,
-  type CreateIssueData,
 } from '../components/CreateIssueModal'
 import DagCanvas from '../components/DagCanvas'
 import FloatingActionButton from '../components/FloatingActionButton'
@@ -24,21 +23,6 @@ interface GraphApiResponse {
   Issues: BdIssue[]
   Dependencies: BdDependency[] | null
   IssueMap: Record<string, BdIssue>
-}
-
-async function createIssue(data: CreateIssueData): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/issues`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.error || 'Failed to create issue')
-  }
 }
 
 async function createDependency(
@@ -168,12 +152,6 @@ function DagView() {
   useEffect(() => {
     refreshGraph()
   }, [refreshGraph])
-
-  const handleCreateIssue = async (data: CreateIssueData) => {
-    await createIssue(data)
-    // Refresh the graph after creating an issue
-    await refreshGraph()
-  }
 
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -307,7 +285,6 @@ function DagView() {
       <CreateIssueModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateIssue}
         chatMessages={chatMessages}
         onSendMessage={handleSendMessage}
         isChatLoading={isChatLoading}

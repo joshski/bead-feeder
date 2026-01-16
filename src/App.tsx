@@ -66,7 +66,7 @@ function App() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-3 cursor-pointer bg-transparent border-none p-0"
+                  className="cursor-pointer bg-transparent border-none p-0"
                   data-testid="user-menu-trigger"
                 >
                   <img
@@ -74,9 +74,6 @@ function App() {
                     alt={user.login}
                     className="w-8 h-8 rounded-full"
                   />
-                  <span className="text-gray-700">
-                    {user.name || user.login}
-                  </span>
                 </button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-48">

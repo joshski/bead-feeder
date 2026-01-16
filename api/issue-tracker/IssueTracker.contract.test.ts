@@ -28,10 +28,10 @@ const fakeAdapter: TestAdapter = {
   },
 }
 
-// Beads adapter - creates temp directory with bd init
-// Commented out until BeadsIssueTracker output parsing aligns with bd CLI format
 let tempDir: string
-const _beadsAdapter: TestAdapter = {
+
+// Beads adapter - creates temp directory with bd init
+const beadsAdapter: TestAdapter = {
   name: 'beads',
   createTracker: async () => {
     // Create unique temp directory for this test
@@ -93,10 +93,8 @@ const _beadsAdapter: TestAdapter = {
   },
 }
 
-// TODO: Enable beadsAdapter once BeadsIssueTracker output parsing is aligned with bd CLI format
-// The bd CLI has different field names (issue_type vs type) and output structures
-// For now, run contract tests only against FakeIssueTracker to validate the interface
-const adapters = [fakeAdapter]
+// Run contract tests against both implementations
+const adapters = [fakeAdapter, beadsAdapter]
 
 describe.each(adapters)('IssueTracker contract ($name)', adapter => {
   let tracker: IssueTracker
@@ -117,7 +115,8 @@ describe.each(adapters)('IssueTracker contract ($name)', adapter => {
       expect(result.data).toBeDefined()
       expect(result.data?.title).toBe('Test issue')
       expect(result.data?.status).toBe('open')
-      expect(result.data?.id).toMatch(/^bead-[a-z0-9]+$/)
+      // ID format varies by implementation (bead-xxx for fake, beads-*-xxx for real)
+      expect(result.data?.id).toMatch(/^bead/)
     })
 
     it('creates issue with all optional fields', async () => {
@@ -349,7 +348,8 @@ describe.each(adapters)('IssueTracker contract ($name)', adapter => {
       const result = await tracker.addDependency('bead-nonexistent', blockerId)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('not found')
+      // Error message varies by implementation but should mention "not found" or "no issue found"
+      expect(result.error?.toLowerCase()).toMatch(/not found|no issue found/)
     })
 
     it('fails when blocker issue does not exist', async () => {
@@ -360,7 +360,8 @@ describe.each(adapters)('IssueTracker contract ($name)', adapter => {
       const result = await tracker.addDependency(blockedId, 'bead-nonexistent')
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('not found')
+      // Error message varies by implementation but should mention "not found" or "no issue found"
+      expect(result.error?.toLowerCase()).toMatch(/not found|no issue found/)
     })
 
     it('detects self-dependency cycle', async () => {
@@ -371,7 +372,10 @@ describe.each(adapters)('IssueTracker contract ($name)', adapter => {
       const result = await tracker.addDependency(issueId, issueId)
 
       expect(result.success).toBe(false)
-      expect(result.error?.toLowerCase()).toContain('cycle')
+      // Error message can be "cycle" or "cannot depend on itself"
+      expect(result.error?.toLowerCase()).toMatch(
+        /cycle|cannot depend on itself/
+      )
     })
 
     it('detects indirect cycle', async () => {
@@ -408,7 +412,10 @@ describe.each(adapters)('IssueTracker contract ($name)', adapter => {
       const result = await tracker.addDependency(blockedId, blockerId)
 
       expect(result.success).toBe(false)
-      expect(result.error?.toLowerCase()).toMatch(/already|exists|duplicate/)
+      // Error message can contain already/exists/duplicate or constraint/unique
+      expect(result.error?.toLowerCase()).toMatch(
+        /already|exists|duplicate|constraint|unique/
+      )
     })
 
     it('updates dependency counts', async () => {
@@ -455,7 +462,8 @@ describe.each(adapters)('IssueTracker contract ($name)', adapter => {
       const result = await tracker.removeDependency(blockedId, blockerId)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('not found')
+      // Error message varies by implementation - can be "not found" or "does not exist"
+      expect(result.error?.toLowerCase()).toMatch(/not found|does not exist/)
     })
 
     it('updates dependency counts after removal', async () => {

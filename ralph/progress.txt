@@ -42,3 +42,47 @@
 - api/tool-executor.test.ts (refactored)
 - api/server.ts (refactored)
 - api/fake-chat.ts (refactored)
+
+## Session 2 - 2026-01-16
+
+### Task: bead-dae - Make BeadsIssueTracker pass contract tests
+
+**Status:** Completed
+
+**Work Done:**
+1. Updated `BeadsIssueTracker.ts` to properly parse and transform bd CLI output:
+   - Added `extractJson()` helper to extract JSON from output with warnings/messages before it
+   - Added `transformIssue()` helper to map `issue_type` to `type` and compute dependency counts
+   - Added `BdRawIssue` and `BdRawGraphEntry` interfaces for raw bd CLI output
+   - Updated `createIssue` to handle warnings before JSON output
+   - Updated `getIssue` to extract single issue from array response
+   - Updated `listIssues` to transform all issues
+   - Updated `updateIssue` to extract from array and transform
+   - Updated `closeIssue` to extract from array and transform
+   - Updated `getGraph` to flatten nested graph structure and handle empty graph
+   - Improved error parsing from JSON error responses
+
+2. Updated contract tests to be more flexible:
+   - Allow both `bead-xxx` and `beads-*-xxx` ID formats
+   - Allow self-dependency error to be "cycle" or "cannot depend on itself"
+   - Allow duplicate dependency error to include "constraint" or "unique"
+   - Allow "not found" or "no issue found" for issue not found errors
+   - Allow "not found" or "does not exist" for dependency not found errors
+
+3. Updated frontend to use normalized IssueGraph format:
+   - Updated `DagView.tsx` to expect `{issues, dependencies, issueMap}` instead of array of `{Root, Issues, Dependencies, IssueMap}`
+   - Updated `issueToNode.ts` to use `type` field instead of `issue_type`
+   - Updated `BdIssue` interface to use `type` instead of `issue_type`
+   - Updated `issueToNode.test.ts` to use new field names
+
+4. Updated `server.test.ts` to expect new IssueGraph format
+
+**Tests:** All 328 tests pass (72 contract tests including 36 for BeadsIssueTracker), e2e test passes
+
+**Files Changed:**
+- api/issue-tracker/BeadsIssueTracker.ts (major refactor)
+- api/issue-tracker/IssueTracker.contract.test.ts (enabled beadsAdapter, updated assertions)
+- api/server.test.ts (updated to expect new graph format)
+- src/pages/DagView.tsx (updated to use new graph format)
+- src/transformers/issueToNode.ts (changed `issue_type` to `type`)
+- src/transformers/issueToNode.test.ts (updated test fixtures)

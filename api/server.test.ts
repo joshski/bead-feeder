@@ -84,22 +84,20 @@ describe('API Server', () => {
     expect(response.status).toBe(404)
   })
 
-  it('GET /api/graph returns JSON array of graph entries', async () => {
+  it('GET /api/graph returns IssueGraph object', async () => {
     const response = await fetch(`http://localhost:${port}/api/graph`)
 
     expect(response.ok).toBe(true)
     expect(response.headers.get('content-type')).toBe('application/json')
 
-    const graphs = await response.json()
-    expect(Array.isArray(graphs)).toBe(true)
-
-    if (graphs.length > 0) {
-      const graph = graphs[0]
-      expect(graph).toHaveProperty('Root')
-      expect(graph).toHaveProperty('Issues')
-      expect(graph).toHaveProperty('Dependencies')
-      expect(graph).toHaveProperty('IssueMap')
-    }
+    const graph = await response.json()
+    // IssueGraph has issues, dependencies, and issueMap properties
+    expect(graph).toHaveProperty('issues')
+    expect(graph).toHaveProperty('dependencies')
+    expect(graph).toHaveProperty('issueMap')
+    expect(Array.isArray(graph.issues)).toBe(true)
+    expect(Array.isArray(graph.dependencies)).toBe(true)
+    expect(typeof graph.issueMap).toBe('object')
   })
 
   it('GET /api/graph includes CORS headers', async () => {
@@ -108,23 +106,18 @@ describe('API Server', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('*')
   })
 
-  it('GET /api/graph returns dependencies as an array or null', async () => {
+  it('GET /api/graph returns dependencies as an array', async () => {
     const response = await fetch(`http://localhost:${port}/api/graph`)
-    const graphs = await response.json()
+    const graph = await response.json()
 
-    if (graphs.length > 0) {
-      const graph = graphs[0]
-      // Dependencies can be null when there are no dependencies, or an array
-      expect(
-        graph.Dependencies === null || Array.isArray(graph.Dependencies)
-      ).toBe(true)
+    // Dependencies is always an array (empty if no dependencies)
+    expect(Array.isArray(graph.dependencies)).toBe(true)
 
-      if (Array.isArray(graph.Dependencies) && graph.Dependencies.length > 0) {
-        const dep = graph.Dependencies[0]
-        expect(dep).toHaveProperty('issue_id')
-        expect(dep).toHaveProperty('depends_on_id')
-        expect(dep).toHaveProperty('type')
-      }
+    if (graph.dependencies.length > 0) {
+      const dep = graph.dependencies[0]
+      expect(dep).toHaveProperty('issue_id')
+      expect(dep).toHaveProperty('depends_on_id')
+      expect(dep).toHaveProperty('type')
     }
   })
 

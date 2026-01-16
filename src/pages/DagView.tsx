@@ -19,10 +19,9 @@ import { dagError, dagLog, logGraphSummary } from '../utils/dagLogger'
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 interface GraphApiResponse {
-  Root: BdIssue
-  Issues: BdIssue[]
-  Dependencies: BdDependency[] | null
-  IssueMap: Record<string, BdIssue>
+  issues: BdIssue[]
+  dependencies: BdDependency[]
+  issueMap: Record<string, BdIssue>
 }
 
 async function createDependency(
@@ -69,30 +68,17 @@ async function fetchGraph(
     dagError(`Failed to fetch graph: ${response.status} ${response.statusText}`)
     throw new Error('Failed to fetch graph')
   }
-  const graphs: GraphApiResponse[] = await response.json()
+  const graph: GraphApiResponse = await response.json()
 
-  dagLog(`Received ${graphs.length} graph entries from API`)
+  dagLog('Received graph from API', {
+    issueCount: graph.issues?.length ?? 0,
+    dependencyCount: graph.dependencies?.length ?? 0,
+  })
 
-  // Collect all unique issues and dependencies from all graph entries
-  const issueMap = new Map<string, BdIssue>()
-  const allDependencies: BdDependency[] = []
-
-  for (const graph of graphs) {
-    dagLog(`Processing graph entry with root: ${graph.Root?.id ?? 'none'}`, {
-      issueCount: graph.Issues?.length ?? 0,
-      dependencyCount: graph.Dependencies?.length ?? 0,
-    })
-    for (const issue of graph.Issues) {
-      issueMap.set(issue.id, issue)
-    }
-    if (graph.Dependencies) {
-      allDependencies.push(...graph.Dependencies)
-    }
-  }
-
-  const issues = Array.from(issueMap.values())
+  const issues = graph.issues ?? []
+  const allDependencies = graph.dependencies ?? []
   dagLog(
-    `Collected ${issues.length} unique issues, ${allDependencies.length} dependencies`
+    `Collected ${issues.length} issues, ${allDependencies.length} dependencies`
   )
 
   const nodes = issuesToNodes(issues)

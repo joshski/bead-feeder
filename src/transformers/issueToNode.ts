@@ -8,7 +8,8 @@ import type {
 import { dagLog, dagWarn } from '../utils/dagLogger'
 
 /**
- * Raw issue data from the bd API
+ * Issue data from the IssueTracker API
+ * Note: The IssueTracker normalizes bd CLI's 'issue_type' to 'type'
  */
 export interface BdIssue {
   id: string
@@ -16,7 +17,7 @@ export interface BdIssue {
   description?: string
   status: string
   priority: number
-  issue_type: string
+  type?: string
   owner?: string
   created_at: string
   created_by?: string
@@ -128,7 +129,7 @@ export function issueToNode(
       title: issue.title,
       description: issue.description,
       status: mapStatus(issue.status),
-      type: mapType(issue.issue_type),
+      type: mapType(issue.type ?? 'task'),
       priority: mapPriority(issue.priority),
     },
   }

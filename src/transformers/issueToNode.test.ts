@@ -8,7 +8,7 @@ const createMockIssue = (overrides: Partial<BdIssue> = {}): BdIssue => ({
   description: 'A test issue',
   status: 'open',
   priority: 2,
-  issue_type: 'task',
+  type: 'task',
   owner: 'test@example.com',
   created_at: '2026-01-14T00:00:00Z',
   created_by: 'Test User',
@@ -67,27 +67,27 @@ describe('issueToNode', () => {
   })
 
   it('maps issue type correctly', () => {
-    const taskNode = issueToNode(createMockIssue({ issue_type: 'task' }), {
+    const taskNode = issueToNode(createMockIssue({ type: 'task' }), {
       x: 0,
       y: 0,
     })
     expect(taskNode.data.type).toBe('task')
 
-    const bugNode = issueToNode(createMockIssue({ issue_type: 'bug' }), {
+    const bugNode = issueToNode(createMockIssue({ type: 'bug' }), {
       x: 0,
       y: 0,
     })
     expect(bugNode.data.type).toBe('bug')
 
-    const featureNode = issueToNode(
-      createMockIssue({ issue_type: 'feature' }),
-      { x: 0, y: 0 }
-    )
+    const featureNode = issueToNode(createMockIssue({ type: 'feature' }), {
+      x: 0,
+      y: 0,
+    })
     expect(featureNode.data.type).toBe('feature')
   })
 
   it('defaults unknown issue type to task', () => {
-    const node = issueToNode(createMockIssue({ issue_type: 'unknown' }), {
+    const node = issueToNode(createMockIssue({ type: 'unknown' }), {
       x: 0,
       y: 0,
     })

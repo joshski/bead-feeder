@@ -447,9 +447,9 @@ test.describe('Load beads issues from GitHub repository', () => {
       }
 
       // Extract dependency data from React Flow edges
-      // React Flow v12 uses aria-label="Edge from {source} to {target}" on edges
-      // and data-testid="rf__edge-{edge-id}" where edge-id is "{source}-{target}"
-      const edgeElements = page.locator('.react-flow__edge')
+      // React Flow renders edges as SVG groups with aria-label="Edge from {source} to {target}"
+      // The .react-flow__edge class may not be queryable in all cases, so we use aria-label
+      const edgeElements = page.locator('[aria-label^="Edge from "]')
       const edgeCount = await edgeElements.count()
 
       console.log(`Found ${edgeCount} React Flow edge elements`)

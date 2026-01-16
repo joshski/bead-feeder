@@ -85,3 +85,4 @@
 - **bead-k2p**: Redesign unauthenticated home page - split Home.tsx into separate unauthenticated/authenticated views, added branded landing page with large "Bead Feeder" title, "Keep your agent busy!" tagline, and centered Sign in with GitHub button
 - **bead-3nu**: Redirect to home page after sign out - added window.location.href = '/' to logout function in AuthContext.tsx
 - **bead-9uf**: Install agent-browser for exploratory testing - added agent-browser as dev dependency, installed Chromium and system dependencies via `bunx agent-browser install --with-deps`
+- Fix e2e test edge extraction - changed locator from `.react-flow__edge` to `[aria-label^="Edge from "]` to correctly find React Flow edge elements in the DOM

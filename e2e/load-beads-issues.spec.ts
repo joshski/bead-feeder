@@ -3,6 +3,9 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { expect, test } from '@playwright/test'
+import { TEST_PORTS } from '../config/ports'
+
+const BASE_URL = `http://localhost:${TEST_PORTS.VITE}`
 
 // Test repository containing sample beads issues
 const TEST_REPO_OWNER = 'josh-beads-test-1'
@@ -282,7 +285,7 @@ test.describe('Load beads issues from GitHub repository', () => {
 
     // Step 2: Navigate to the Bead Feeder app
     await test.step('Navigate to app and click GitHub login', async () => {
-      await page.goto('http://localhost:5173')
+      await page.goto(BASE_URL)
 
       // Wait for the welcome page to load
       await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible(
@@ -339,7 +342,7 @@ test.describe('Load beads issues from GitHub repository', () => {
     await test.step('Select test repository', async () => {
       // Wait for the repository selector to appear
       // After OAuth callback, user should be redirected to home with repo selector
-      await page.waitForURL('http://localhost:5173/', { timeout: 15000 })
+      await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 })
 
       // Wait for repositories to load
       await expect(
@@ -645,7 +648,7 @@ test.describe('Load beads issues from GitHub repository', () => {
     // Step 8: Test AI chat with fake mode by creating an issue locally
     await test.step('Navigate to local DAG view', async () => {
       // Navigate to the local view which uses the project's own .beads directory
-      await page.goto('http://localhost:5173/local')
+      await page.goto(`${BASE_URL}/local`)
 
       // Wait for the DAG canvas to be present
       await expect(page.locator('.react-flow')).toBeVisible({ timeout: 15000 })

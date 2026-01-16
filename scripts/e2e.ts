@@ -5,6 +5,7 @@
  */
 
 import { spawn } from 'bun'
+import { TEST_PORTS } from '../config/ports'
 
 const COLORS = {
   e2e: '\x1b[32m', // green
@@ -12,8 +13,8 @@ const COLORS = {
   reset: '\x1b[0m',
 }
 
-const VITE_URL = 'http://localhost:5173'
-const API_URL = 'http://localhost:3001'
+const VITE_URL = `http://localhost:${TEST_PORTS.VITE}`
+const API_URL = `http://localhost:${TEST_PORTS.API}`
 const MAX_WAIT_MS = 30000
 const POLL_INTERVAL_MS = 500
 
@@ -73,29 +74,44 @@ async function waitForServer(url: string, name: string): Promise<boolean> {
 async function main() {
   console.log(`${COLORS.e2e}[e2e]${COLORS.reset} Starting dev servers...`)
 
-  // Start the dev servers using the existing dev script
-  // Enable FAKE_MODE for e2e tests to avoid real AI API calls and GitHub pushes
-  const devProc = spawn({
-    cmd: ['bun', 'run', 'scripts/dev.ts'],
+  // Start Vite dev server on test port
+  const viteProc = spawn({
+    cmd: ['bun', 'run', 'vite', '--host', '--port', String(TEST_PORTS.VITE)],
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),
     env: {
       ...process.env,
+      VITE_API_URL: `http://localhost:${TEST_PORTS.API}`,
+    },
+  })
+
+  // Start API server on test port with FAKE_MODE enabled
+  const apiProc = spawn({
+    cmd: ['bun', 'run', 'api/server.ts'],
+    stdout: 'pipe',
+    stderr: 'pipe',
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(TEST_PORTS.API),
       FAKE_MODE: 'true',
     },
   })
 
   const cleanup = () => {
-    devProc.kill()
+    viteProc.kill()
+    apiProc.kill()
   }
 
   process.on('SIGINT', cleanup)
   process.on('SIGTERM', cleanup)
 
-  // Stream dev server output with muted colors
-  streamOutput(devProc.stdout, 'server', COLORS.server)
-  streamOutput(devProc.stderr, 'server', COLORS.server)
+  // Stream server output with muted colors
+  streamOutput(viteProc.stdout, 'vite', COLORS.server)
+  streamOutput(viteProc.stderr, 'vite', COLORS.server)
+  streamOutput(apiProc.stdout, 'api', COLORS.server)
+  streamOutput(apiProc.stderr, 'api', COLORS.server)
 
   // Wait for both servers to be ready
   const [viteReady, apiReady] = await Promise.all([

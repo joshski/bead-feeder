@@ -5,6 +5,7 @@
  */
 
 import { spawn } from 'bun'
+import { DEV_PORTS } from '../config/ports'
 
 const COLORS = {
   vite: '\x1b[36m', // cyan
@@ -46,7 +47,7 @@ async function main() {
   console.log('')
 
   const viteProc = spawn({
-    cmd: ['bun', 'run', 'vite', '--host'],
+    cmd: ['bun', 'run', 'vite', '--host', '--port', String(DEV_PORTS.VITE)],
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),
@@ -58,7 +59,10 @@ async function main() {
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),
-    env: process.env,
+    env: {
+      ...process.env,
+      PORT: String(DEV_PORTS.API),
+    },
   })
 
   // Handle process termination

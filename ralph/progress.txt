@@ -75,3 +75,4 @@
 - Added debug logging to DagView SSE stream processing for troubleshooting
 - Made e2e AI chat test more resilient with polling and longer timeout
 - **bead-f3w**: Show issue description in detail modal - added description field to IssueNodeData, passed through transformer, displayed in modal
+- **bead-hxm**: Use different ports for dev and test servers - created config/ports.ts with DEV_PORTS (5173, 3001) and TEST_PORTS (5174, 3002), updated scripts/dev.ts and scripts/e2e.ts to use these ports, updated vite.config.ts and playwright.config.ts to use port config

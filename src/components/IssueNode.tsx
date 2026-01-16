@@ -8,6 +8,7 @@ export type IssuePriority = 'P0' | 'P1' | 'P2' | 'P3'
 export interface IssueNodeData extends Record<string, unknown> {
   issueId: string
   title: string
+  description?: string
   status: IssueStatus
   type: IssueType
   priority: IssuePriority

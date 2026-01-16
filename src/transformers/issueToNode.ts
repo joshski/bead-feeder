@@ -126,6 +126,7 @@ export function issueToNode(
     data: {
       issueId: issue.id,
       title: issue.title,
+      description: issue.description,
       status: mapStatus(issue.status),
       type: mapType(issue.issue_type),
       priority: mapPriority(issue.priority),

@@ -171,6 +171,7 @@ function DagView() {
 
   const handleSendMessage = useCallback(
     async (message: string) => {
+      console.log('[CHAT] handleSendMessage called with:', message)
       // Add user message to chat
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -187,6 +188,7 @@ function DagView() {
           content: m.content,
         }))
 
+        console.log('[CHAT] Sending request to:', `${API_BASE_URL}/api/chat`)
         const response = await fetch(`${API_BASE_URL}/api/chat`, {
           method: 'POST',
           headers: {
@@ -194,6 +196,7 @@ function DagView() {
           },
           body: JSON.stringify({ messages: apiMessages }),
         })
+        console.log('[CHAT] Response status:', response.status)
 
         if (!response.ok) {
           throw new Error('Failed to send message')
@@ -209,6 +212,8 @@ function DagView() {
         let assistantContent = ''
         const assistantMessageId = `assistant-${Date.now()}`
 
+        console.log('[CHAT] Starting SSE stream processing')
+
         // Add empty assistant message that we'll update
         setChatMessages(prev => [
           ...prev,
@@ -217,7 +222,13 @@ function DagView() {
 
         while (true) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            console.log(
+              '[CHAT] Stream done, final content length:',
+              assistantContent.length
+            )
+            break
+          }
 
           const chunk = decoder.decode(value)
           const lines = chunk.split('\n')
@@ -226,6 +237,7 @@ function DagView() {
             if (line.startsWith('data: ')) {
               const data = line.slice(6)
               if (data === '[DONE]') {
+                console.log('[CHAT] Received [DONE] marker')
                 continue
               }
 
@@ -245,6 +257,7 @@ function DagView() {
                 }
 
                 if (parsed.graphUpdated) {
+                  console.log('[CHAT] Graph updated, refreshing')
                   // Graph was modified by tool calls, refresh it
                   await refreshGraph()
                 }
@@ -254,6 +267,7 @@ function DagView() {
             }
           }
         }
+        console.log('[CHAT] Stream processing complete')
       } catch (error) {
         console.error('Chat error:', error)
         // Add error message

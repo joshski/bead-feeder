@@ -180,14 +180,18 @@ export function createFakeChatStream(messages: ChatMessage[]): ReadableStream {
         }
 
         // Append tool results to the response text
-        response.text += '\n\n' + toolResults.join('\n')
+        response.text += `\n\n${toolResults.join('\n')}`
       }
 
-      // Stream the text response character by character (simulating streaming)
-      for (const char of response.text) {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ text: char })}\n\n`)
-        )
+      // Stream the text response in chunks (simulating streaming)
+      // Use word-based chunks for more reliable delivery
+      const words = response.text.split(/(\s+)/)
+      for (const word of words) {
+        if (word) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ text: word })}\n\n`)
+          )
+        }
       }
 
       // If there were tool calls, send a graph update notification

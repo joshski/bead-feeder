@@ -116,4 +116,39 @@ describe('IssueDetailModal', () => {
       'P0 - Critical'
     )
   })
+
+  it('displays issue description when provided', () => {
+    const issueWithDescription: IssueNodeData = {
+      ...mockIssue,
+      description: 'This is a test description for the issue.',
+    }
+    render(<IssueDetailModal issue={issueWithDescription} onClose={vi.fn()} />)
+    expect(screen.getByTestId('issue-detail-description')).toHaveTextContent(
+      'This is a test description for the issue.'
+    )
+  })
+
+  it('does not display description section when description is empty', () => {
+    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    expect(
+      screen.queryByTestId('issue-detail-description')
+    ).not.toBeInTheDocument()
+  })
+
+  it('preserves whitespace in description', () => {
+    const issueWithMultilineDescription: IssueNodeData = {
+      ...mockIssue,
+      description: 'Line 1\nLine 2\nLine 3',
+    }
+    render(
+      <IssueDetailModal
+        issue={issueWithMultilineDescription}
+        onClose={vi.fn()}
+      />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    expect(descriptionElement).toHaveTextContent('Line 1')
+    expect(descriptionElement).toHaveTextContent('Line 2')
+    expect(descriptionElement).toHaveTextContent('Line 3')
+  })
 })

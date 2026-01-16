@@ -104,6 +104,20 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
               </div>
             </div>
 
+            {issue.description && (
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                  Description
+                </div>
+                <div
+                  className="text-sm text-foreground whitespace-pre-wrap"
+                  data-testid="issue-detail-description"
+                >
+                  {issue.description}
+                </div>
+              </div>
+            )}
+
             <DialogFooter>
               <Button
                 variant="outline"

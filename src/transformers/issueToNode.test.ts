@@ -31,6 +31,7 @@ describe('issueToNode', () => {
     expect(node.data).toEqual({
       issueId: 'test-issue-123',
       title: 'Test Issue',
+      description: 'A test issue',
       status: 'open',
       type: 'task',
       priority: 'P2',

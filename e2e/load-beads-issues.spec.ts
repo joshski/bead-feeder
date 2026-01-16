@@ -679,9 +679,14 @@ test.describe('Load beads issues from GitHub repository', () => {
 
       // Wait for the AI response to appear
       // The fake AI will respond with confirmation text
-      await expect(
-        page.locator('[data-testid="message-assistant"]').last()
-      ).toContainText('create', { timeout: 10000 })
+      // Use polling to handle SSE streaming race conditions
+      await expect(async () => {
+        const assistantMessage = page
+          .locator('[data-testid="message-assistant"]')
+          .last()
+        const text = await assistantMessage.textContent()
+        expect(text?.toLowerCase()).toContain('create')
+      }).toPass({ timeout: 15000, intervals: [500, 1000, 1000] })
 
       console.log(`Sent AI chat message to create issue: "${testIssueTitle}"`)
 

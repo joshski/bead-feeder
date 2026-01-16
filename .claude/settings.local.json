@@ -15,7 +15,8 @@
       "Bash(set +a)",
       "Bash(source .env)",
       "Bash(timeout:*)",
-      "Bash(./check:*)"
+      "Bash(./check:*)",
+      "Bash(grep:*)"
     ]
   }
 }

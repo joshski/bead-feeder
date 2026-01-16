@@ -63,6 +63,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
     } finally {
       setUser(null)
+      window.location.href = '/'
     }
   }, [])
 

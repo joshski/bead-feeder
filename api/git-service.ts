@@ -207,19 +207,29 @@ export async function sparseCloneRepository(
 
 /**
  * Ensure a GitHub repository is cloned locally (sparse clone).
- * If already cloned, pulls latest changes. If not cloned, performs sparse clone.
+ * If already cloned, pulls latest changes (unless skipPull is true).
+ * If not cloned, performs sparse clone.
+ *
+ * @param skipPull - If true and repo is already cloned, skip the pull operation.
+ *                   Use this for read-only operations to avoid slow network I/O.
  */
 export async function ensureRepoCloned(
   owner: string,
   repo: string,
   targetDir: string,
-  token: string
+  token: string,
+  options: { skipPull?: boolean } = {}
 ): Promise<GitResult> {
   const { existsSync } = await import('node:fs')
   const { join } = await import('node:path')
 
   // Check if already cloned (has .git directory)
   if (existsSync(join(targetDir, '.git'))) {
+    // If skipPull is true, just return success without pulling
+    if (options.skipPull) {
+      return { success: true, output: 'Repository exists (pull skipped)' }
+    }
+
     // Already cloned, pull latest changes
     const pullResult = await pullRepository(targetDir, token, 'origin')
     if (!pullResult.success) {

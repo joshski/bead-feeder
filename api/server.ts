@@ -10,6 +10,7 @@ import {
   createCommit,
   ensureRepoCloned,
   listUserRepositories,
+  pullRepository,
   runBdSync,
   stageFiles,
 } from './git-service'
@@ -293,8 +294,17 @@ async function handleRequest(req: Request): Promise<Response> {
 
       try {
         // Ensure repo is cloned locally (sparse clone - only .beads directory)
+        // Skip pull for read-only graph requests to avoid slow network I/O
         const repoPath = getRepoPath(owner, repo)
-        const cloneResult = await ensureRepoCloned(owner, repo, repoPath, token)
+        const cloneResult = await ensureRepoCloned(
+          owner,
+          repo,
+          repoPath,
+          token,
+          {
+            skipPull: true,
+          }
+        )
         if (!cloneResult.success) {
           throw new Error(`Failed to clone repository: ${cloneResult.error}`)
         }
@@ -881,6 +891,67 @@ async function handleRequest(req: Request): Promise<Response> {
         'Access-Control-Allow-Credentials': 'true',
       },
     })
+  }
+
+  // Pull latest changes for a remote repository
+  const pullMatch = url.pathname.match(/^\/api\/repos\/([^/]+)\/([^/]+)\/pull$/)
+  if (pullMatch && req.method === 'POST') {
+    const [, owner, repo] = pullMatch
+    const token = getTokenFromCookies(req)
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        }
+      )
+    }
+
+    try {
+      const repoPath = getRepoPath(owner, repo)
+      const result = await pullRepository(repoPath, token, 'origin')
+
+      if (!result.success) {
+        return new Response(
+          JSON.stringify({ error: result.error || 'Pull failed' }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Repository updated' }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        }
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      return new Response(JSON.stringify({ error: message }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      })
+    }
   }
 
   // Conflict resolution endpoint

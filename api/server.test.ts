@@ -393,6 +393,35 @@ describe('API Server', () => {
     })
   })
 
+  describe('POST /api/repos/:owner/:repo/pull', () => {
+    it('returns 401 without authentication', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/repos/test-owner/test-repo/pull`,
+        {
+          method: 'POST',
+        }
+      )
+
+      expect(response.status).toBe(401)
+      const error = await response.json()
+      expect(error).toHaveProperty('error', 'Authentication required')
+    })
+
+    it('includes CORS headers on response', async () => {
+      const response = await fetch(
+        `http://localhost:${port}/api/repos/test-owner/test-repo/pull`,
+        {
+          method: 'POST',
+          headers: { Origin: 'http://localhost:5173' },
+        }
+      )
+
+      expect(response.headers.get('access-control-allow-credentials')).toBe(
+        'true'
+      )
+    })
+  })
+
   describe('POST /api/sync/resolve', () => {
     it('returns 401 without authentication', async () => {
       const response = await fetch(

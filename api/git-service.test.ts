@@ -127,3 +127,7 @@ describe('hasConflicts', () => {
     expect(result).toBe(false)
   })
 })
+
+// Note: sparseCloneRepository and ensureRepoCloned are integration-level functions
+// that require actual GitHub tokens and network access to test properly.
+// They are tested via e2e tests instead of unit tests.

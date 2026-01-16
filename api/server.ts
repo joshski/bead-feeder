@@ -4,11 +4,11 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionMessageToolCall,
 } from 'openai/resources/chat/completions'
-import { type BdIssue, buildGraphsFromIssues } from './buildGraphsFromIssues'
 import { getLocalRepoPath, getRepoPath } from './config'
 import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import {
   createCommit,
+  ensureRepoCloned,
   listUserRepositories,
   runBdSync,
   stageFiles,
@@ -272,8 +272,9 @@ async function handleRequest(req: Request): Promise<Response> {
   if (url.pathname === '/api/graph' && req.method === 'GET') {
     const owner = url.searchParams.get('owner')
     const repo = url.searchParams.get('repo')
+    const localPath = url.searchParams.get('local')
 
-    // If owner and repo provided, fetch from GitHub
+    // If owner and repo provided, use local clone of remote repo
     if (owner && repo) {
       const token = getTokenFromCookies(req)
       if (!token) {
@@ -291,59 +292,16 @@ async function handleRequest(req: Request): Promise<Response> {
       }
 
       try {
-        // Fetch issues.jsonl via GitHub Contents API
-        const ghResponse = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/contents/.beads/issues.jsonl`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/vnd.github+json',
-            },
-          }
-        )
-
-        if (!ghResponse.ok) {
-          if (ghResponse.status === 404) {
-            // No issues file, return empty graph
-            return new Response(JSON.stringify([]), {
-              headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': origin,
-                'Access-Control-Allow-Credentials': 'true',
-              },
-            })
-          }
-          throw new Error(`GitHub API error: ${ghResponse.status}`)
+        // Ensure repo is cloned locally (sparse clone - only .beads directory)
+        const repoPath = getRepoPath(owner, repo)
+        const cloneResult = await ensureRepoCloned(owner, repo, repoPath, token)
+        if (!cloneResult.success) {
+          throw new Error(`Failed to clone repository: ${cloneResult.error}`)
         }
 
-        const ghData = (await ghResponse.json()) as {
-          content?: string
-          encoding?: string
-        }
-
-        if (!ghData.content) {
-          return new Response(JSON.stringify([]), {
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': origin,
-              'Access-Control-Allow-Credentials': 'true',
-            },
-          })
-        }
-
-        // Decode base64 content
-        const decoded = atob(ghData.content.replace(/\n/g, ''))
-        const lines = decoded.trim().split('\n').filter(Boolean)
-
-        // Parse JSONL and filter out tombstones
-        const issues: BdIssue[] = lines
-          .map(line => JSON.parse(line) as BdIssue)
-          .filter(issue => issue.status !== 'tombstone')
-
-        // Build graph format from issues
-        const graphs = buildGraphsFromIssues(issues)
-
-        return new Response(JSON.stringify(graphs), {
+        // Use bd CLI against the local clone
+        const json = await runBdCommand(['graph', '--all', '--json'], repoPath)
+        return new Response(json, {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': origin,
@@ -365,7 +323,6 @@ async function handleRequest(req: Request): Promise<Response> {
 
     // No owner/repo - use local bd command
     // Optionally use 'local' query param to specify repository path
-    const localPath = url.searchParams.get('local')
     try {
       const json = await runBdCommand(
         ['graph', '--all', '--json'],
@@ -416,6 +373,46 @@ async function handleRequest(req: Request): Promise<Response> {
       // Compute working directory for bd commands based on repository context
       const repoWorkDir =
         owner && repo ? getRepoPath(owner, repo) : getLocalRepoPath()
+
+      // For remote repos, ensure the repo is cloned before operations
+      if (owner && repo) {
+        const token = getTokenFromCookies(req)
+        if (!token) {
+          return new Response(
+            JSON.stringify({ error: 'Authentication required' }),
+            {
+              status: 401,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        const cloneResult = await ensureRepoCloned(
+          owner,
+          repo,
+          repoWorkDir,
+          token
+        )
+        if (!cloneResult.success) {
+          return new Response(
+            JSON.stringify({
+              error: `Failed to access repository: ${cloneResult.error}`,
+            }),
+            {
+              status: 500,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+      }
 
       // Use fake chat handler in fake mode (for e2e testing without AI costs)
       if (isFakeModeEnabled()) {

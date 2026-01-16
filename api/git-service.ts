@@ -112,6 +112,136 @@ export async function cloneRepository(
 }
 
 /**
+ * Sparse clone a GitHub repository - only fetches the .beads directory.
+ * This is much faster than a full clone, especially for large repos.
+ */
+export async function sparseCloneRepository(
+  owner: string,
+  repo: string,
+  targetDir: string,
+  token: string
+): Promise<GitResult> {
+  const authUrl = buildAuthenticatedUrl(owner, repo, token)
+
+  // Step 1: Initialize empty git repo
+  const initResult = await runGitCommand(['init', targetDir])
+  if (!initResult.success) {
+    return initResult
+  }
+
+  // Step 2: Add remote origin
+  const remoteResult = await runGitCommand(
+    ['remote', 'add', 'origin', authUrl],
+    { cwd: targetDir }
+  )
+  if (!remoteResult.success) {
+    return remoteResult
+  }
+
+  // Step 3: Enable sparse checkout
+  const sparseResult = await runGitCommand(
+    ['config', 'core.sparseCheckout', 'true'],
+    { cwd: targetDir }
+  )
+  if (!sparseResult.success) {
+    return sparseResult
+  }
+
+  // Step 4: Configure sparse checkout to only include .beads directory
+  const { writeFileSync, mkdirSync, existsSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const sparseCheckoutDir = join(targetDir, '.git', 'info')
+  if (!existsSync(sparseCheckoutDir)) {
+    mkdirSync(sparseCheckoutDir, { recursive: true })
+  }
+  writeFileSync(join(sparseCheckoutDir, 'sparse-checkout'), '.beads/\n')
+
+  // Step 5: Fetch with blob filter (only metadata, blobs fetched on demand)
+  const fetchResult = await runGitCommand(
+    ['fetch', '--filter=blob:none', '--depth=1', 'origin'],
+    { cwd: targetDir }
+  )
+  if (!fetchResult.success) {
+    return fetchResult
+  }
+
+  // Step 6: Get the default branch name
+  const refResult = await runGitCommand(['remote', 'show', 'origin'], {
+    cwd: targetDir,
+  })
+  let defaultBranch = 'main'
+  if (refResult.success && refResult.output) {
+    const match = refResult.output.match(/HEAD branch: (\S+)/)
+    if (match) {
+      defaultBranch = match[1]
+    }
+  }
+
+  // Step 7: Checkout the default branch
+  const checkoutResult = await runGitCommand(
+    ['checkout', `origin/${defaultBranch}`, '-b', defaultBranch],
+    { cwd: targetDir }
+  )
+  if (!checkoutResult.success) {
+    // Try alternate approach if checkout fails
+    const resetResult = await runGitCommand(
+      ['reset', '--hard', `origin/${defaultBranch}`],
+      { cwd: targetDir }
+    )
+    if (!resetResult.success) {
+      return resetResult
+    }
+  }
+
+  // Step 8: Restore original remote URL (without token)
+  const originalUrl = `https://github.com/${owner}/${repo}.git`
+  await runGitCommand(['remote', 'set-url', 'origin', originalUrl], {
+    cwd: targetDir,
+  })
+
+  return {
+    success: true,
+    output: `Sparse cloned ${owner}/${repo} to ${targetDir}`,
+  }
+}
+
+/**
+ * Ensure a GitHub repository is cloned locally (sparse clone).
+ * If already cloned, pulls latest changes. If not cloned, performs sparse clone.
+ */
+export async function ensureRepoCloned(
+  owner: string,
+  repo: string,
+  targetDir: string,
+  token: string
+): Promise<GitResult> {
+  const { existsSync } = await import('node:fs')
+  const { join } = await import('node:path')
+
+  // Check if already cloned (has .git directory)
+  if (existsSync(join(targetDir, '.git'))) {
+    // Already cloned, pull latest changes
+    const pullResult = await pullRepository(targetDir, token, 'origin')
+    if (!pullResult.success) {
+      // If pull fails (e.g., conflicts), still return success since repo exists
+      // The caller can decide how to handle stale data
+      return {
+        success: true,
+        output: 'Repository exists (pull skipped due to conflicts)',
+      }
+    }
+    return { success: true, output: 'Repository updated' }
+  }
+
+  // Not cloned yet, create parent directory and clone
+  const { mkdirSync } = await import('node:fs')
+  const { dirname } = await import('node:path')
+  mkdirSync(dirname(targetDir), { recursive: true })
+
+  return sparseCloneRepository(owner, repo, targetDir, token)
+}
+
+/**
  * Fetch updates from a remote using an access token for authentication
  */
 export async function fetchRepository(

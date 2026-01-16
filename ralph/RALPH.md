@@ -20,7 +20,8 @@ Your job is to complete ONE task and then stop.
 ## On Finishing ONE Task
 
 1. Run `./check` to confirm all quality gates pass
-2. Close completed tasks: `bd close <id>`
-3. Append to `./ralph/progress.txt` with what you accomplished
-4. Commit all changes including ./ralph/progress.txt
-5. Stop work
+2. If your issue includes any UX changes, use `bunx agent-browser` to test those changes interactively (use screenshots at key points to verify visual changes)
+3. Close completed tasks: `bd close <id>`
+4. Append to `./ralph/progress.txt` with what you accomplished
+5. Commit all changes including ./ralph/progress.txt
+6. Stop work

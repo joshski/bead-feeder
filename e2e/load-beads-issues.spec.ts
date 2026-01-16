@@ -287,12 +287,12 @@ test.describe('Load beads issues from GitHub repository', () => {
     await test.step('Navigate to app and click GitHub login', async () => {
       await page.goto(BASE_URL)
 
-      // Wait for the welcome page to load
-      await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible(
-        {
-          timeout: 10000,
-        }
-      )
+      // Wait for the home page to load
+      await expect(
+        page.getByRole('heading', { name: /bead feeder/i })
+      ).toBeVisible({
+        timeout: 10000,
+      })
 
       // Click the GitHub login button (use first() as there may be multiple)
       const loginButton = page

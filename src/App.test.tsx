@@ -13,18 +13,19 @@ class MockEventSource {
 }
 
 describe('App', () => {
-  it('renders the heading', () => {
+  it('renders the heading on non-home routes', () => {
     // Mock EventSource and fetch for contexts
     vi.stubGlobal('EventSource', MockEventSource)
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
-        json: () => Promise.resolve({ user: null }),
+        ok: true,
+        json: () => Promise.resolve({ issues: [], dependencies: [] }),
       })
     )
 
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/local?path=/tmp/test']}>
         <AuthProvider>
           <SyncProvider>
             <App />

@@ -1,6 +1,33 @@
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID
 const GITHUB_OAUTH_URL = 'https://github.com/login/oauth/authorize'
 
+function generateState(): string {
+  const array = new Uint8Array(16)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+export function triggerGitHubLogin(): void {
+  if (!GITHUB_CLIENT_ID) {
+    console.error('VITE_GITHUB_CLIENT_ID is not configured')
+    return
+  }
+
+  // Build the OAuth URL with required parameters
+  const params = new URLSearchParams({
+    client_id: GITHUB_CLIENT_ID,
+    redirect_uri: `${window.location.origin}/auth/callback`,
+    scope: 'repo',
+    state: generateState(),
+  })
+
+  // Store state in sessionStorage for CSRF protection
+  sessionStorage.setItem('oauth_state', params.get('state') || '')
+
+  // Redirect to GitHub OAuth
+  window.location.href = `${GITHUB_OAUTH_URL}?${params.toString()}`
+}
+
 interface GitHubLoginButtonProps {
   className?: string
 }
@@ -8,31 +35,10 @@ interface GitHubLoginButtonProps {
 export default function GitHubLoginButton({
   className,
 }: GitHubLoginButtonProps) {
-  const handleLogin = () => {
-    if (!GITHUB_CLIENT_ID) {
-      console.error('VITE_GITHUB_CLIENT_ID is not configured')
-      return
-    }
-
-    // Build the OAuth URL with required parameters
-    const params = new URLSearchParams({
-      client_id: GITHUB_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/auth/callback`,
-      scope: 'repo',
-      state: generateState(),
-    })
-
-    // Store state in sessionStorage for CSRF protection
-    sessionStorage.setItem('oauth_state', params.get('state') || '')
-
-    // Redirect to GitHub OAuth
-    window.location.href = `${GITHUB_OAUTH_URL}?${params.toString()}`
-  }
-
   return (
     <button
       type="button"
-      onClick={handleLogin}
+      onClick={triggerGitHubLogin}
       className={className}
       style={{
         display: 'inline-flex',
@@ -54,11 +60,11 @@ export default function GitHubLoginButton({
   )
 }
 
-function GitHubIcon() {
+export function GitHubIcon({ size = 20 }: { size?: number }) {
   return (
     <svg
-      width="20"
-      height="20"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden="true"
@@ -70,10 +76,4 @@ function GitHubIcon() {
       />
     </svg>
   )
-}
-
-function generateState(): string {
-  const array = new Uint8Array(16)
-  crypto.getRandomValues(array)
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }

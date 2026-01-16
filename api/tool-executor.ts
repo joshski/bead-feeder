@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import type { IssueTracker } from './issue-tracker'
 import * as log from './logger'
 
 /**
@@ -48,272 +48,166 @@ export interface CloseIssueInput {
 }
 
 /**
- * Run a bd command and return the output
- * @param args - Command arguments to pass to bd
- * @param cwd - Working directory to run the command in
- */
-async function runBdCommand(args: string[], cwd?: string): Promise<string> {
-  const workDir = cwd ?? process.cwd()
-  log.debug(`Running bd command: bd ${args.join(' ')} in ${workDir}`)
-
-  return new Promise((resolve, reject) => {
-    const proc = spawn('bd', args, {
-      cwd: workDir,
-      env: process.env,
-    })
-
-    let stdout = ''
-    let stderr = ''
-
-    proc.stdout.on('data', data => {
-      stdout += data.toString()
-    })
-
-    proc.stderr.on('data', data => {
-      stderr += data.toString()
-    })
-
-    proc.on('close', code => {
-      if (code === 0) {
-        log.debug(`bd command succeeded: bd ${args.join(' ')}`)
-        resolve(stdout)
-      } else {
-        const errorMsg = `bd ${args.join(' ')} failed with code ${code}: ${stderr}`
-        log.error(`bd command failed: ${errorMsg}`)
-        reject(new Error(errorMsg))
-      }
-    })
-
-    proc.on('error', err => {
-      log.error(`bd command spawn error: ${err.message}`)
-      reject(err)
-    })
-  })
-}
-
-/**
  * Execute create_issue tool
- * @param input - Tool input parameters
- * @param cwd - Working directory for bd command
  */
 async function executeCreateIssue(
-  input: CreateIssueInput,
-  cwd?: string
+  tracker: IssueTracker,
+  input: CreateIssueInput
 ): Promise<ToolExecutionResult> {
   log.info(
     `Creating issue: "${input.title}" (type: ${input.type ?? 'task'}, priority: ${input.priority ?? 2})`
   )
 
-  try {
-    const args = ['create', input.title, '--json']
+  const result = await tracker.createIssue({
+    title: input.title,
+    description: input.description,
+    type: input.type,
+    priority: input.priority,
+  })
 
-    if (input.description) {
-      args.push('--description', input.description)
-    }
+  if (!result.success) {
+    log.error(`Failed to create issue "${input.title}": ${result.error}`)
+    return { success: false, error: result.error }
+  }
 
-    if (input.type) {
-      args.push('--type', input.type)
-    }
-
-    if (input.priority !== undefined) {
-      args.push('--priority', String(input.priority))
-    }
-
-    const output = await runBdCommand(args, cwd)
-    const result = JSON.parse(output) as { id?: string }
-    const issueId = result.id || 'unknown'
-    log.info(`Issue created successfully: ${issueId}`)
-    return {
-      success: true,
-      result,
-      commitMessage: `feat(beads): Create issue ${issueId} - ${input.title}`,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    log.error(`Failed to create issue "${input.title}": ${message}`)
-    return { success: false, error: message }
+  const issueId = result.data?.id || 'unknown'
+  log.info(`Issue created successfully: ${issueId}`)
+  return {
+    success: true,
+    result: result.data,
+    commitMessage: `feat(beads): Create issue ${issueId} - ${input.title}`,
   }
 }
 
 /**
  * Execute add_dependency tool
- * @param input - Tool input parameters
- * @param cwd - Working directory for bd command
  */
 async function executeAddDependency(
-  input: AddDependencyInput,
-  cwd?: string
+  tracker: IssueTracker,
+  input: AddDependencyInput
 ): Promise<ToolExecutionResult> {
   log.info(
     `Adding dependency: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
   )
 
-  try {
-    const args = [
-      'dep',
-      'add',
-      input.blocked_issue_id,
-      input.blocker_issue_id,
-      '--json',
-    ]
+  const result = await tracker.addDependency(
+    input.blocked_issue_id,
+    input.blocker_issue_id
+  )
 
-    const output = await runBdCommand(args, cwd)
-    const result = JSON.parse(output)
-    log.info(
-      `Dependency added: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
-    )
-    return {
-      success: true,
-      result,
-      commitMessage: `feat(beads): Add dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
+  if (!result.success) {
     log.error(
-      `Failed to add dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}: ${message}`
+      `Failed to add dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}: ${result.error}`
     )
-    return { success: false, error: message }
+    return { success: false, error: result.error }
+  }
+
+  log.info(
+    `Dependency added: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
+  )
+  return {
+    success: true,
+    result: result.data,
+    commitMessage: `feat(beads): Add dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`,
   }
 }
 
 /**
  * Execute remove_dependency tool
- * @param input - Tool input parameters
- * @param cwd - Working directory for bd command
  */
 async function executeRemoveDependency(
-  input: RemoveDependencyInput,
-  cwd?: string
+  tracker: IssueTracker,
+  input: RemoveDependencyInput
 ): Promise<ToolExecutionResult> {
   log.info(
     `Removing dependency: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
   )
 
-  try {
-    const args = [
-      'dep',
-      'remove',
-      input.blocked_issue_id,
-      input.blocker_issue_id,
-      '--json',
-    ]
+  const result = await tracker.removeDependency(
+    input.blocked_issue_id,
+    input.blocker_issue_id
+  )
 
-    const output = await runBdCommand(args, cwd)
-    const result = JSON.parse(output)
-    log.info(
-      `Dependency removed: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
-    )
-    return {
-      success: true,
-      result,
-      commitMessage: `feat(beads): Remove dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
+  if (!result.success) {
     log.error(
-      `Failed to remove dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}: ${message}`
+      `Failed to remove dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}: ${result.error}`
     )
-    return { success: false, error: message }
+    return { success: false, error: result.error }
+  }
+
+  log.info(
+    `Dependency removed: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
+  )
+  return {
+    success: true,
+    result: undefined,
+    commitMessage: `feat(beads): Remove dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`,
   }
 }
 
 /**
  * Execute update_issue tool
- * @param input - Tool input parameters
- * @param cwd - Working directory for bd command
  */
 async function executeUpdateIssue(
-  input: UpdateIssueInput,
-  cwd?: string
+  tracker: IssueTracker,
+  input: UpdateIssueInput
 ): Promise<ToolExecutionResult> {
   log.info(`Updating issue: ${input.issue_id}`)
 
-  try {
-    const args = ['update', input.issue_id]
+  const result = await tracker.updateIssue(input.issue_id, {
+    title: input.title,
+    description: input.description,
+    type: input.type,
+    priority: input.priority,
+    status: input.status,
+    assignee: input.assignee,
+  })
 
-    if (input.title) {
-      args.push('--title', input.title)
-    }
+  if (!result.success) {
+    log.error(`Failed to update issue ${input.issue_id}: ${result.error}`)
+    return { success: false, error: result.error }
+  }
 
-    if (input.description) {
-      args.push('--description', input.description)
-    }
+  // Build a descriptive commit message for the update
+  const changes: string[] = []
+  if (input.status) changes.push(`status -> ${input.status}`)
+  if (input.title) changes.push('title')
+  if (input.description) changes.push('description')
+  if (input.type) changes.push(`type -> ${input.type}`)
+  if (input.priority !== undefined)
+    changes.push(`priority -> P${input.priority}`)
+  if (input.assignee) changes.push(`assignee -> ${input.assignee}`)
+  const changesSummary = changes.length > 0 ? changes.join(', ') : 'fields'
 
-    if (input.type) {
-      args.push('--type', input.type)
-    }
-
-    if (input.priority !== undefined) {
-      args.push('--priority', String(input.priority))
-    }
-
-    if (input.status) {
-      args.push('--status', input.status)
-    }
-
-    if (input.assignee) {
-      args.push('--assignee', input.assignee)
-    }
-
-    args.push('--json')
-
-    const output = await runBdCommand(args, cwd)
-    const result = JSON.parse(output)
-
-    // Build a descriptive commit message for the update
-    const changes: string[] = []
-    if (input.status) changes.push(`status -> ${input.status}`)
-    if (input.title) changes.push('title')
-    if (input.description) changes.push('description')
-    if (input.type) changes.push(`type -> ${input.type}`)
-    if (input.priority !== undefined)
-      changes.push(`priority -> P${input.priority}`)
-    if (input.assignee) changes.push(`assignee -> ${input.assignee}`)
-    const changesSummary = changes.length > 0 ? changes.join(', ') : 'fields'
-
-    log.info(`Issue updated: ${input.issue_id} (${changesSummary})`)
-    return {
-      success: true,
-      result,
-      commitMessage: `feat(beads): Update issue ${input.issue_id} (${changesSummary})`,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    log.error(`Failed to update issue ${input.issue_id}: ${message}`)
-    return { success: false, error: message }
+  log.info(`Issue updated: ${input.issue_id} (${changesSummary})`)
+  return {
+    success: true,
+    result: result.data,
+    commitMessage: `feat(beads): Update issue ${input.issue_id} (${changesSummary})`,
   }
 }
 
 /**
  * Execute close_issue tool
- * @param input - Tool input parameters
- * @param cwd - Working directory for bd command
  */
 async function executeCloseIssue(
-  input: CloseIssueInput,
-  cwd?: string
+  tracker: IssueTracker,
+  input: CloseIssueInput
 ): Promise<ToolExecutionResult> {
   log.info(`Closing issue: ${input.issue_id}`)
 
-  try {
-    const args = ['close', input.issue_id, '--json']
+  const result = await tracker.closeIssue(input.issue_id, input.reason)
 
-    if (input.reason) {
-      args.push('--reason', input.reason)
-    }
+  if (!result.success) {
+    log.error(`Failed to close issue ${input.issue_id}: ${result.error}`)
+    return { success: false, error: result.error }
+  }
 
-    const output = await runBdCommand(args, cwd)
-    const result = JSON.parse(output)
-    log.info(`Issue closed: ${input.issue_id}`)
-    return {
-      success: true,
-      result,
-      commitMessage: `feat(beads): Close issue ${input.issue_id}`,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    log.error(`Failed to close issue ${input.issue_id}: ${message}`)
-    return { success: false, error: message }
+  log.info(`Issue closed: ${input.issue_id}`)
+  return {
+    success: true,
+    result: result.data,
+    commitMessage: `feat(beads): Close issue ${input.issue_id}`,
   }
 }
 
@@ -321,26 +215,26 @@ async function executeCloseIssue(
  * Execute a tool by name with the given input
  * @param toolName - Name of the tool to execute
  * @param input - Tool input parameters
- * @param cwd - Working directory for bd commands (defaults to process.cwd())
+ * @param tracker - IssueTracker instance to use
  */
 export async function executeTool(
   toolName: string,
   input: unknown,
-  cwd?: string
+  tracker: IssueTracker
 ): Promise<ToolExecutionResult> {
   log.debug(`Executing tool: ${toolName} with input: ${JSON.stringify(input)}`)
 
   switch (toolName) {
     case 'create_issue':
-      return executeCreateIssue(input as CreateIssueInput, cwd)
+      return executeCreateIssue(tracker, input as CreateIssueInput)
     case 'add_dependency':
-      return executeAddDependency(input as AddDependencyInput, cwd)
+      return executeAddDependency(tracker, input as AddDependencyInput)
     case 'remove_dependency':
-      return executeRemoveDependency(input as RemoveDependencyInput, cwd)
+      return executeRemoveDependency(tracker, input as RemoveDependencyInput)
     case 'update_issue':
-      return executeUpdateIssue(input as UpdateIssueInput, cwd)
+      return executeUpdateIssue(tracker, input as UpdateIssueInput)
     case 'close_issue':
-      return executeCloseIssue(input as CloseIssueInput, cwd)
+      return executeCloseIssue(tracker, input as CloseIssueInput)
     default:
       log.error(`Unknown tool requested: ${toolName}`)
       return { success: false, error: `Unknown tool: ${toolName}` }

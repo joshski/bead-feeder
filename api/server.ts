@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import OpenAI from 'openai'
 import type {
@@ -12,9 +11,9 @@ import {
   ensureRepoCloned,
   listUserRepositories,
   pullRepository,
-  runBdSync,
   stageFiles,
 } from './git-service'
+import { BeadsIssueTracker, type IssueTracker } from './issue-tracker'
 import * as log from './logger'
 import { openaiTools } from './openai-tools'
 import { getSyncQueue } from './sync-queue'
@@ -57,38 +56,11 @@ When users ask you to perform these actions, use the appropriate tools. After us
 
 Keep your responses concise and helpful. When listing or discussing issues, use their issue IDs so users can reference them.`
 
-async function runBdCommand(args: string[], cwd?: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn('bd', args, {
-      cwd: cwd ?? process.cwd(),
-      env: process.env,
-    })
-
-    let stdout = ''
-    let stderr = ''
-
-    proc.stdout.on('data', data => {
-      stdout += data.toString()
-    })
-
-    proc.stderr.on('data', data => {
-      stderr += data.toString()
-    })
-
-    proc.on('close', code => {
-      if (code === 0) {
-        resolve(stdout)
-      } else {
-        reject(
-          new Error(`bd ${args.join(' ')} failed with code ${code}: ${stderr}`)
-        )
-      }
-    })
-
-    proc.on('error', err => {
-      reject(err)
-    })
-  })
+/**
+ * Create an IssueTracker for the given repository path
+ */
+function createTrackerForPath(cwd?: string): IssueTracker {
+  return new BeadsIssueTracker({ cwd })
 }
 
 async function handleRequest(req: Request): Promise<Response> {
@@ -110,8 +82,12 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === '/api/issues' && req.method === 'GET') {
     try {
-      const json = await runBdCommand(['list', '--json'])
-      return new Response(json, {
+      const tracker = createTrackerForPath()
+      const result = await tracker.listIssues()
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      return new Response(JSON.stringify(result.data), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -154,22 +130,19 @@ async function handleRequest(req: Request): Promise<Response> {
         )
       }
 
-      const args = ['create', title.trim(), '--json']
+      const tracker = createTrackerForPath()
+      const result = await tracker.createIssue({
+        title: title.trim(),
+        description,
+        type: type as 'task' | 'bug' | 'feature' | undefined,
+        priority: priority as 0 | 1 | 2 | 3 | undefined,
+      })
 
-      if (description && typeof description === 'string') {
-        args.push('--description', description)
+      if (!result.success) {
+        throw new Error(result.error)
       }
 
-      if (type && typeof type === 'string') {
-        args.push('--type', type)
-      }
-
-      if (priority !== undefined && typeof priority === 'number') {
-        args.push('--priority', String(priority))
-      }
-
-      const json = await runBdCommand(args)
-      return new Response(json, {
+      return new Response(JSON.stringify(result.data), {
         status: 201,
         headers: {
           'Content-Type': 'application/json',
@@ -226,15 +199,33 @@ async function handleRequest(req: Request): Promise<Response> {
         )
       }
 
-      // Run bd dep add <blocked> <blocker> --json
-      const json = await runBdCommand([
-        'dep',
-        'add',
-        blocked.trim(),
-        blocker.trim(),
-        '--json',
-      ])
-      return new Response(json, {
+      const tracker = createTrackerForPath()
+      const result = await tracker.addDependency(blocked.trim(), blocker.trim())
+
+      if (!result.success) {
+        // Check for cycle detection errors
+        if (
+          result.error?.includes('cycle') ||
+          result.error?.includes('circular')
+        ) {
+          return new Response(
+            JSON.stringify({
+              error: 'Adding this dependency would create a cycle',
+              details: result.error,
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              },
+            }
+          )
+        }
+        throw new Error(result.error)
+      }
+
+      return new Response(JSON.stringify(result.data), {
         status: 201,
         headers: {
           'Content-Type': 'application/json',
@@ -243,24 +234,6 @@ async function handleRequest(req: Request): Promise<Response> {
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
-
-      // Check for cycle detection errors from bd
-      if (message.includes('cycle') || message.includes('circular')) {
-        return new Response(
-          JSON.stringify({
-            error: 'Adding this dependency would create a cycle',
-            details: message,
-          }),
-          {
-            status: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          }
-        )
-      }
-
       return new Response(JSON.stringify({ error: message }), {
         status: 500,
         headers: {
@@ -310,9 +283,13 @@ async function handleRequest(req: Request): Promise<Response> {
           throw new Error(`Failed to clone repository: ${cloneResult.error}`)
         }
 
-        // Use bd CLI against the local clone
-        const json = await runBdCommand(['graph', '--all', '--json'], repoPath)
-        return new Response(json, {
+        const tracker = createTrackerForPath(repoPath)
+        const result = await tracker.getGraph()
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+
+        return new Response(JSON.stringify(result.data), {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': origin,
@@ -335,11 +312,13 @@ async function handleRequest(req: Request): Promise<Response> {
     // No owner/repo - use local bd command
     // Optionally use 'local' query param to specify repository path
     try {
-      const json = await runBdCommand(
-        ['graph', '--all', '--json'],
-        localPath ?? undefined
-      )
-      return new Response(json, {
+      const tracker = createTrackerForPath(localPath ?? undefined)
+      const result = await tracker.getGraph()
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+
+      return new Response(JSON.stringify(result.data), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -385,6 +364,9 @@ async function handleRequest(req: Request): Promise<Response> {
       const repoWorkDir =
         owner && repo ? getRepoPath(owner, repo) : getLocalRepoPath()
 
+      // Create tracker for the working directory
+      const tracker = createTrackerForPath(repoWorkDir)
+
       // For remote repos, ensure the repo is cloned before operations
       if (owner && repo) {
         const token = getTokenFromCookies(req)
@@ -427,7 +409,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
       // Use fake chat handler in fake mode (for e2e testing without AI costs)
       if (isFakeModeEnabled()) {
-        const fakeStream = createFakeChatStream(messages, repoWorkDir)
+        const fakeStream = createFakeChatStream(messages, tracker)
         return new Response(fakeStream, {
           headers: {
             'Content-Type': 'text/event-stream',
@@ -541,7 +523,7 @@ async function handleRequest(req: Request): Promise<Response> {
               const result = await executeTool(
                 toolCall.function.name,
                 args,
-                repoWorkDir
+                tracker
               )
 
               toolResults.push({
@@ -575,8 +557,8 @@ async function handleRequest(req: Request): Promise<Response> {
                 )
                 if (commitResult.success) {
                   log.info(`Committed beads changes: ${commitMessage}`)
-                  // Run bd sync to keep beads in sync with git
-                  const syncResult = await runBdSync(repoWorkDir)
+                  // Run sync to keep beads in sync with git
+                  const syncResult = await tracker.sync()
                   if (syncResult.success) {
                     log.info('bd sync completed successfully')
                   } else {

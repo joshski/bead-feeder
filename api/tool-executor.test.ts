@@ -1,24 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-// Create a mock spawn function using vi.hoisted to allow use in vi.mock
-const { mockSpawn } = vi.hoisted(() => ({
-  mockSpawn: vi.fn(),
-}))
-
-// Mock the child_process module
-vi.mock('node:child_process', () => {
-  return {
-    default: {
-      spawn: mockSpawn,
-    },
-    spawn: mockSpawn,
-  }
-})
-
+import { FakeIssueTracker } from './issue-tracker'
 import { executeTool } from './tool-executor'
 
 describe('Tool Executor', () => {
+  let tracker: FakeIssueTracker
+
   beforeEach(() => {
+    tracker = new FakeIssueTracker()
     vi.resetAllMocks()
   })
 
@@ -26,53 +14,9 @@ describe('Tool Executor', () => {
     vi.restoreAllMocks()
   })
 
-  // Helper to mock spawn for successful bd commands
-  function mockSpawnSuccess(stdout: string) {
-    const mockProcess = {
-      stdout: {
-        on: vi.fn((event: string, callback: (data: Buffer) => void) => {
-          if (event === 'data') {
-            callback(Buffer.from(stdout))
-          }
-        }),
-      },
-      stderr: {
-        on: vi.fn(),
-      },
-      on: vi.fn((event: string, callback: (code: number) => void) => {
-        if (event === 'close') {
-          callback(0)
-        }
-      }),
-    }
-    mockSpawn.mockReturnValue(mockProcess)
-  }
-
-  // Helper to mock spawn for failed bd commands
-  function mockSpawnFailure(stderr: string) {
-    const mockProcess = {
-      stdout: {
-        on: vi.fn(),
-      },
-      stderr: {
-        on: vi.fn((event: string, callback: (data: Buffer) => void) => {
-          if (event === 'data') {
-            callback(Buffer.from(stderr))
-          }
-        }),
-      },
-      on: vi.fn((event: string, callback: (code: number) => void) => {
-        if (event === 'close') {
-          callback(1)
-        }
-      }),
-    }
-    mockSpawn.mockReturnValue(mockProcess)
-  }
-
   describe('executeTool', () => {
     it('returns error for unknown tool', async () => {
-      const result = await executeTool('unknown_tool', {})
+      const result = await executeTool('unknown_tool', {}, tracker)
 
       expect(result.success).toBe(false)
       expect(result.error).toContain('Unknown tool')
@@ -81,51 +25,32 @@ describe('Tool Executor', () => {
 
   describe('create_issue', () => {
     it('creates an issue with title only', async () => {
-      const mockResponse = JSON.stringify({
-        id: 'test-issue-123',
-        title: 'Tool Executor Test Issue',
-        status: 'open',
-        priority: 2,
-        issue_type: 'task',
-      })
-
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('create_issue', {
-        title: 'Tool Executor Test Issue',
-      })
+      const result = await executeTool(
+        'create_issue',
+        {
+          title: 'Tool Executor Test Issue',
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('id')
       expect(result.result).toHaveProperty('title', 'Tool Executor Test Issue')
-      expect(result.commitMessage).toBe(
-        'feat(beads): Create issue test-issue-123 - Tool Executor Test Issue'
-      )
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'bd',
-        ['create', 'Tool Executor Test Issue', '--json'],
-        expect.any(Object)
-      )
+      expect(result.commitMessage).toContain('Create issue')
+      expect(result.commitMessage).toContain('Tool Executor Test Issue')
     })
 
     it('creates an issue with all fields', async () => {
-      const mockResponse = JSON.stringify({
-        id: 'test-issue-456',
-        title: 'Full Tool Executor Test Issue',
-        description: 'A test description',
-        issue_type: 'bug',
-        priority: 1,
-        status: 'open',
-      })
-
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('create_issue', {
-        title: 'Full Tool Executor Test Issue',
-        description: 'A test description',
-        type: 'bug',
-        priority: 1,
-      })
+      const result = await executeTool(
+        'create_issue',
+        {
+          title: 'Full Tool Executor Test Issue',
+          description: 'A test description',
+          type: 'bug',
+          priority: 1,
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty(
@@ -133,180 +58,187 @@ describe('Tool Executor', () => {
         'Full Tool Executor Test Issue'
       )
       expect(result.result).toHaveProperty('description', 'A test description')
-      expect(result.result).toHaveProperty('issue_type', 'bug')
+      expect(result.result).toHaveProperty('type', 'bug')
       expect(result.result).toHaveProperty('priority', 1)
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'bd',
-        [
-          'create',
-          'Full Tool Executor Test Issue',
-          '--json',
-          '--description',
-          'A test description',
-          '--type',
-          'bug',
-          '--priority',
-          '1',
-        ],
-        expect.any(Object)
-      )
     })
   })
 
   describe('update_issue', () => {
     it('returns error for non-existent issue', async () => {
-      mockSpawnFailure('Issue not found')
-
-      const result = await executeTool('update_issue', {
-        issue_id: 'nonexistent-issue-id-xyz',
-        title: 'New Title',
-      })
+      const result = await executeTool(
+        'update_issue',
+        {
+          issue_id: 'nonexistent-issue-id-xyz',
+          title: 'New Title',
+        },
+        tracker
+      )
 
       expect(result.success).toBe(false)
       expect(result.error).toBeDefined()
     })
 
     it('updates an issue successfully', async () => {
-      const mockResponse = JSON.stringify({
-        id: 'existing-issue-123',
-        title: 'Updated Title',
-        status: 'open',
+      // First create an issue
+      const createResult = await tracker.createIssue({
+        title: 'Original Title',
       })
+      const issueId = createResult.data?.id as string
 
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('update_issue', {
-        issue_id: 'existing-issue-123',
-        title: 'Updated Title',
-      })
+      const result = await executeTool(
+        'update_issue',
+        {
+          issue_id: issueId,
+          title: 'Updated Title',
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('title', 'Updated Title')
       expect(result.commitMessage).toBe(
-        'feat(beads): Update issue existing-issue-123 (title)'
+        `feat(beads): Update issue ${issueId} (title)`
       )
     })
 
     it('includes all updated fields in commit message', async () => {
-      const mockResponse = JSON.stringify({
-        id: 'existing-issue-123',
-        title: 'Updated Title',
-        status: 'in_progress',
-        priority: 1,
+      // First create an issue
+      const createResult = await tracker.createIssue({
+        title: 'Original Title',
       })
+      const issueId = createResult.data?.id as string
 
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('update_issue', {
-        issue_id: 'existing-issue-123',
-        status: 'in_progress',
-        priority: 1,
-      })
+      const result = await executeTool(
+        'update_issue',
+        {
+          issue_id: issueId,
+          status: 'in_progress',
+          priority: 1,
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
       expect(result.commitMessage).toBe(
-        'feat(beads): Update issue existing-issue-123 (status -> in_progress, priority -> P1)'
+        `feat(beads): Update issue ${issueId} (status -> in_progress, priority -> P1)`
       )
     })
   })
 
   describe('close_issue', () => {
     it('returns error for non-existent issue', async () => {
-      mockSpawnFailure('Issue not found')
-
-      const result = await executeTool('close_issue', {
-        issue_id: 'nonexistent-issue-id-xyz',
-      })
+      const result = await executeTool(
+        'close_issue',
+        {
+          issue_id: 'nonexistent-issue-id-xyz',
+        },
+        tracker
+      )
 
       expect(result.success).toBe(false)
       expect(result.error).toBeDefined()
     })
 
     it('closes an issue successfully', async () => {
-      const mockResponse = JSON.stringify({
-        id: 'existing-issue-123',
-        title: 'Some Issue',
-        status: 'closed',
-      })
+      // First create an issue
+      const createResult = await tracker.createIssue({ title: 'Some Issue' })
+      const issueId = createResult.data?.id as string
 
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('close_issue', {
-        issue_id: 'existing-issue-123',
-      })
+      const result = await executeTool(
+        'close_issue',
+        {
+          issue_id: issueId,
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('status', 'closed')
-      expect(result.commitMessage).toBe(
-        'feat(beads): Close issue existing-issue-123'
-      )
+      expect(result.commitMessage).toBe(`feat(beads): Close issue ${issueId}`)
     })
   })
 
   describe('add_dependency', () => {
     it('returns error for non-existent issues', async () => {
-      mockSpawnFailure('Issue not found')
-
-      const result = await executeTool('add_dependency', {
-        blocked_issue_id: 'nonexistent-blocked-xyz',
-        blocker_issue_id: 'nonexistent-blocker-xyz',
-      })
+      const result = await executeTool(
+        'add_dependency',
+        {
+          blocked_issue_id: 'nonexistent-blocked-xyz',
+          blocker_issue_id: 'nonexistent-blocker-xyz',
+        },
+        tracker
+      )
 
       expect(result.success).toBe(false)
       expect(result.error).toBeDefined()
     })
 
     it('adds a dependency successfully', async () => {
-      const mockResponse = JSON.stringify({
-        issue_id: 'blocked-123',
-        depends_on_id: 'blocker-456',
-        type: 'blocks',
-      })
+      // First create two issues
+      const blocked = await tracker.createIssue({ title: 'Blocked Task' })
+      const blocker = await tracker.createIssue({ title: 'Blocker Task' })
+      const blockedId = blocked.data?.id as string
+      const blockerId = blocker.data?.id as string
 
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('add_dependency', {
-        blocked_issue_id: 'blocked-123',
-        blocker_issue_id: 'blocker-456',
-      })
+      const result = await executeTool(
+        'add_dependency',
+        {
+          blocked_issue_id: blockedId,
+          blocker_issue_id: blockerId,
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
-      expect(result.result).toHaveProperty('issue_id', 'blocked-123')
-      expect(result.result).toHaveProperty('depends_on_id', 'blocker-456')
+      expect(result.result).toHaveProperty('issue_id', blockedId)
+      expect(result.result).toHaveProperty('depends_on_id', blockerId)
       expect(result.commitMessage).toBe(
-        'feat(beads): Add dependency blocker-456 blocks blocked-123'
+        `feat(beads): Add dependency ${blockerId} blocks ${blockedId}`
       )
     })
   })
 
   describe('remove_dependency', () => {
     it('returns error for non-existent dependency', async () => {
-      mockSpawnFailure('Dependency not found')
+      // Create issues but don't add a dependency
+      const blocked = await tracker.createIssue({ title: 'Blocked Task' })
+      const blocker = await tracker.createIssue({ title: 'Blocker Task' })
+      const blockedId = blocked.data?.id as string
+      const blockerId = blocker.data?.id as string
 
-      const result = await executeTool('remove_dependency', {
-        blocked_issue_id: 'nonexistent-blocked-xyz',
-        blocker_issue_id: 'nonexistent-blocker-xyz',
-      })
+      const result = await executeTool(
+        'remove_dependency',
+        {
+          blocked_issue_id: blockedId,
+          blocker_issue_id: blockerId,
+        },
+        tracker
+      )
 
       expect(result.success).toBe(false)
       expect(result.error).toBeDefined()
     })
 
     it('removes a dependency successfully', async () => {
-      const mockResponse = JSON.stringify({
-        success: true,
-      })
+      // First create two issues and add a dependency
+      const blocked = await tracker.createIssue({ title: 'Blocked Task' })
+      const blocker = await tracker.createIssue({ title: 'Blocker Task' })
+      const blockedId = blocked.data?.id as string
+      const blockerId = blocker.data?.id as string
+      await tracker.addDependency(blockedId, blockerId)
 
-      mockSpawnSuccess(mockResponse)
-
-      const result = await executeTool('remove_dependency', {
-        blocked_issue_id: 'blocked-123',
-        blocker_issue_id: 'blocker-456',
-      })
+      const result = await executeTool(
+        'remove_dependency',
+        {
+          blocked_issue_id: blockedId,
+          blocker_issue_id: blockerId,
+        },
+        tracker
+      )
 
       expect(result.success).toBe(true)
       expect(result.commitMessage).toBe(
-        'feat(beads): Remove dependency blocker-456 blocks blocked-123'
+        `feat(beads): Remove dependency ${blockerId} blocks ${blockedId}`
       )
     })
   })

@@ -4,6 +4,7 @@
  * Tool calls are actually executed so the UI responds as if real AI was used.
  */
 
+import type { IssueTracker } from './issue-tracker'
 import { executeTool } from './tool-executor'
 
 interface ChatMessage {
@@ -130,11 +131,11 @@ function parseUserIntent(message: string): FakeResponse {
  * Returns an SSE stream that mimics the real Anthropic streaming response.
  * Tool calls are actually executed so the UI behaves as if real AI was used.
  * @param messages - Chat messages
- * @param cwd - Working directory for bd commands (defaults to process.cwd())
+ * @param tracker - IssueTracker instance to use for tool calls
  */
 export function createFakeChatStream(
   messages: ChatMessage[],
-  cwd?: string
+  tracker: IssueTracker
 ): ReadableStream {
   const encoder = new TextEncoder()
   console.log(
@@ -142,9 +143,6 @@ export function createFakeChatStream(
     messages.length,
     'messages'
   )
-  if (cwd) {
-    console.log('[FAKE_CHAT] Using working directory:', cwd)
-  }
 
   return new ReadableStream({
     async start(controller) {
@@ -177,7 +175,11 @@ export function createFakeChatStream(
       if (response.toolCalls && response.toolCalls.length > 0) {
         const toolResults: string[] = []
         for (const toolCall of response.toolCalls) {
-          const result = await executeTool(toolCall.name, toolCall.input, cwd)
+          const result = await executeTool(
+            toolCall.name,
+            toolCall.input,
+            tracker
+          )
           if (result.success) {
             toolResults.push(
               `✓ Executed ${toolCall.name}: ${JSON.stringify(result.result)}`

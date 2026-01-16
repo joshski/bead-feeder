@@ -487,7 +487,7 @@ export async function createCommit(
 export async function runBdSync(cwd: string): Promise<GitResult> {
   return new Promise(resolve => {
     const { spawn } = require('node:child_process')
-    const proc = spawn('bd', ['sync'], { cwd })
+    const proc = spawn('bd', ['sync'], { cwd, env: process.env })
 
     let stdout = ''
     let stderr = ''

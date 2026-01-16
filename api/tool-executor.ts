@@ -48,11 +48,13 @@ export interface CloseIssueInput {
 
 /**
  * Run a bd command and return the output
+ * @param args - Command arguments to pass to bd
+ * @param cwd - Working directory to run the command in
  */
-async function runBdCommand(args: string[]): Promise<string> {
+async function runBdCommand(args: string[], cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn('bd', args, {
-      cwd: process.cwd(),
+      cwd: cwd ?? process.cwd(),
     })
 
     let stdout = ''
@@ -84,9 +86,12 @@ async function runBdCommand(args: string[]): Promise<string> {
 
 /**
  * Execute create_issue tool
+ * @param input - Tool input parameters
+ * @param cwd - Working directory for bd command
  */
 async function executeCreateIssue(
-  input: CreateIssueInput
+  input: CreateIssueInput,
+  cwd?: string
 ): Promise<ToolExecutionResult> {
   try {
     const args = ['create', input.title, '--json']
@@ -103,7 +108,7 @@ async function executeCreateIssue(
       args.push('--priority', String(input.priority))
     }
 
-    const output = await runBdCommand(args)
+    const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output) as { id?: string }
     const issueId = result.id || 'unknown'
     return {
@@ -119,9 +124,12 @@ async function executeCreateIssue(
 
 /**
  * Execute add_dependency tool
+ * @param input - Tool input parameters
+ * @param cwd - Working directory for bd command
  */
 async function executeAddDependency(
-  input: AddDependencyInput
+  input: AddDependencyInput,
+  cwd?: string
 ): Promise<ToolExecutionResult> {
   try {
     const args = [
@@ -132,7 +140,7 @@ async function executeAddDependency(
       '--json',
     ]
 
-    const output = await runBdCommand(args)
+    const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
     return {
       success: true,
@@ -147,9 +155,12 @@ async function executeAddDependency(
 
 /**
  * Execute remove_dependency tool
+ * @param input - Tool input parameters
+ * @param cwd - Working directory for bd command
  */
 async function executeRemoveDependency(
-  input: RemoveDependencyInput
+  input: RemoveDependencyInput,
+  cwd?: string
 ): Promise<ToolExecutionResult> {
   try {
     const args = [
@@ -160,7 +171,7 @@ async function executeRemoveDependency(
       '--json',
     ]
 
-    const output = await runBdCommand(args)
+    const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
     return {
       success: true,
@@ -175,9 +186,12 @@ async function executeRemoveDependency(
 
 /**
  * Execute update_issue tool
+ * @param input - Tool input parameters
+ * @param cwd - Working directory for bd command
  */
 async function executeUpdateIssue(
-  input: UpdateIssueInput
+  input: UpdateIssueInput,
+  cwd?: string
 ): Promise<ToolExecutionResult> {
   try {
     const args = ['update', input.issue_id]
@@ -208,7 +222,7 @@ async function executeUpdateIssue(
 
     args.push('--json')
 
-    const output = await runBdCommand(args)
+    const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
 
     // Build a descriptive commit message for the update
@@ -235,9 +249,12 @@ async function executeUpdateIssue(
 
 /**
  * Execute close_issue tool
+ * @param input - Tool input parameters
+ * @param cwd - Working directory for bd command
  */
 async function executeCloseIssue(
-  input: CloseIssueInput
+  input: CloseIssueInput,
+  cwd?: string
 ): Promise<ToolExecutionResult> {
   try {
     const args = ['close', input.issue_id, '--json']
@@ -246,7 +263,7 @@ async function executeCloseIssue(
       args.push('--reason', input.reason)
     }
 
-    const output = await runBdCommand(args)
+    const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
     return {
       success: true,
@@ -261,22 +278,26 @@ async function executeCloseIssue(
 
 /**
  * Execute a tool by name with the given input
+ * @param toolName - Name of the tool to execute
+ * @param input - Tool input parameters
+ * @param cwd - Working directory for bd commands (defaults to process.cwd())
  */
 export async function executeTool(
   toolName: string,
-  input: unknown
+  input: unknown,
+  cwd?: string
 ): Promise<ToolExecutionResult> {
   switch (toolName) {
     case 'create_issue':
-      return executeCreateIssue(input as CreateIssueInput)
+      return executeCreateIssue(input as CreateIssueInput, cwd)
     case 'add_dependency':
-      return executeAddDependency(input as AddDependencyInput)
+      return executeAddDependency(input as AddDependencyInput, cwd)
     case 'remove_dependency':
-      return executeRemoveDependency(input as RemoveDependencyInput)
+      return executeRemoveDependency(input as RemoveDependencyInput, cwd)
     case 'update_issue':
-      return executeUpdateIssue(input as UpdateIssueInput)
+      return executeUpdateIssue(input as UpdateIssueInput, cwd)
     case 'close_issue':
-      return executeCloseIssue(input as CloseIssueInput)
+      return executeCloseIssue(input as CloseIssueInput, cwd)
     default:
       return { success: false, error: `Unknown tool: ${toolName}` }
   }

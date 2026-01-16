@@ -2,8 +2,14 @@
 /**
  * E2E test runner that starts dev servers, waits for them to be ready,
  * runs all Playwright e2e tests, and cleans up.
+ *
+ * Uses a temporary data directory for test isolation so e2e tests don't
+ * pollute the project's .beads directory.
  */
 
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
 import { spawn } from 'bun'
 import { TEST_PORTS } from '../config/ports'
 
@@ -74,6 +80,26 @@ async function waitForServer(url: string, name: string): Promise<boolean> {
 async function main() {
   console.log(`${COLORS.e2e}[e2e]${COLORS.reset} Starting dev servers...`)
 
+  // Create a temporary data directory for test isolation
+  // This ensures e2e tests don't pollute the project's .beads directory
+  const tempDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bead-feeder-e2e-'))
+  console.log(
+    `${COLORS.e2e}[e2e]${COLORS.reset} Using temp data directory: ${tempDataDir}`
+  )
+
+  // Initialize a local beads repo in the temp directory
+  // This is needed for the /local route in e2e tests
+  const localBeadsDir = path.join(tempDataDir, 'local')
+  fs.mkdirSync(localBeadsDir, { recursive: true })
+  // Initialize git and beads in the local directory
+  const initGit = Bun.spawn(['git', 'init'], { cwd: localBeadsDir })
+  await initGit.exited
+  const initBeads = Bun.spawn(['bd', 'init'], { cwd: localBeadsDir })
+  await initBeads.exited
+  console.log(
+    `${COLORS.e2e}[e2e]${COLORS.reset} Initialized local beads repo at ${localBeadsDir}`
+  )
+
   // Start Vite dev server on test port
   const viteProc = spawn({
     cmd: ['bun', 'run', 'vite', '--host', '--port', String(TEST_PORTS.VITE)],
@@ -86,7 +112,7 @@ async function main() {
     },
   })
 
-  // Start API server on test port with FAKE_MODE enabled
+  // Start API server on test port with FAKE_MODE enabled and temp data directory
   const apiProc = spawn({
     cmd: ['bun', 'run', 'api/server.ts'],
     stdout: 'pipe',
@@ -96,12 +122,25 @@ async function main() {
       ...process.env,
       PORT: String(TEST_PORTS.API),
       FAKE_MODE: 'true',
+      BEAD_FEEDER_DATA_DIR: localBeadsDir,
     },
   })
 
   const cleanup = () => {
     viteProc.kill()
     apiProc.kill()
+    // Clean up temp directory
+    try {
+      fs.rmSync(tempDataDir, { recursive: true, force: true })
+      console.log(
+        `${COLORS.e2e}[e2e]${COLORS.reset} Cleaned up temp directory: ${tempDataDir}`
+      )
+    } catch (err) {
+      console.warn(
+        `${COLORS.e2e}[e2e]${COLORS.reset} Failed to clean up temp directory:`,
+        err
+      )
+    }
   }
 
   process.on('SIGINT', cleanup)

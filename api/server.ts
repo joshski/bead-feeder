@@ -5,6 +5,7 @@ import type {
   ChatCompletionMessageToolCall,
 } from 'openai/resources/chat/completions'
 import { type BdIssue, buildGraphsFromIssues } from './buildGraphsFromIssues'
+import { getLocalRepoPath, getRepoPath } from './config'
 import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import {
   createCommit,
@@ -390,7 +391,11 @@ async function handleRequest(req: Request): Promise<Response> {
   if (url.pathname === '/api/chat' && req.method === 'POST') {
     try {
       const body = await req.json()
-      const { messages } = body as { messages?: ChatMessage[] }
+      const { messages, owner, repo } = body as {
+        messages?: ChatMessage[]
+        owner?: string
+        repo?: string
+      }
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return new Response(
@@ -407,9 +412,13 @@ async function handleRequest(req: Request): Promise<Response> {
         )
       }
 
+      // Compute working directory for bd commands based on repository context
+      const repoWorkDir =
+        owner && repo ? getRepoPath(owner, repo) : getLocalRepoPath()
+
       // Use fake chat handler in fake mode (for e2e testing without AI costs)
       if (isFakeModeEnabled()) {
-        const fakeStream = createFakeChatStream(messages)
+        const fakeStream = createFakeChatStream(messages, repoWorkDir)
         return new Response(fakeStream, {
           headers: {
             'Content-Type': 'text/event-stream',
@@ -520,7 +529,11 @@ async function handleRequest(req: Request): Promise<Response> {
             for (const toolCall of toolCalls) {
               toolsUsed.push(toolCall.function.name)
               const args = JSON.parse(toolCall.function.arguments)
-              const result = await executeTool(toolCall.function.name, args)
+              const result = await executeTool(
+                toolCall.function.name,
+                args,
+                repoWorkDir
+              )
 
               toolResults.push({
                 role: 'tool',
@@ -544,17 +557,17 @@ async function handleRequest(req: Request): Promise<Response> {
                   : `feat(beads): Multiple changes\n\n${commitMessages.map(m => `- ${m}`).join('\n')}`
 
               // Stage .beads directory changes
-              const stageResult = await stageFiles(process.cwd(), '.beads')
+              const stageResult = await stageFiles(repoWorkDir, '.beads')
               if (stageResult.success) {
                 // Create commit
                 const commitResult = await createCommit(
-                  process.cwd(),
+                  repoWorkDir,
                   commitMessage
                 )
                 if (commitResult.success) {
                   log.info(`Committed beads changes: ${commitMessage}`)
                   // Run bd sync to keep beads in sync with git
-                  const syncResult = await runBdSync(process.cwd())
+                  const syncResult = await runBdSync(repoWorkDir)
                   if (syncResult.success) {
                     log.info('bd sync completed successfully')
                   } else {

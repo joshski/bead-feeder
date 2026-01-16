@@ -203,7 +203,7 @@ function DagView() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ messages: apiMessages }),
+          body: JSON.stringify({ messages: apiMessages, owner, repo }),
         })
         console.log('[CHAT] Response status:', response.status)
 
@@ -292,7 +292,7 @@ function DagView() {
         setIsChatLoading(false)
       }
     },
-    [chatMessages, refreshGraph]
+    [chatMessages, refreshGraph, owner, repo]
   )
 
   return (

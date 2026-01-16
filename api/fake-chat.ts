@@ -129,14 +129,22 @@ function parseUserIntent(message: string): FakeResponse {
  * Create a fake chat response stream.
  * Returns an SSE stream that mimics the real Anthropic streaming response.
  * Tool calls are actually executed so the UI behaves as if real AI was used.
+ * @param messages - Chat messages
+ * @param cwd - Working directory for bd commands (defaults to process.cwd())
  */
-export function createFakeChatStream(messages: ChatMessage[]): ReadableStream {
+export function createFakeChatStream(
+  messages: ChatMessage[],
+  cwd?: string
+): ReadableStream {
   const encoder = new TextEncoder()
   console.log(
     '[FAKE_CHAT] Creating fake chat stream for',
     messages.length,
     'messages'
   )
+  if (cwd) {
+    console.log('[FAKE_CHAT] Using working directory:', cwd)
+  }
 
   return new ReadableStream({
     async start(controller) {
@@ -169,7 +177,7 @@ export function createFakeChatStream(messages: ChatMessage[]): ReadableStream {
       if (response.toolCalls && response.toolCalls.length > 0) {
         const toolResults: string[] = []
         for (const toolCall of response.toolCalls) {
-          const result = await executeTool(toolCall.name, toolCall.input)
+          const result = await executeTool(toolCall.name, toolCall.input, cwd)
           if (result.success) {
             toolResults.push(
               `✓ Executed ${toolCall.name}: ${JSON.stringify(result.result)}`

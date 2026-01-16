@@ -63,14 +63,6 @@ export default function Home() {
     }
   }, [showGitHubModal, user, fetchRepos])
 
-  const handleGitHubClick = () => {
-    if (user) {
-      setShowGitHubModal(true)
-    } else {
-      triggerGitHubLogin()
-    }
-  }
-
   const handleSelectGitHubRepo = (repo: Repository) => {
     setShowGitHubModal(false)
     navigate(`/repos/${repo.owner}/${repo.repo}`)
@@ -84,19 +76,35 @@ export default function Home() {
     )
   }
 
+  // Unauthenticated landing page
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-6">
+        <div className="max-w-lg w-full text-center">
+          <h1 className="text-5xl font-bold mb-4">Bead Feeder</h1>
+          <p className="text-xl text-gray-600 mb-8">Keep your agent busy!</p>
+          <Button onClick={triggerGitHubLogin} size="lg" className="gap-2">
+            <GitHubIcon size={20} />
+            Sign in with GitHub
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Authenticated user - show repository selection
   return (
     <div className="flex items-center justify-center min-h-screen p-6">
       <div className="max-w-lg w-full text-center">
         <h1 className="text-3xl font-bold mb-4">Bead Feeder</h1>
         <p className="text-gray-600 mb-8">
-          Visualize and manage your project dependencies with an interactive DAG
-          view.
+          Select a repository to get started.
         </p>
 
         <div className="flex flex-col gap-4">
           <button
             type="button"
-            onClick={handleGitHubClick}
+            onClick={() => setShowGitHubModal(true)}
             className="flex items-center gap-3 p-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer text-left"
           >
             <div className="flex-shrink-0 text-gray-800">
@@ -104,12 +112,10 @@ export default function Home() {
             </div>
             <div>
               <div className="font-semibold text-gray-900">
-                {user ? 'GitHub Repository' : 'Sign in with GitHub'}
+                GitHub Repository
               </div>
               <div className="text-sm text-gray-600">
-                {user
-                  ? 'Browse your GitHub repos'
-                  : 'Access your GitHub repositories'}
+                Browse your GitHub repos
               </div>
             </div>
           </button>

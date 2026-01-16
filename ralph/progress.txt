@@ -82,3 +82,4 @@
 - **bead-idk**: Adjust DAG card spacing - changed nodeSpacingX from 180→20 (closer vertically) and nodeSpacingY from 30→200 (wider horizontally)
 - **bead-dex**: Rework repository opening flow - removed header from home page, streamlined to two immediate options (Sign in with GitHub / Local Repository), GitHub button triggers OAuth directly when not logged in, repository lists now appear in modal dialogs instead of full pages, added custom path input form for local repos
 - **bead-0iz**: Remove Local Repository option - removed Local Repository button and modal from Home.tsx, deleted LocalRepoSelector.tsx component, removed GET /api/local-repos endpoint from server.ts
+- **bead-k2p**: Redesign unauthenticated home page - split Home.tsx into separate unauthenticated/authenticated views, added branded landing page with large "Bead Feeder" title, "Keep your agent busy!" tagline, and centered Sign in with GitHub button

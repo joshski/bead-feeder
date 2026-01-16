@@ -6,7 +6,12 @@ import type {
 } from 'openai/resources/chat/completions'
 import { type BdIssue, buildGraphsFromIssues } from './buildGraphsFromIssues'
 import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
-import { listUserRepositories } from './git-service'
+import {
+  createCommit,
+  listUserRepositories,
+  runBdSync,
+  stageFiles,
+} from './git-service'
 import * as log from './logger'
 import { openaiTools } from './openai-tools'
 import { getSyncQueue } from './sync-queue'
@@ -511,6 +516,7 @@ async function handleRequest(req: Request): Promise<Response> {
               tool_call_id: string
               content: string
             }[] = []
+            const commitMessages: string[] = []
             for (const toolCall of toolCalls) {
               toolsUsed.push(toolCall.function.name)
               const args = JSON.parse(toolCall.function.arguments)
@@ -523,6 +529,45 @@ async function handleRequest(req: Request): Promise<Response> {
                   ? JSON.stringify(result.result)
                   : `Error: ${result.error}`,
               })
+
+              // Collect commit messages from successful tool executions
+              if (result.success && result.commitMessage) {
+                commitMessages.push(result.commitMessage)
+              }
+            }
+
+            // If any tools modified beads, commit the changes and sync
+            if (commitMessages.length > 0) {
+              const commitMessage =
+                commitMessages.length === 1
+                  ? commitMessages[0]
+                  : `feat(beads): Multiple changes\n\n${commitMessages.map(m => `- ${m}`).join('\n')}`
+
+              // Stage .beads directory changes
+              const stageResult = await stageFiles(process.cwd(), '.beads')
+              if (stageResult.success) {
+                // Create commit
+                const commitResult = await createCommit(
+                  process.cwd(),
+                  commitMessage
+                )
+                if (commitResult.success) {
+                  log.info(`Committed beads changes: ${commitMessage}`)
+                  // Run bd sync to keep beads in sync with git
+                  const syncResult = await runBdSync(process.cwd())
+                  if (syncResult.success) {
+                    log.info('bd sync completed successfully')
+                  } else {
+                    log.warn(`bd sync failed: ${syncResult.error}`)
+                  }
+                } else {
+                  log.warn(
+                    `Failed to commit beads changes: ${commitResult.error}`
+                  )
+                }
+              } else {
+                log.warn(`Failed to stage .beads: ${stageResult.error}`)
+              }
             }
 
             // Add assistant message with tool calls

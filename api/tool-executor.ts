@@ -7,6 +7,8 @@ export interface ToolExecutionResult {
   success: boolean
   result?: unknown
   error?: string
+  /** Suggested commit message for this tool execution */
+  commitMessage?: string
 }
 
 /**
@@ -102,8 +104,13 @@ async function executeCreateIssue(
     }
 
     const output = await runBdCommand(args)
-    const result = JSON.parse(output)
-    return { success: true, result }
+    const result = JSON.parse(output) as { id?: string }
+    const issueId = result.id || 'unknown'
+    return {
+      success: true,
+      result,
+      commitMessage: `feat(beads): Create issue ${issueId} - ${input.title}`,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return { success: false, error: message }
@@ -127,7 +134,11 @@ async function executeAddDependency(
 
     const output = await runBdCommand(args)
     const result = JSON.parse(output)
-    return { success: true, result }
+    return {
+      success: true,
+      result,
+      commitMessage: `feat(beads): Add dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return { success: false, error: message }
@@ -151,7 +162,11 @@ async function executeRemoveDependency(
 
     const output = await runBdCommand(args)
     const result = JSON.parse(output)
-    return { success: true, result }
+    return {
+      success: true,
+      result,
+      commitMessage: `feat(beads): Remove dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return { success: false, error: message }
@@ -195,7 +210,23 @@ async function executeUpdateIssue(
 
     const output = await runBdCommand(args)
     const result = JSON.parse(output)
-    return { success: true, result }
+
+    // Build a descriptive commit message for the update
+    const changes: string[] = []
+    if (input.status) changes.push(`status -> ${input.status}`)
+    if (input.title) changes.push('title')
+    if (input.description) changes.push('description')
+    if (input.type) changes.push(`type -> ${input.type}`)
+    if (input.priority !== undefined)
+      changes.push(`priority -> P${input.priority}`)
+    if (input.assignee) changes.push(`assignee -> ${input.assignee}`)
+    const changesSummary = changes.length > 0 ? changes.join(', ') : 'fields'
+
+    return {
+      success: true,
+      result,
+      commitMessage: `feat(beads): Update issue ${input.issue_id} (${changesSummary})`,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return { success: false, error: message }
@@ -217,7 +248,11 @@ async function executeCloseIssue(
 
     const output = await runBdCommand(args)
     const result = JSON.parse(output)
-    return { success: true, result }
+    return {
+      success: true,
+      result,
+      commitMessage: `feat(beads): Close issue ${input.issue_id}`,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return { success: false, error: message }

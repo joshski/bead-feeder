@@ -460,3 +460,56 @@ export async function resolveConflictsOurs(cwd: string): Promise<GitResult> {
 
   return { success: true }
 }
+
+/**
+ * Stage files matching a pattern
+ */
+export async function stageFiles(
+  cwd: string,
+  pattern: string
+): Promise<GitResult> {
+  return runGitCommand(['add', pattern], { cwd })
+}
+
+/**
+ * Create a commit with the given message
+ */
+export async function createCommit(
+  cwd: string,
+  message: string
+): Promise<GitResult> {
+  return runGitCommand(['commit', '-m', message], { cwd })
+}
+
+/**
+ * Run bd sync to synchronize beads with git
+ */
+export async function runBdSync(cwd: string): Promise<GitResult> {
+  return new Promise(resolve => {
+    const { spawn } = require('node:child_process')
+    const proc = spawn('bd', ['sync'], { cwd })
+
+    let stdout = ''
+    let stderr = ''
+
+    proc.stdout.on('data', (data: Buffer) => {
+      stdout += data.toString()
+    })
+
+    proc.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString()
+    })
+
+    proc.on('close', (code: number) => {
+      if (code === 0) {
+        resolve({ success: true, output: stdout.trim() })
+      } else {
+        resolve({ success: false, error: stderr.trim() || stdout.trim() })
+      }
+    })
+
+    proc.on('error', (err: Error) => {
+      resolve({ success: false, error: err.message })
+    })
+  })
+}

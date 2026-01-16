@@ -98,6 +98,9 @@ describe('Tool Executor', () => {
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('id')
       expect(result.result).toHaveProperty('title', 'Tool Executor Test Issue')
+      expect(result.commitMessage).toBe(
+        'feat(beads): Create issue test-issue-123 - Tool Executor Test Issue'
+      )
       expect(mockSpawn).toHaveBeenCalledWith(
         'bd',
         ['create', 'Tool Executor Test Issue', '--json'],
@@ -179,6 +182,31 @@ describe('Tool Executor', () => {
 
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('title', 'Updated Title')
+      expect(result.commitMessage).toBe(
+        'feat(beads): Update issue existing-issue-123 (title)'
+      )
+    })
+
+    it('includes all updated fields in commit message', async () => {
+      const mockResponse = JSON.stringify({
+        id: 'existing-issue-123',
+        title: 'Updated Title',
+        status: 'in_progress',
+        priority: 1,
+      })
+
+      mockSpawnSuccess(mockResponse)
+
+      const result = await executeTool('update_issue', {
+        issue_id: 'existing-issue-123',
+        status: 'in_progress',
+        priority: 1,
+      })
+
+      expect(result.success).toBe(true)
+      expect(result.commitMessage).toBe(
+        'feat(beads): Update issue existing-issue-123 (status -> in_progress, priority -> P1)'
+      )
     })
   })
 
@@ -209,6 +237,9 @@ describe('Tool Executor', () => {
 
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('status', 'closed')
+      expect(result.commitMessage).toBe(
+        'feat(beads): Close issue existing-issue-123'
+      )
     })
   })
 
@@ -242,6 +273,9 @@ describe('Tool Executor', () => {
       expect(result.success).toBe(true)
       expect(result.result).toHaveProperty('issue_id', 'blocked-123')
       expect(result.result).toHaveProperty('depends_on_id', 'blocker-456')
+      expect(result.commitMessage).toBe(
+        'feat(beads): Add dependency blocker-456 blocks blocked-123'
+      )
     })
   })
 
@@ -271,6 +305,9 @@ describe('Tool Executor', () => {
       })
 
       expect(result.success).toBe(true)
+      expect(result.commitMessage).toBe(
+        'feat(beads): Remove dependency blocker-456 blocks blocked-123'
+      )
     })
   })
 })

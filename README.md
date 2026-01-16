@@ -1,44 +1,91 @@
-# ralph-kit
+# Bead Feeder
 
-An opinionated [Ralph with beads](https://www.chrismdp.com/your-agent-orchestrator-is-too-clever/) starter project, with:
+A visual dependency graph interface for the [Beads](https://github.com/joshcarp/beads) issue tracking system.
 
-* [bun](https://bun.com/)
-* [biome](https://biomejs.dev/)
-* [typescript](https://www.typescriptlang.org/)
+> Keep your agent busy!
 
-To get started:
+## What is Bead Feeder?
 
-```
+Bead Feeder transforms flat issue lists into interactive directed acyclic graphs (DAGs), letting you visualize and manage dependencies between tasks. It's designed for AI-agent collaboration, enabling natural language control over project work through an embedded chat interface.
+
+### Features
+
+- **Dependency Graph Visualization** - Interactive DAG canvas with pan, zoom, and drag-to-connect dependency creation
+- **AI-Assisted Issue Management** - Create and modify issues through natural language chat (OpenAI GPT-4o)
+- **GitHub Integration** - OAuth login to visualize issues from any GitHub repository with a `.beads` directory
+- **Real-time Sync** - Auto-commits changes to Git with conflict detection and resolution
+
+## Tech Stack
+
+**Frontend:** React 19, TypeScript, Vite, React Flow, Tailwind CSS, Radix UI
+
+**Backend:** Bun, OpenAI SDK
+
+**Testing:** Vitest, Playwright
+
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) (package manager and runtime)
+- [Beads CLI](https://github.com/joshcarp/beads) (`bd` command)
+- OpenAI API key (for chat features)
+- GitHub OAuth app credentials (for GitHub integration)
+
+### Installation
+
+```bash
 bun install
-bd init
 ```
 
-## Step by step
+### Configuration
 
-### Create a new repo using this as a template
+Create a `.env` file:
 
-<img width="992" height="394" alt="Screenshot 2026-01-13 at 07 25 22" src="https://github.com/user-attachments/assets/252338e7-323a-4957-980b-465addca7c99" />
+```bash
+# Required for AI chat
+OPENAI_API_KEY=sk-...
 
-<img width="990" height="517" alt="Screenshot 2026-01-13 at 07 31 00" src="https://github.com/user-attachments/assets/2c7a69f6-a72c-4ccb-869f-c8a042d8921f" />
+# Required for GitHub integration
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+```
 
-### Clone your new repo and launch the devcontainer
+### Running
 
-Use the [devcontainers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and CMD+Shift+P to clone the repository in a new container volume.
-<img width="726" height="133" alt="Screenshot 2026-01-13 at 08 56 59" src="https://github.com/user-attachments/assets/1fa94407-cb54-4e44-b678-20fa174045eb" />
+```bash
+bun run dev
+```
 
-<img width="666" height="126" alt="Screenshot 2026-01-13 at 08 58 03" src="https://github.com/user-attachments/assets/5d3824c6-1f8d-44d4-ac3e-09fb505c3837" />
+This starts both the Vite dev server (port 5173) and API server (port 3001).
 
-### Use claude code to add some issues to beads
+### Testing
 
-<img width="1189" height="821" alt="Screenshot 2026-01-13 at 07 43 41" src="https://github.com/user-attachments/assets/65abcc97-9413-47f7-9c7d-8669d1c13afa" />
+```bash
+./check        # Run all quality gates (lint + unit tests + e2e)
+bun test       # Unit tests only
+```
 
-### Run the ralph loop
+## Project Structure
 
-<img width="1192" height="690" alt="Screenshot 2026-01-13 at 07 44 47" src="https://github.com/user-attachments/assets/cf38f263-509b-4da8-9ffa-cb9c7da2300e" />
+```
+bead-feeder/
+├── src/               # React frontend
+│   ├── components/    # UI components (DagCanvas, IssueNode, etc.)
+│   ├── pages/         # Route pages (Home, DagView)
+│   └── transformers/  # DAG layout and data transformation
+├── api/               # Bun backend
+│   ├── server.ts      # HTTP endpoints
+│   ├── llm-tools.ts   # OpenAI tool definitions
+│   └── git-service.ts # Git/Beads CLI integration
+└── e2e/               # Playwright tests
+```
 
-### Start your shiny new app
+## Contact
 
-<img width="1181" height="418" alt="Screenshot 2026-01-13 at 08 01 44" src="https://github.com/user-attachments/assets/d51d2d17-e0df-4479-be46-9ff7dd9d87e1" />
+This project is maintained by [Josh Chisholm](https://github.com/joshcarp).
 
-<img width="1024" height="821" alt="Screenshot 2026-01-13 at 08 01 53" src="https://github.com/user-attachments/assets/e486b5fb-f8e6-4c83-8c24-5cda7288f434" />
+## License
+
+MIT
 

@@ -1,16 +1,14 @@
 import { spawn } from 'node:child_process'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import type {
-  ContentBlock,
-  MessageParam,
-  ToolResultBlockParam,
-  ToolUseBlock,
-} from '@anthropic-ai/sdk/resources/messages'
+  ChatCompletionMessageParam,
+  ChatCompletionMessageToolCall,
+} from 'openai/resources/chat/completions'
 import { type BdIssue, buildGraphsFromIssues } from './buildGraphsFromIssues'
 import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import { listUserRepositories } from './git-service'
-import { llmTools } from './llm-tools'
 import * as log from './logger'
+import { openaiTools } from './openai-tools'
 import { getSyncQueue } from './sync-queue'
 import { executeTool } from './tool-executor'
 
@@ -20,7 +18,7 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
 const GITHUB_USER_URL = 'https://api.github.com/user'
 
-const anthropic = new Anthropic()
+const openai = new OpenAI()
 
 function getTokenFromCookies(req: Request): string | null {
   const cookieHeader = req.headers.get('cookie') || ''
@@ -417,96 +415,127 @@ async function handleRequest(req: Request): Promise<Response> {
         })
       }
 
-      // Convert chat messages to Anthropic format
-      const anthropicMessages: MessageParam[] = messages.map(m => ({
-        role: m.role,
-        content: m.content,
-      }))
+      // Convert chat messages to OpenAI format
+      const openaiMessages: ChatCompletionMessageParam[] = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...messages.map(
+          m =>
+            ({
+              role: m.role,
+              content: m.content,
+            }) as ChatCompletionMessageParam
+        ),
+      ]
 
       const responseStream = new ReadableStream({
         async start(controller) {
           const encoder = new TextEncoder()
-          const currentMessages = [...anthropicMessages]
+          const currentMessages = [...openaiMessages]
           const toolsUsed: string[] = []
 
           // Agentic loop - keep running until no more tool calls
           while (true) {
-            const stream = anthropic.messages.stream({
-              model: 'claude-sonnet-4-20250514',
+            const stream = await openai.chat.completions.create({
+              model: 'gpt-4o',
               max_tokens: 1024,
-              system: SYSTEM_PROMPT,
               messages: currentMessages,
-              tools: llmTools,
+              tools: openaiTools,
+              stream: true,
             })
 
             // Collect the full response
             let textContent = ''
-            const toolUseBlocks: ToolUseBlock[] = []
-            let stopReason: string | null = null
+            const toolCalls: ChatCompletionMessageToolCall[] = []
+            // Track partial tool calls as they stream in
+            const partialToolCalls: Map<
+              number,
+              { id: string; name: string; arguments: string }
+            > = new Map()
 
-            for await (const event of stream) {
-              if (
-                event.type === 'content_block_delta' &&
-                event.delta.type === 'text_delta'
-              ) {
-                textContent += event.delta.text
-                const data = `data: ${JSON.stringify({ text: event.delta.text })}\n\n`
+            for await (const chunk of stream) {
+              const delta = chunk.choices[0]?.delta
+
+              // Handle text content
+              if (delta?.content) {
+                textContent += delta.content
+                const data = `data: ${JSON.stringify({ text: delta.content })}\n\n`
                 controller.enqueue(encoder.encode(data))
               }
 
-              if (event.type === 'message_delta') {
-                stopReason = event.delta.stop_reason
+              // Handle tool calls (they stream in incrementally)
+              if (delta?.tool_calls) {
+                for (const toolCallDelta of delta.tool_calls) {
+                  const index = toolCallDelta.index
+                  let partial = partialToolCalls.get(index)
+
+                  if (!partial) {
+                    partial = { id: '', name: '', arguments: '' }
+                    partialToolCalls.set(index, partial)
+                  }
+
+                  if (toolCallDelta.id) {
+                    partial.id = toolCallDelta.id
+                  }
+                  if (toolCallDelta.function?.name) {
+                    partial.name = toolCallDelta.function.name
+                  }
+                  if (toolCallDelta.function?.arguments) {
+                    partial.arguments += toolCallDelta.function.arguments
+                  }
+                }
               }
             }
 
-            // Get the final message to extract tool use blocks
-            const finalMessage = await stream.finalMessage()
-            for (const block of finalMessage.content) {
-              if (block.type === 'tool_use') {
-                toolUseBlocks.push(block)
+            // Convert partial tool calls to complete tool calls
+            for (const [, partial] of partialToolCalls) {
+              if (partial.id && partial.name) {
+                toolCalls.push({
+                  id: partial.id,
+                  type: 'function',
+                  function: {
+                    name: partial.name,
+                    arguments: partial.arguments,
+                  },
+                })
               }
             }
 
-            // If no tool use, we're done
-            if (stopReason !== 'tool_use' || toolUseBlocks.length === 0) {
+            // If no tool calls, we're done
+            if (toolCalls.length === 0) {
               break
             }
 
             // Execute tools and build tool results
-            const toolResults: ToolResultBlockParam[] = []
-            for (const toolUse of toolUseBlocks) {
-              toolsUsed.push(toolUse.name)
-              const result = await executeTool(toolUse.name, toolUse.input)
+            const toolResults: {
+              role: 'tool'
+              tool_call_id: string
+              content: string
+            }[] = []
+            for (const toolCall of toolCalls) {
+              toolsUsed.push(toolCall.function.name)
+              const args = JSON.parse(toolCall.function.arguments)
+              const result = await executeTool(toolCall.function.name, args)
 
               toolResults.push({
-                type: 'tool_result',
-                tool_use_id: toolUse.id,
+                role: 'tool',
+                tool_call_id: toolCall.id,
                 content: result.success
                   ? JSON.stringify(result.result)
                   : `Error: ${result.error}`,
-                is_error: !result.success,
               })
             }
 
-            // Add assistant message with content blocks
-            const assistantContent: ContentBlock[] = []
-            if (textContent) {
-              assistantContent.push({ type: 'text', text: textContent })
-            }
-            for (const toolUse of toolUseBlocks) {
-              assistantContent.push(toolUse)
-            }
-
+            // Add assistant message with tool calls
             currentMessages.push({
               role: 'assistant',
-              content: assistantContent,
+              content: textContent || null,
+              tool_calls: toolCalls,
             })
 
-            // Add tool results as user message
-            currentMessages.push({
-              role: 'user',
-              content: toolResults,
-            })
+            // Add tool results
+            for (const toolResult of toolResults) {
+              currentMessages.push(toolResult)
+            }
           }
 
           // Send graph update notification if tools were used

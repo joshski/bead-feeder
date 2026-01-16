@@ -942,67 +942,6 @@ async function handleRequest(req: Request): Promise<Response> {
     })
   }
 
-  // List local directories with .beads
-  if (url.pathname === '/api/local-repos' && req.method === 'GET') {
-    try {
-      const searchRoot = process.env.LOCAL_REPOS_PATH || process.cwd()
-      const localRepos: Array<{ name: string; path: string }> = []
-
-      // Check if the search root itself has .beads
-      const rootBeadsPath = `${searchRoot}/.beads`
-      try {
-        const rootStat = await Bun.file(rootBeadsPath).exists()
-        if (rootStat) {
-          const parts = searchRoot.split('/')
-          localRepos.push({
-            name: parts[parts.length - 1] || 'root',
-            path: searchRoot,
-          })
-        }
-      } catch {
-        // Ignore errors checking root
-      }
-
-      // Scan subdirectories (one level deep) for .beads directories
-      const { readdir } = await import('node:fs/promises')
-      const entries = await readdir(searchRoot, { withFileTypes: true })
-
-      for (const entry of entries) {
-        if (entry.isDirectory() && !entry.name.startsWith('.')) {
-          const subdirPath = `${searchRoot}/${entry.name}`
-          const beadsPath = `${subdirPath}/.beads`
-          try {
-            const exists = await Bun.file(beadsPath).exists()
-            if (exists) {
-              localRepos.push({
-                name: entry.name,
-                path: subdirPath,
-              })
-            }
-          } catch {
-            // Ignore directories we can't access
-          }
-        }
-      }
-
-      return new Response(JSON.stringify({ repos: localRepos }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error'
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      })
-    }
-  }
-
   return new Response('Not found', { status: 404 })
 }
 

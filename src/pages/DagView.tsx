@@ -204,6 +204,7 @@ function DagView() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ messages: apiMessages, owner, repo }),
+          credentials: owner && repo ? 'include' : 'omit',
         })
         console.log('[CHAT] Response status:', response.status)
 

@@ -32,8 +32,8 @@ export interface DagLayoutOptions {
 
 const DEFAULT_OPTIONS: Required<DagLayoutOptions> = {
   direction: 'LR',
-  nodeSpacingX: 120,
-  nodeSpacingY: 50,
+  nodeSpacingX: 180,
+  nodeSpacingY: 30,
   nodeWidth: 300,
   nodeHeight: 80,
 }

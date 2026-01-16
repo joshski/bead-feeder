@@ -16,9 +16,9 @@ export interface IssueNodeData extends Record<string, unknown> {
 }
 
 const statusColors: Record<IssueStatus, string> = {
-  open: '#3b82f6',
-  in_progress: '#f59e0b',
-  closed: '#22c55e',
+  open: '#6b9bd1',
+  in_progress: '#d4a764',
+  closed: '#6bb38a',
 }
 
 const statusLabels: Record<IssueStatus, string> = {

@@ -23,8 +23,15 @@ export default function Home() {
   const { user, isLoading } = useAuth()
   const navigate = useNavigate()
 
-  // Modal state
+  // Modal state - auto-open when authenticated
   const [showGitHubModal, setShowGitHubModal] = useState(false)
+
+  // Auto-open repository modal when user is authenticated
+  useEffect(() => {
+    if (user && !isLoading) {
+      setShowGitHubModal(true)
+    }
+  }, [user, isLoading])
 
   // GitHub repos state
   const [repos, setRepos] = useState<Repository[]>([])
@@ -92,34 +99,22 @@ export default function Home() {
     )
   }
 
-  // Authenticated user - show repository selection
+  // Authenticated user - repository selection modal opens automatically
   return (
     <div className="flex items-center justify-center min-h-screen p-6">
       <div className="max-w-lg w-full text-center">
-        <h1 className="text-3xl font-bold mb-4">Bead Feeder</h1>
-        <p className="text-gray-600 mb-8">
-          Select a repository to get started.
-        </p>
-
-        <div className="flex flex-col gap-4">
-          <button
-            type="button"
+        <h1 className="text-5xl font-bold mb-4">Bead Feeder</h1>
+        <p className="text-xl text-gray-600 mb-8">Keep your agent busy!</p>
+        {!showGitHubModal && (
+          <Button
             onClick={() => setShowGitHubModal(true)}
-            className="flex items-center gap-3 p-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer text-left"
+            size="lg"
+            className="gap-2"
           >
-            <div className="flex-shrink-0 text-gray-800">
-              <GitHubIcon size={32} />
-            </div>
-            <div>
-              <div className="font-semibold text-gray-900">
-                GitHub Repository
-              </div>
-              <div className="text-sm text-gray-600">
-                Browse your GitHub repos
-              </div>
-            </div>
-          </button>
-        </div>
+            <GitHubIcon size={20} />
+            Select Repository
+          </Button>
+        )}
       </div>
 
       {/* GitHub Repository Modal */}

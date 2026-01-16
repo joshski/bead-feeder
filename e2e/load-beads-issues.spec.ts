@@ -340,19 +340,12 @@ test.describe('Load beads issues from GitHub repository', () => {
 
     // Step 4: Select the test repository
     await test.step('Select test repository', async () => {
-      // Wait for the mode selector to appear
-      // After OAuth callback, user should be redirected to home with mode selector
+      // After OAuth callback, user is redirected to home where repository selector opens automatically
       await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 })
 
-      // Click on "GitHub Repository" button to show the GitHub repository selector
-      await expect(page.getByText('GitHub Repository')).toBeVisible({
-        timeout: 15000,
-      })
-      await page.getByText('GitHub Repository').click()
-
-      // Wait for repositories to load
+      // Wait for repository selection modal to open automatically (no button click needed)
       await expect(
-        page.getByText(/repositories/i, { exact: false })
+        page.getByText(/select a repository/i, { exact: false })
       ).toBeVisible({
         timeout: 15000,
       })

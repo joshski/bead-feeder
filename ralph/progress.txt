@@ -84,3 +84,4 @@
 - **bead-0iz**: Remove Local Repository option - removed Local Repository button and modal from Home.tsx, deleted LocalRepoSelector.tsx component, removed GET /api/local-repos endpoint from server.ts
 - **bead-k2p**: Redesign unauthenticated home page - split Home.tsx into separate unauthenticated/authenticated views, added branded landing page with large "Bead Feeder" title, "Keep your agent busy!" tagline, and centered Sign in with GitHub button
 - **bead-3nu**: Redirect to home page after sign out - added window.location.href = '/' to logout function in AuthContext.tsx
+- **bead-9uf**: Install agent-browser for exploratory testing - added agent-browser as dev dependency, installed Chromium and system dependencies via `bunx agent-browser install --with-deps`

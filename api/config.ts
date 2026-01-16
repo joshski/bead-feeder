@@ -1,5 +1,8 @@
 import * as path from 'node:path'
 
+/** Default data directory relative to project root */
+export const DEFAULT_DATA_DIR = './temp/github-repositories'
+
 /**
  * Application configuration
  */
@@ -13,7 +16,8 @@ export interface AppConfig {
  */
 export function getConfig(): AppConfig {
   return {
-    rootDataDir: process.env.BEAD_FEEDER_DATA_DIR || process.cwd(),
+    rootDataDir:
+      process.env.BEAD_FEEDER_DATA_DIR || path.resolve(DEFAULT_DATA_DIR),
   }
 }
 

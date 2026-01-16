@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process'
+import { mkdirSync } from 'node:fs'
 import OpenAI from 'openai'
 import type {
   ChatCompletionMessageParam,
   ChatCompletionMessageToolCall,
 } from 'openai/resources/chat/completions'
-import { getLocalRepoPath, getRepoPath } from './config'
+import { DEFAULT_DATA_DIR, getLocalRepoPath, getRepoPath } from './config'
 import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import {
   createCommit,
@@ -1099,6 +1100,11 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   return new Response('Not found', { status: 404 })
+}
+
+// Create default data directory at server startup
+if (!process.env.BEAD_FEEDER_DATA_DIR) {
+  mkdirSync(DEFAULT_DATA_DIR, { recursive: true })
 }
 
 const server = Bun.serve({

@@ -81,10 +81,6 @@ bead-feeder/
 └── e2e/               # Playwright tests
 ```
 
-## Contact
-
-This project is maintained by [Josh Chisholm](https://github.com/joshcarp).
-
 ## License
 
 MIT

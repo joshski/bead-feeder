@@ -17,7 +17,8 @@
       "Bash(timeout:*)",
       "Bash(./check:*)",
       "Bash(grep:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

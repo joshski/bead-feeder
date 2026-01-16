@@ -1,6 +1,6 @@
 import type { Connection, Edge, Node } from '@xyflow/react'
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import CreateIssueModal, {
   type ChatMessage,
 } from '../components/CreateIssueModal'
@@ -45,7 +45,8 @@ async function createDependency(
 
 async function fetchGraph(
   owner?: string,
-  repo?: string
+  repo?: string,
+  localPath?: string
 ): Promise<{
   nodes: Node[]
   edges: Edge[]
@@ -54,6 +55,8 @@ async function fetchGraph(
   if (owner && repo) {
     url.searchParams.set('owner', owner)
     url.searchParams.set('repo', repo)
+  } else if (localPath) {
+    url.searchParams.set('local', localPath)
   }
 
   dagLog(`Fetching graph from ${url.toString()}`)
@@ -115,6 +118,8 @@ async function fetchGraph(
 
 function DagView() {
   const { owner, repo } = useParams<{ owner?: string; repo?: string }>()
+  const [searchParams] = useSearchParams()
+  const localPath = searchParams.get('path') ?? undefined
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
@@ -130,7 +135,11 @@ function DagView() {
   const refreshGraph = useCallback(async () => {
     dagLog('Refreshing graph data')
     try {
-      const { nodes: newNodes, edges: newEdges } = await fetchGraph(owner, repo)
+      const { nodes: newNodes, edges: newEdges } = await fetchGraph(
+        owner,
+        repo,
+        localPath
+      )
       // Inject onSelect callback into each node's data
       const nodesWithCallback = newNodes.map(node => ({
         ...node,
@@ -147,7 +156,7 @@ function DagView() {
     } catch (error) {
       dagError('Failed to fetch graph', error)
     }
-  }, [owner, repo, handleIssueSelect])
+  }, [owner, repo, localPath, handleIssueSelect])
 
   useEffect(() => {
     refreshGraph()

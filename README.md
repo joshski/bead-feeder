@@ -1,6 +1,6 @@
 # Bead Feeder
 
-A visual dependency graph interface for the [Beads](https://github.com/joshcarp/beads) issue tracking system.
+A visual dependency graph interface for the [Beads](https://github.com/steveyegge/beads) issue tracking system.
 
 > Keep your agent busy!
 
@@ -28,7 +28,7 @@ Bead Feeder transforms flat issue lists into interactive directed acyclic graphs
 ### Prerequisites
 
 - [Bun](https://bun.sh/) (package manager and runtime)
-- [Beads CLI](https://github.com/joshcarp/beads) (`bd` command)
+- [Beads CLI](https://github.com/steveyegge/beads) (`bd` command)
 - OpenAI API key (for chat features)
 - GitHub OAuth app credentials (for GitHub integration)
 

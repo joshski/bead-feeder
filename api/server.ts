@@ -59,6 +59,7 @@ async function runBdCommand(args: string[], cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn('bd', args, {
       cwd: cwd ?? process.cwd(),
+      env: process.env,
     })
 
     let stdout = ''

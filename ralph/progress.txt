@@ -96,3 +96,4 @@
 - **bead-5md**: Update Beads references in README - changed Beads CLI URL from joshcarp/beads to steveyegge/beads in both the intro and prerequisites sections
 - **bead-7o2**: Add logging for issue creation failures - added structured logging to tool-executor.ts for all LLM tool operations (create_issue, update_issue, close_issue, add_dependency, remove_dependency) including info logs for operations and error logs with details when failures occur
 - **bead-np0**: Fix bd spawn calls missing env: process.env - added `env: process.env` to spawn calls in api/tool-executor.ts (runBdCommand) and api/git-service.ts (runBdSync) so child processes inherit PATH and can find the bd CLI
+- **bead-2nz**: Fix bd spawn in server.ts runBdCommand missing env: process.env - added `env: process.env` to spawn call in api/server.ts runBdCommand function (same fix as bead-np0, but this third location was missed)

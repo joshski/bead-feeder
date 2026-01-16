@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import * as log from './logger'
 
 /**
  * Result of executing an LLM tool call
@@ -52,9 +53,12 @@ export interface CloseIssueInput {
  * @param cwd - Working directory to run the command in
  */
 async function runBdCommand(args: string[], cwd?: string): Promise<string> {
+  const workDir = cwd ?? process.cwd()
+  log.debug(`Running bd command: bd ${args.join(' ')} in ${workDir}`)
+
   return new Promise((resolve, reject) => {
     const proc = spawn('bd', args, {
-      cwd: cwd ?? process.cwd(),
+      cwd: workDir,
     })
 
     let stdout = ''
@@ -70,15 +74,17 @@ async function runBdCommand(args: string[], cwd?: string): Promise<string> {
 
     proc.on('close', code => {
       if (code === 0) {
+        log.debug(`bd command succeeded: bd ${args.join(' ')}`)
         resolve(stdout)
       } else {
-        reject(
-          new Error(`bd ${args.join(' ')} failed with code ${code}: ${stderr}`)
-        )
+        const errorMsg = `bd ${args.join(' ')} failed with code ${code}: ${stderr}`
+        log.error(`bd command failed: ${errorMsg}`)
+        reject(new Error(errorMsg))
       }
     })
 
     proc.on('error', err => {
+      log.error(`bd command spawn error: ${err.message}`)
       reject(err)
     })
   })
@@ -93,6 +99,10 @@ async function executeCreateIssue(
   input: CreateIssueInput,
   cwd?: string
 ): Promise<ToolExecutionResult> {
+  log.info(
+    `Creating issue: "${input.title}" (type: ${input.type ?? 'task'}, priority: ${input.priority ?? 2})`
+  )
+
   try {
     const args = ['create', input.title, '--json']
 
@@ -111,6 +121,7 @@ async function executeCreateIssue(
     const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output) as { id?: string }
     const issueId = result.id || 'unknown'
+    log.info(`Issue created successfully: ${issueId}`)
     return {
       success: true,
       result,
@@ -118,6 +129,7 @@ async function executeCreateIssue(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    log.error(`Failed to create issue "${input.title}": ${message}`)
     return { success: false, error: message }
   }
 }
@@ -131,6 +143,10 @@ async function executeAddDependency(
   input: AddDependencyInput,
   cwd?: string
 ): Promise<ToolExecutionResult> {
+  log.info(
+    `Adding dependency: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
+  )
+
   try {
     const args = [
       'dep',
@@ -142,6 +158,9 @@ async function executeAddDependency(
 
     const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
+    log.info(
+      `Dependency added: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
+    )
     return {
       success: true,
       result,
@@ -149,6 +168,9 @@ async function executeAddDependency(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    log.error(
+      `Failed to add dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}: ${message}`
+    )
     return { success: false, error: message }
   }
 }
@@ -162,6 +184,10 @@ async function executeRemoveDependency(
   input: RemoveDependencyInput,
   cwd?: string
 ): Promise<ToolExecutionResult> {
+  log.info(
+    `Removing dependency: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
+  )
+
   try {
     const args = [
       'dep',
@@ -173,6 +199,9 @@ async function executeRemoveDependency(
 
     const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
+    log.info(
+      `Dependency removed: ${input.blocker_issue_id} blocks ${input.blocked_issue_id}`
+    )
     return {
       success: true,
       result,
@@ -180,6 +209,9 @@ async function executeRemoveDependency(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    log.error(
+      `Failed to remove dependency ${input.blocker_issue_id} blocks ${input.blocked_issue_id}: ${message}`
+    )
     return { success: false, error: message }
   }
 }
@@ -193,6 +225,8 @@ async function executeUpdateIssue(
   input: UpdateIssueInput,
   cwd?: string
 ): Promise<ToolExecutionResult> {
+  log.info(`Updating issue: ${input.issue_id}`)
+
   try {
     const args = ['update', input.issue_id]
 
@@ -236,6 +270,7 @@ async function executeUpdateIssue(
     if (input.assignee) changes.push(`assignee -> ${input.assignee}`)
     const changesSummary = changes.length > 0 ? changes.join(', ') : 'fields'
 
+    log.info(`Issue updated: ${input.issue_id} (${changesSummary})`)
     return {
       success: true,
       result,
@@ -243,6 +278,7 @@ async function executeUpdateIssue(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    log.error(`Failed to update issue ${input.issue_id}: ${message}`)
     return { success: false, error: message }
   }
 }
@@ -256,6 +292,8 @@ async function executeCloseIssue(
   input: CloseIssueInput,
   cwd?: string
 ): Promise<ToolExecutionResult> {
+  log.info(`Closing issue: ${input.issue_id}`)
+
   try {
     const args = ['close', input.issue_id, '--json']
 
@@ -265,6 +303,7 @@ async function executeCloseIssue(
 
     const output = await runBdCommand(args, cwd)
     const result = JSON.parse(output)
+    log.info(`Issue closed: ${input.issue_id}`)
     return {
       success: true,
       result,
@@ -272,6 +311,7 @@ async function executeCloseIssue(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    log.error(`Failed to close issue ${input.issue_id}: ${message}`)
     return { success: false, error: message }
   }
 }
@@ -287,6 +327,8 @@ export async function executeTool(
   input: unknown,
   cwd?: string
 ): Promise<ToolExecutionResult> {
+  log.debug(`Executing tool: ${toolName} with input: ${JSON.stringify(input)}`)
+
   switch (toolName) {
     case 'create_issue':
       return executeCreateIssue(input as CreateIssueInput, cwd)
@@ -299,6 +341,7 @@ export async function executeTool(
     case 'close_issue':
       return executeCloseIssue(input as CloseIssueInput, cwd)
     default:
+      log.error(`Unknown tool requested: ${toolName}`)
       return { success: false, error: `Unknown tool: ${toolName}` }
   }
 }

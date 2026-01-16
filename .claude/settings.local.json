@@ -18,7 +18,8 @@
       "Bash(./check:*)",
       "Bash(grep:*)",
       "WebFetch(domain:github.com)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(npx agent-browser:*)"
     ]
   }
 }

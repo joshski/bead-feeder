@@ -79,3 +79,4 @@
 - **bead-g7a**: Hide username, show in avatar popover - removed username text from header, now only avatar is visible in main UI with name displayed in popover when clicked
 - **bead-okk**: DAG visual improvements - increased horizontal spacing (120→180), decreased vertical spacing (50→30), and muted status label colors (open: #6b9bd1, in_progress: #d4a764, closed: #6bb38a)
 - **bead-jzl**: Repository selection on app load - added GET /api/local-repos endpoint to discover beads repositories, created LocalRepoSelector component, updated Home page with mode chooser (Local/GitHub), updated DagView to support local path query parameter, updated e2e test for new flow
+- **bead-idk**: Adjust DAG card spacing - changed nodeSpacingX from 180→20 (closer vertically) and nodeSpacingY from 30→200 (wider horizontally)

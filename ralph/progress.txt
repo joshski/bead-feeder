@@ -173,3 +173,37 @@ Now 500 errors log with full context:
 - api/logger.ts (added error parameter to logRequest)
 - api/server.ts (extract and log error from 500 responses)
 - api/logger.test.ts (added 2 new tests for error logging)
+
+## Session 5 - 2026-01-17
+
+### Task: bead-qjy - Rename BEAD_FEEDER_DATA_DIR to BEAD_FEEDER_GITHUB_REPOS_DIR and use system temp dir
+
+**Status:** Completed
+
+**Problem Solved:**
+The `BEAD_FEEDER_DATA_DIR` environment variable defaulted to `./temp/github-repositories`, which is inside the app's git repository. This could cause conflicts between cloned GitHub repos and the app's own repository.
+
+**Solution Implemented:**
+1. Renamed the environment variable from `BEAD_FEEDER_DATA_DIR` to `BEAD_FEEDER_GITHUB_REPOS_DIR`
+2. Changed the default value to use `os.tmpdir()` + `bead-feeder-github-repos` (e.g., `/tmp/bead-feeder-github-repos` on Linux)
+
+**Work Done:**
+1. Updated `api/config.ts`:
+   - Added `import * as os from 'node:os'`
+   - Renamed `DEFAULT_DATA_DIR` to `DEFAULT_GITHUB_REPOS_DIR`
+   - Changed default from `'./temp/github-repositories'` to `path.join(os.tmpdir(), 'bead-feeder-github-repos')`
+   - Updated `getConfig()` to use `BEAD_FEEDER_GITHUB_REPOS_DIR` env var
+
+2. Updated `api/server.ts`:
+   - Updated import to use `DEFAULT_GITHUB_REPOS_DIR`
+   - Updated startup check to use `BEAD_FEEDER_GITHUB_REPOS_DIR` env var
+
+3. Updated `scripts/e2e.ts`:
+   - Updated env var name from `BEAD_FEEDER_DATA_DIR` to `BEAD_FEEDER_GITHUB_REPOS_DIR`
+
+**Tests:** All 330 tests pass, e2e test passes
+
+**Files Changed:**
+- api/config.ts (renamed constant and env var, changed default to use os.tmpdir())
+- api/server.ts (updated import and env var check)
+- scripts/e2e.ts (updated env var name)

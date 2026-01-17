@@ -1,7 +1,11 @@
+import * as os from 'node:os'
 import * as path from 'node:path'
 
-/** Default data directory relative to project root */
-export const DEFAULT_DATA_DIR = './temp/github-repositories'
+/** Default directory for cloned GitHub repositories */
+export const DEFAULT_GITHUB_REPOS_DIR = path.join(
+  os.tmpdir(),
+  'bead-feeder-github-repos'
+)
 
 /**
  * Application configuration
@@ -17,7 +21,8 @@ export interface AppConfig {
 export function getConfig(): AppConfig {
   return {
     rootDataDir:
-      process.env.BEAD_FEEDER_DATA_DIR || path.resolve(DEFAULT_DATA_DIR),
+      process.env.BEAD_FEEDER_GITHUB_REPOS_DIR ||
+      path.resolve(DEFAULT_GITHUB_REPOS_DIR),
   }
 }
 

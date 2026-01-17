@@ -122,7 +122,7 @@ async function main() {
       ...process.env,
       PORT: String(TEST_PORTS.API),
       FAKE_MODE: 'true',
-      BEAD_FEEDER_DATA_DIR: localBeadsDir,
+      BEAD_FEEDER_GITHUB_REPOS_DIR: localBeadsDir,
     },
   })
 

@@ -86,3 +86,47 @@
 - src/pages/DagView.tsx (updated to use new graph format)
 - src/transformers/issueToNode.ts (changed `issue_type` to `type`)
 - src/transformers/issueToNode.test.ts (updated test fixtures)
+
+## Session 3 - 2026-01-17
+
+### Task: bead-vo9 - Implement per-user repository clones with dynamic token auth
+
+**Status:** Completed
+
+**Problem Solved:**
+Previously, repository clones were shared across all users at `temp/github-repositories/{owner}/{repo}/`. This caused:
+1. Push failures because token was stripped from remote URL after cloning
+2. Token ambiguity when multiple users accessed the same repo
+
+**Solution Implemented:**
+Changed to per-user clones at `temp/github-repositories/{userId}/{owner}/{repo}/`. Each user gets their own clone, and their token is used dynamically for git operations.
+
+**Work Done:**
+1. Updated `api/config.ts`:
+   - Modified `getRepoPath()` to accept optional `userId` parameter
+   - When userId is provided, creates path like `{rootDataDir}/{userId}/{owner}/{repo}/`
+   - Backwards compatible: without userId, uses shared path
+
+2. Added `getUserIdFromToken()` function in `api/git-service.ts`:
+   - Fetches user's numeric ID from GitHub API using the access token
+   - Returns user ID as string for use in file paths
+
+3. Updated `api/server.ts` - `/api/graph` endpoint:
+   - Gets user ID from token before clone/pull operations
+   - Passes userId to `getRepoPath()` for per-user clone directories
+
+4. Updated `api/server.ts` - `/api/chat` endpoint:
+   - Refactored to get token and userId early for remote repos
+   - Uses per-user clone directory for all operations
+   - Added `pushRepository()` call after successful commit and sync to push changes to GitHub
+
+5. Updated `api/server.ts` - `/api/repos/:owner/:repo/pull` endpoint:
+   - Gets user ID from token before pull
+   - Uses per-user clone directory
+
+**Tests:** All 328 tests pass, e2e test passes
+
+**Files Changed:**
+- api/config.ts (added userId parameter to getRepoPath)
+- api/git-service.ts (added getUserIdFromToken function)
+- api/server.ts (updated /api/graph, /api/chat, and /api/repos/:owner/:repo/pull endpoints)

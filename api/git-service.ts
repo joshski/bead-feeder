@@ -449,6 +449,41 @@ export async function listUserRepositories(
 }
 
 /**
+ * Get user ID from a GitHub access token.
+ * Uses the GitHub API to fetch the authenticated user's numeric ID.
+ * Returns the ID as a string for use in file paths.
+ */
+export async function getUserIdFromToken(
+  token: string
+): Promise<{ success: boolean; userId?: string; error?: string }> {
+  try {
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+      },
+    })
+
+    if (!response.ok) {
+      return { success: false, error: `GitHub API error: ${response.status}` }
+    }
+
+    const userData = (await response.json()) as { id?: number }
+
+    if (!userData.id) {
+      return { success: false, error: 'User ID not found in response' }
+    }
+
+    return { success: true, userId: String(userData.id) }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+/**
  * Get current branch name
  */
 export async function getCurrentBranch(cwd: string): Promise<GitResult> {

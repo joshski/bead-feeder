@@ -9,8 +9,10 @@ import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import {
   createCommit,
   ensureRepoCloned,
+  getUserIdFromToken,
   listUserRepositories,
   pullRepository,
+  pushRepository,
   stageFiles,
 } from './git-service'
 import { BeadsIssueTracker, type IssueTracker } from './issue-tracker'
@@ -267,9 +269,18 @@ async function handleRequest(req: Request): Promise<Response> {
       }
 
       try {
+        // Get user ID for per-user clone directory
+        const userIdResult = await getUserIdFromToken(token)
+        if (!userIdResult.success || !userIdResult.userId) {
+          throw new Error(
+            `Failed to get user ID: ${userIdResult.error || 'Unknown error'}`
+          )
+        }
+        const userId = userIdResult.userId
+
         // Ensure repo is cloned locally (sparse clone - only .beads directory)
         // Skip pull for read-only graph requests to avoid slow network I/O
-        const repoPath = getRepoPath(owner, repo)
+        const repoPath = getRepoPath(owner, repo, userId)
         const cloneResult = await ensureRepoCloned(
           owner,
           repo,
@@ -360,16 +371,12 @@ async function handleRequest(req: Request): Promise<Response> {
         )
       }
 
-      // Compute working directory for bd commands based on repository context
-      const repoWorkDir =
-        owner && repo ? getRepoPath(owner, repo) : getLocalRepoPath()
+      // For remote repos, get token and userId early for per-user clones
+      let repoWorkDir: string
+      let token: string | null = null
 
-      // Create tracker for the working directory
-      const tracker = createTrackerForPath(repoWorkDir)
-
-      // For remote repos, ensure the repo is cloned before operations
       if (owner && repo) {
-        const token = getTokenFromCookies(req)
+        token = getTokenFromCookies(req)
         if (!token) {
           return new Response(
             JSON.stringify({ error: 'Authentication required' }),
@@ -383,6 +390,26 @@ async function handleRequest(req: Request): Promise<Response> {
             }
           )
         }
+
+        // Get user ID for per-user clone directory
+        const userIdResult = await getUserIdFromToken(token)
+        if (!userIdResult.success || !userIdResult.userId) {
+          return new Response(
+            JSON.stringify({
+              error: `Failed to get user ID: ${userIdResult.error || 'Unknown error'}`,
+            }),
+            {
+              status: 500,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+              },
+            }
+          )
+        }
+
+        repoWorkDir = getRepoPath(owner, repo, userIdResult.userId)
 
         const cloneResult = await ensureRepoCloned(
           owner,
@@ -405,7 +432,12 @@ async function handleRequest(req: Request): Promise<Response> {
             }
           )
         }
+      } else {
+        repoWorkDir = getLocalRepoPath()
       }
+
+      // Create tracker for the working directory
+      const tracker = createTrackerForPath(repoWorkDir)
 
       // Use fake chat handler in fake mode (for e2e testing without AI costs)
       if (isFakeModeEnabled()) {
@@ -563,6 +595,20 @@ async function handleRequest(req: Request): Promise<Response> {
                     log.info('bd sync completed successfully')
                   } else {
                     log.warn(`bd sync failed: ${syncResult.error}`)
+                  }
+
+                  // For remote repos, push the changes to GitHub
+                  if (token && owner && repo) {
+                    const pushResult = await pushRepository(
+                      repoWorkDir,
+                      token,
+                      'origin'
+                    )
+                    if (pushResult.success) {
+                      log.info('Pushed changes to remote repository')
+                    } else {
+                      log.warn(`Failed to push changes: ${pushResult.error}`)
+                    }
                   }
                 } else {
                   log.warn(
@@ -897,7 +943,25 @@ async function handleRequest(req: Request): Promise<Response> {
     }
 
     try {
-      const repoPath = getRepoPath(owner, repo)
+      // Get user ID for per-user clone directory
+      const userIdResult = await getUserIdFromToken(token)
+      if (!userIdResult.success || !userIdResult.userId) {
+        return new Response(
+          JSON.stringify({
+            error: `Failed to get user ID: ${userIdResult.error || 'Unknown error'}`,
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      }
+
+      const repoPath = getRepoPath(owner, repo, userIdResult.userId)
       const result = await pullRepository(repoPath, token, 'origin')
 
       if (!result.success) {

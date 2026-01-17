@@ -25,10 +25,21 @@ export function getConfig(): AppConfig {
  * Get the file system path for a repository
  * @param owner - Repository owner (e.g., 'josh-beads-test-1')
  * @param repo - Repository name (e.g., 'bead-feeder-example-issues')
+ * @param userId - Optional user ID for per-user clones. If provided, creates path like:
+ *                 temp/github-repositories/{userId}/{owner}/{repo}/
+ *                 If omitted, uses shared path (for backwards compatibility):
+ *                 temp/github-repositories/{owner}/{repo}/
  * @returns Absolute path to the repository directory
  */
-export function getRepoPath(owner: string, repo: string): string {
+export function getRepoPath(
+  owner: string,
+  repo: string,
+  userId?: string
+): string {
   const config = getConfig()
+  if (userId) {
+    return path.join(config.rootDataDir, userId, owner, repo)
+  }
   return path.join(config.rootDataDir, owner, repo)
 }
 

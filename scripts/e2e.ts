@@ -112,7 +112,7 @@ async function main() {
     },
   })
 
-  // Start API server on test port with FAKE_MODE enabled and temp data directory
+  // Start API server on test port with temp data directory
   const apiProc = spawn({
     cmd: ['bun', 'run', 'api/server.ts'],
     stdout: 'pipe',
@@ -121,7 +121,6 @@ async function main() {
     env: {
       ...process.env,
       PORT: String(TEST_PORTS.API),
-      FAKE_MODE: 'true',
       BEAD_FEEDER_GITHUB_REPOS_DIR: localBeadsDir,
     },
   })

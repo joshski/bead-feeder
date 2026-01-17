@@ -7,12 +7,14 @@ import { TEST_PORTS } from '../config/ports'
 
 const BASE_URL = `http://localhost:${TEST_PORTS.VITE}`
 
-// Test repository containing sample beads issues
-const TEST_REPO_OWNER = 'josh-beads-test-1'
-const TEST_REPO_NAME = 'bead-feeder-example-issues'
+// Source repository to fork for testing
+const SOURCE_REPO_OWNER = 'joshski'
+const SOURCE_REPO_NAME = 'bead-feeder-example-issues'
 
-// Shared state for cloned repository path (used within this test file)
+// Shared state for fork management
+let forkRepoName: string | null = null
 let clonedRepoPath: string | null = null
+let testUsername: string | null = null
 
 // Data structure representing issues and their dependencies extracted from beads CLI
 interface BeadsIssue {
@@ -62,10 +64,54 @@ interface DagData {
 let extractedDagData: DagData | null = null
 
 /**
- * Clone the test repository into a temporary directory.
+ * Create a fork of the source repository with a unique name.
+ * Uses gh CLI with credentials from environment variables.
+ */
+function createTestFork(username: string, password: string): string {
+  // Generate unique fork name with timestamp
+  const timestamp = Date.now()
+  const forkName = `bead-feeder-e2e-${timestamp}`
+
+  console.log(`Creating fork: ${username}/${forkName}`)
+
+  // Login to gh CLI using the test credentials
+  // Use --with-token to provide the password as a PAT
+  try {
+    execSync(`echo "${password}" | gh auth login --with-token`, {
+      stdio: 'pipe',
+    })
+  } catch (error) {
+    throw new Error(
+      `Failed to authenticate gh CLI: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
+
+  // Create the fork with a custom name
+  try {
+    execSync(
+      `gh repo fork ${SOURCE_REPO_OWNER}/${SOURCE_REPO_NAME} --fork-name ${forkName} --clone=false`,
+      {
+        stdio: 'pipe',
+      }
+    )
+    console.log(`Created fork: ${username}/${forkName}`)
+  } catch (error) {
+    throw new Error(
+      `Failed to create fork: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
+
+  // Wait a moment for GitHub to process the fork
+  execSync('sleep 5')
+
+  return forkName
+}
+
+/**
+ * Clone the forked repository into a temporary directory.
  * Returns the path to the cloned repository.
  */
-function cloneTestRepo(
+function cloneFork(
   owner: string,
   repo: string,
   username: string,
@@ -83,13 +129,29 @@ function cloneTestRepo(
     execSync(`git clone ${authUrl} ${tempDir}`, {
       stdio: 'pipe', // Suppress output to avoid leaking credentials
     })
-    console.log(`Cloned test repository to ${tempDir}`)
+    console.log(`Cloned fork to ${tempDir}`)
     return tempDir
   } catch (error) {
     // Clean up temp directory on failure
     fs.rmSync(tempDir, { recursive: true, force: true })
     throw new Error(
-      `Failed to clone test repository: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to clone fork: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
+}
+
+/**
+ * Delete the test fork using gh CLI
+ */
+function deleteFork(owner: string, repo: string): void {
+  try {
+    execSync(`gh repo delete ${owner}/${repo} --yes`, {
+      stdio: 'pipe',
+    })
+    console.log(`Deleted fork: ${owner}/${repo}`)
+  } catch (error) {
+    console.warn(
+      `Failed to delete fork ${owner}/${repo}: ${error instanceof Error ? error.message : 'Unknown error'}`
     )
   }
 }
@@ -155,12 +217,49 @@ function extractBeadsData(repoPath: string): BeadsData {
   }
 }
 
+/**
+ * Pull latest changes from remote and extract beads data
+ */
+function pullAndExtractBeadsData(
+  repoPath: string,
+  username: string,
+  password: string
+): BeadsData {
+  // Pull latest changes
+  const encodedPassword = encodeURIComponent(password)
+  const authUrl = `https://${username}:${encodedPassword}@github.com/${username}/${forkRepoName}.git`
+
+  execSync(`git remote set-url origin ${authUrl}`, {
+    cwd: repoPath,
+    stdio: 'pipe',
+  })
+  execSync('git pull origin main', {
+    cwd: repoPath,
+    stdio: 'pipe',
+  })
+
+  // Restore URL without credentials
+  execSync(
+    `git remote set-url origin https://github.com/${username}/${forkRepoName}.git`,
+    {
+      cwd: repoPath,
+      stdio: 'pipe',
+    }
+  )
+
+  return extractBeadsData(repoPath)
+}
+
 test.describe('Load beads issues from GitHub repository', () => {
-  // Clean up cloned repository after all tests complete
+  // Clean up fork and cloned repository after all tests complete
   test.afterAll(async () => {
     if (clonedRepoPath) {
       cleanupClonedRepo(clonedRepoPath)
       clonedRepoPath = null
+    }
+    if (forkRepoName && testUsername) {
+      deleteFork(testUsername, forkRepoName)
+      forkRepoName = null
     }
   })
 
@@ -169,9 +268,6 @@ test.describe('Load beads issues from GitHub repository', () => {
   }) => {
     const username = process.env.TEST_GITHUB_USERNAME
     const password = process.env.TEST_GITHUB_PASSWORD
-    const testRepo =
-      process.env.TEST_GITHUB_REPOSITORY ||
-      `${TEST_REPO_OWNER}/${TEST_REPO_NAME}`
 
     if (!username || !password) {
       throw new Error(
@@ -179,17 +275,22 @@ test.describe('Load beads issues from GitHub repository', () => {
       )
     }
 
-    const [owner, repo] = testRepo.split('/')
-    if (!owner || !repo) {
-      throw new Error(
-        'TEST_GITHUB_REPOSITORY must be in format "owner/repo" (e.g., "josh-beads-test-1/bead-feeder-example-issues")'
-      )
-    }
+    testUsername = username
 
-    // Step 0: Clone the test repository into a temp directory
-    await test.step('Clone test repository to temp directory', async () => {
-      clonedRepoPath = cloneTestRepo(owner, repo, username, password)
-      console.log(`Test repository cloned to: ${clonedRepoPath}`)
+    // Step 0: Create a fresh fork with a unique name
+    await test.step('Create test fork', async () => {
+      forkRepoName = createTestFork(username, password)
+      console.log(`Test fork created: ${username}/${forkRepoName}`)
+    })
+
+    // Step 1: Clone the fork into a temp directory
+    await test.step('Clone fork to temp directory', async () => {
+      if (!forkRepoName) {
+        throw new Error('Fork was not created')
+      }
+
+      clonedRepoPath = cloneFork(username, forkRepoName, username, password)
+      console.log(`Fork cloned to: ${clonedRepoPath}`)
 
       // Verify the .beads directory exists in the cloned repo
       const beadsDir = path.join(clonedRepoPath, '.beads')
@@ -202,8 +303,8 @@ test.describe('Load beads issues from GitHub repository', () => {
       }
     })
 
-    // Step 0.5: Extract issues and dependencies from cloned repo using beads CLI
-    await test.step('Extract issues and dependencies from cloned repo', async () => {
+    // Step 2: Extract issues and dependencies from cloned fork using beads CLI
+    await test.step('Extract issues and dependencies from cloned fork', async () => {
       if (!clonedRepoPath) {
         throw new Error('Repository was not cloned')
       }
@@ -240,7 +341,7 @@ test.describe('Load beads issues from GitHub repository', () => {
       ).toBeGreaterThan(0)
     })
 
-    // Step 1: Sign into GitHub first
+    // Step 3: Sign into GitHub first
     await test.step('Sign into GitHub', async () => {
       await page.goto('https://github.com/login')
       await page.fill('input[name="login"]', username)
@@ -283,7 +384,7 @@ test.describe('Load beads issues from GitHub repository', () => {
       })
     })
 
-    // Step 2: Navigate to the Bead Feeder app
+    // Step 4: Navigate to the Bead Feeder app
     await test.step('Navigate to app and click GitHub login', async () => {
       await page.goto(BASE_URL)
 
@@ -302,7 +403,7 @@ test.describe('Load beads issues from GitHub repository', () => {
       await loginButton.click()
     })
 
-    // Step 3: Handle OAuth authorization
+    // Step 5: Handle OAuth authorization
     await test.step('Complete GitHub OAuth authorization', async () => {
       // Wait for GitHub OAuth page or redirect back to app
       // If already authorized, we'll be redirected directly to callback
@@ -338,8 +439,12 @@ test.describe('Load beads issues from GitHub repository', () => {
       })
     })
 
-    // Step 4: Select the test repository
-    await test.step('Select test repository', async () => {
+    // Step 6: Select the test fork from the repository list
+    await test.step('Select test fork', async () => {
+      if (!forkRepoName) {
+        throw new Error('Fork name not available')
+      }
+
       // After OAuth callback, user is redirected to home where repository selector opens automatically
       await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 })
 
@@ -350,36 +455,37 @@ test.describe('Load beads issues from GitHub repository', () => {
         timeout: 15000,
       })
 
-      // Look for the test repository in the list
-      // The repository selector shows repos as clickable items
+      // Look for the test fork in the list
       const repoItem = page.locator(
-        `[data-testid="repo-item-${owner}-${repo}"], :text("${owner}/${repo}")`
+        `[data-testid="repo-item-${username}-${forkRepoName}"], :text("${username}/${forkRepoName}")`
       )
 
-      // If repo not immediately visible, it might be in "Other Repositories" section
-      // or we need to scroll/wait for loading
-      await expect(repoItem.first()).toBeVisible({ timeout: 15000 })
+      // Wait for repo list to load and find our fork
+      await expect(repoItem.first()).toBeVisible({ timeout: 30000 })
       await repoItem.first().click()
     })
 
-    // Step 5: Verify the DAG view loaded for the repository
+    // Step 7: Verify the DAG view loaded for the fork
     await test.step('Verify DAG view loaded', async () => {
+      if (!forkRepoName) {
+        throw new Error('Fork name not available')
+      }
+
       // Wait for navigation to the repo page
-      await page.waitForURL(`**/repos/${owner}/${repo}`, { timeout: 10000 })
+      await page.waitForURL(`**/repos/${username}/${forkRepoName}`, {
+        timeout: 10000,
+      })
 
       // Wait for the DAG canvas to be present
       await expect(page.locator('.react-flow')).toBeVisible({ timeout: 15000 })
 
       // Verify the repo name is shown in the header
-      await expect(page.getByText(`${owner}/${repo}`)).toBeVisible()
+      await expect(page.getByText(`${username}/${forkRepoName}`)).toBeVisible()
 
       // Wait for issue nodes to appear in the DAG view
-      // This is the actual indicator that graph data has been fetched and rendered
-      // The 'Synced' status is for git sync, not graph fetch - waiting for it causes race conditions
       const issueNodes = page.locator('[data-testid="issue-node"]')
 
-      // We know from CLI extraction that issues exist, so wait for at least one to appear
-      // Use a longer timeout since graph fetch and rendering may take time
+      // Wait for at least one issue to appear
       await expect(issueNodes.first()).toBeVisible({ timeout: 30000 })
 
       const issueCount = await issueNodes.count()
@@ -393,10 +499,6 @@ test.describe('Load beads issues from GitHub repository', () => {
         await expect(firstIssueTitle).toBeVisible()
         const titleText = await firstIssueTitle.textContent()
         console.log(`First issue title: ${titleText}`)
-      } else {
-        console.log(
-          'No issues found in test repository - DAG view loaded but empty'
-        )
       }
 
       // Take a success screenshot
@@ -408,7 +510,7 @@ test.describe('Load beads issues from GitHub repository', () => {
       console.log(`Success screenshot saved to ${screenshotPath}`)
     })
 
-    // Step 6: Extract issues and dependencies data structure from DAG view
+    // Step 8: Extract issues and dependencies data structure from DAG view
     await test.step('Extract issues and dependencies from DAG view', async () => {
       // Extract issue data from DOM elements
       const issueNodes = page.locator('[data-testid="issue-node"]')
@@ -440,8 +542,6 @@ test.describe('Load beads issues from GitHub repository', () => {
       }
 
       // Extract dependency data from React Flow edges
-      // React Flow renders edges as SVG groups with aria-label="Edge from {source} to {target}"
-      // The .react-flow__edge class may not be queryable in all cases, so we use aria-label
       const edgeElements = page.locator('[aria-label^="Edge from "]')
       const edgeCount = await edgeElements.count()
 
@@ -452,7 +552,6 @@ test.describe('Load beads issues from GitHub repository', () => {
         const edge = edgeElements.nth(i)
 
         // Get source and target from aria-label attribute
-        // Format: "Edge from {source} to {target}"
         const ariaLabel = await edge.getAttribute('aria-label')
 
         if (ariaLabel) {
@@ -496,14 +595,13 @@ test.describe('Load beads issues from GitHub repository', () => {
       ).toBeGreaterThan(0)
     })
 
-    // Step 7: Compare CLI and DAG data structures
+    // Step 9: Compare CLI and DAG data structures
     await test.step('Compare CLI and DAG data structures', async () => {
       if (!extractedBeadsData || !extractedDagData) {
         throw new Error('Missing extracted data for comparison')
       }
 
       // Helper to normalize priority for comparison
-      // CLI returns priority as number (0-3), DAG returns as string (P0-P3)
       const normalizePriority = (priority: number | string): string => {
         if (typeof priority === 'number') {
           return `P${priority}`
@@ -512,7 +610,6 @@ test.describe('Load beads issues from GitHub repository', () => {
       }
 
       // Helper to normalize status for comparison
-      // Both should use same values, but normalize case
       const normalizeStatus = (status: string): string => {
         return status.toLowerCase()
       }
@@ -644,18 +741,7 @@ test.describe('Load beads issues from GitHub repository', () => {
       console.log('✓ All CLI issues and dependencies match DAG view')
     })
 
-    // Step 8: Test AI chat with fake mode by creating an issue locally
-    await test.step('Navigate to local DAG view', async () => {
-      // Navigate to the local view which uses the project's own .beads directory
-      await page.goto(`${BASE_URL}/local`)
-
-      // Wait for the DAG canvas to be present
-      await expect(page.locator('.react-flow')).toBeVisible({ timeout: 15000 })
-
-      console.log('Navigated to local DAG view')
-    })
-
-    // Step 9: Use AI chat to create an issue (tests fake AI without real API costs)
+    // Step 10: Create a new issue via AI chat (real AI, not fake)
     await test.step('Create issue via AI chat', async () => {
       // Click the floating action button to open the Create Issue modal
       const fabButton = page.locator('[data-testid="fab-create-issue"]')
@@ -680,15 +766,14 @@ test.describe('Load beads issues from GitHub repository', () => {
       await sendButton.click()
 
       // Wait for the AI response to appear
-      // The fake AI will respond with confirmation text
-      // Use polling to handle SSE streaming race conditions
+      // Use polling to handle SSE streaming
       await expect(async () => {
         const assistantMessage = page
           .locator('[data-testid="message-assistant"]')
           .last()
         const text = await assistantMessage.textContent()
         expect(text?.toLowerCase()).toContain('create')
-      }).toPass({ timeout: 15000, intervals: [500, 1000, 1000] })
+      }).toPass({ timeout: 60000, intervals: [1000, 2000, 3000] })
 
       console.log(`Sent AI chat message to create issue: "${testIssueTitle}"`)
 
@@ -706,50 +791,89 @@ test.describe('Load beads issues from GitHub repository', () => {
         page.getByRole('heading', { name: /create issue/i })
       ).not.toBeVisible({ timeout: 5000 })
 
-      // Wait a moment for the graph to refresh
-      await page.waitForTimeout(1000)
+      // Wait for the graph to refresh
+      await page.waitForTimeout(2000)
 
-      console.log('Created issue via AI chat (using fake AI mode)')
+      console.log('Created issue via AI chat')
     })
 
-    // Step 10: Verify the new issue appears in the local DAG view
+    // Step 11: Verify new issue appears in the DAG view
     await test.step('Verify new issue appears in DAG', async () => {
-      // The fake AI executed the create_issue tool, which should have created a real issue
-      // Wait for the DAG to update and show the new issue
-
-      // Get all issue nodes
+      // Get initial issue count
       const issueNodes = page.locator('[data-testid="issue-node"]')
 
-      // Wait for at least one issue to be visible
+      // Wait for at least one more issue than before
       await expect(issueNodes.first()).toBeVisible({ timeout: 10000 })
 
       const issueCount = await issueNodes.count()
-      console.log(`Found ${issueCount} issue(s) in local DAG view`)
+      console.log(`Found ${issueCount} issue(s) in DAG view after AI creation`)
 
-      // Verify at least one issue exists (the one we just created)
+      // Verify the count increased
       expect(
         issueCount,
-        'Expected at least one issue in local DAG view after AI creation'
-      ).toBeGreaterThan(0)
+        'Expected at least one more issue after AI creation'
+      ).toBeGreaterThan(extractedBeadsData?.issues.length ?? 0)
 
-      // Take a screenshot of the local DAG with the new issue
+      // Take a screenshot
       await page.screenshot({
-        path: 'screenshots/e2e-local-dag-with-ai-issue.png',
+        path: 'screenshots/e2e-dag-with-ai-issue.png',
         fullPage: true,
       })
 
-      console.log('✓ AI-created issue is visible in local DAG view')
+      console.log('✓ AI-created issue is visible in DAG view')
       console.log(
-        'Success screenshot saved to screenshots/e2e-local-dag-with-ai-issue.png'
+        'Success screenshot saved to screenshots/e2e-dag-with-ai-issue.png'
       )
     })
 
-    // Step 11: Test isolation verification
-    // No cleanup needed - the e2e test runner uses a temp directory for isolation
-    // Issues created via AI chat go to the temp data directory, not the project
-    await test.step('Verify test isolation', async () => {
-      console.log('✓ Test isolation: issues created in temp data directory')
-      console.log('✓ No cleanup needed - temp directory is deleted after tests')
+    // Step 12: Verify remote sync - pull changes from fork and check with bd
+    await test.step('Verify remote sync with bd', async () => {
+      if (!clonedRepoPath || !forkRepoName) {
+        throw new Error('Missing cloned repo path or fork name')
+      }
+
+      // Pull latest changes from the fork
+      const updatedData = pullAndExtractBeadsData(
+        clonedRepoPath,
+        username,
+        password
+      )
+
+      console.log(
+        `After sync: ${updatedData.issues.length} issue(s) in repository`
+      )
+
+      // Verify we have more issues than before
+      expect(
+        updatedData.issues.length,
+        'Expected more issues after AI creation and sync'
+      ).toBeGreaterThan(extractedBeadsData?.issues.length ?? 0)
+
+      // Find the new issue (it should have "E2E Test Issue" in the title)
+      const newIssues = updatedData.issues.filter(issue =>
+        issue.title.includes('E2E Test Issue')
+      )
+
+      expect(
+        newIssues.length,
+        'Expected to find the AI-created issue in repository'
+      ).toBeGreaterThan(0)
+
+      console.log('New issue found in repository after sync:')
+      for (const issue of newIssues) {
+        console.log(`  - [${issue.id}] ${issue.title}`)
+      }
+
+      console.log('✓ Remote sync verified - AI-created issue is in repository')
+    })
+
+    // Step 13: Cleanup summary
+    await test.step('Cleanup summary', async () => {
+      console.log('✓ Test completed successfully')
+      console.log(
+        `✓ Fork ${testUsername}/${forkRepoName} will be deleted in afterAll hook`
+      )
+      console.log('✓ Cloned repository will be deleted in afterAll hook')
     })
   })
 })

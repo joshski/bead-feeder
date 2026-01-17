@@ -243,3 +243,65 @@ This ensures each adapter instance has its own isolated `tempDir` variable, elim
 
 **Files Changed:**
 - api/issue-tracker/IssueTracker.contract.test.ts (refactored beadsAdapter to use closure-scoped tempDir)
+
+## Session 7 - 2026-01-17
+
+### Task: bead-91d - Refactor e2e test to use real GitHub fork workflow
+
+**Status:** Completed
+
+**Problem Solved:**
+The e2e test was using fake implementations (`FAKE_MODE`) for AI chat and git operations, which meant it wasn't testing the real end-to-end flow. This made it impossible to verify that issues created via AI chat were actually synced to GitHub.
+
+**Solution Implemented:**
+Removed all fake implementations and refactored the e2e test to use a real GitHub fork workflow:
+
+1. **Create a test fork** - Uses gh CLI to create a unique fork of `joshski/bead-feeder-example-issues` with a timestamp-based name
+2. **Sign in with GitHub** - Authenticates via the real OAuth flow
+3. **Select the fork** - Chooses the freshly-created fork from the repository list
+4. **Add an issue via AI chat** - Uses real AI (OpenAI API) to create an issue
+5. **Verify remote sync** - Pulls changes from the fork using gh CLI and verifies with bd
+6. **Cleanup** - Deletes the fork after the test
+
+**Work Done:**
+1. Deleted `api/fake-chat.ts`:
+   - Removed fake AI chat handler
+
+2. Deleted `api/fake-git-service.ts`:
+   - Removed fake git operations (push, pull, fetch)
+
+3. Updated `api/server.ts`:
+   - Removed import of `createFakeChatStream` and `isFakeModeEnabled`
+   - Removed FAKE_MODE check in `/api/chat` endpoint
+   - Now always uses real OpenAI API for chat
+
+4. Updated `api/git-service.ts`:
+   - Removed import of fake git service functions
+   - Removed `isFakeModeEnabled()` checks from `fetchRepository`, `pushRepository`, and `pullRepository`
+   - Now always uses real git operations
+
+5. Updated `scripts/e2e.ts`:
+   - Removed `FAKE_MODE: 'true'` from API server environment
+
+6. Rewrote `e2e/load-beads-issues.spec.ts`:
+   - Added `createTestFork()` to create a unique fork using gh CLI
+   - Added `cloneFork()` to clone the fork locally
+   - Added `deleteFork()` to cleanup the fork after test
+   - Added `pullAndExtractBeadsData()` to verify remote sync
+   - Updated test steps to use fork instead of static test repo
+   - Added step to verify AI-created issue is synced to remote
+
+**Requirements:**
+- `TEST_GITHUB_USERNAME` - GitHub username with fork permissions
+- `TEST_GITHUB_PASSWORD` - GitHub Personal Access Token (PAT) with repo scope
+- `OPENAI_API_KEY` - OpenAI API key for real AI chat
+
+**Tests:** All 330 unit tests pass. E2e test requires valid GitHub PAT and OpenAI API key.
+
+**Files Changed:**
+- api/fake-chat.ts (deleted)
+- api/fake-git-service.ts (deleted)
+- api/server.ts (removed fake mode code)
+- api/git-service.ts (removed fake mode code)
+- scripts/e2e.ts (removed FAKE_MODE)
+- e2e/load-beads-issues.spec.ts (major rewrite for fork workflow)

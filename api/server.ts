@@ -9,7 +9,6 @@ import {
   getLocalRepoPath,
   getRepoPath,
 } from './config'
-import { createFakeChatStream, isFakeModeEnabled } from './fake-chat'
 import {
   createCommit,
   ensureRepoCloned,
@@ -442,19 +441,6 @@ async function handleRequest(req: Request): Promise<Response> {
 
       // Create tracker for the working directory
       const tracker = createTrackerForPath(repoWorkDir)
-
-      // Use fake chat handler in fake mode (for e2e testing without AI costs)
-      if (isFakeModeEnabled()) {
-        const fakeStream = createFakeChatStream(messages, tracker)
-        return new Response(fakeStream, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-            'Access-Control-Allow-Origin': '*',
-          },
-        })
-      }
 
       // Convert chat messages to OpenAI format
       const openaiMessages: ChatCompletionMessageParam[] = [

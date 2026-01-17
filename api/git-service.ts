@@ -1,10 +1,4 @@
 import { spawn } from 'node:child_process'
-import {
-  fakeFetchRepository,
-  fakePullRepository,
-  fakePushRepository,
-  isFakeModeEnabled,
-} from './fake-git-service'
 
 interface GitResult {
   success: boolean
@@ -259,11 +253,6 @@ export async function fetchRepository(
   token: string,
   remote = 'origin'
 ): Promise<GitResult> {
-  // Use fake implementation in test mode
-  if (isFakeModeEnabled()) {
-    return fakeFetchRepository(cwd, token, remote)
-  }
-
   // Get the remote URL to parse it
   const urlResult = await runGitCommand(['remote', 'get-url', remote], { cwd })
   if (!urlResult.success || !urlResult.output) {
@@ -308,11 +297,6 @@ export async function pushRepository(
   remote = 'origin',
   branch?: string
 ): Promise<GitResult> {
-  // Use fake implementation in test mode
-  if (isFakeModeEnabled()) {
-    return fakePushRepository(cwd, token, remote, branch)
-  }
-
   // Get the remote URL to parse it
   const urlResult = await runGitCommand(['remote', 'get-url', remote], { cwd })
   if (!urlResult.success || !urlResult.output) {
@@ -361,11 +345,6 @@ export async function pullRepository(
   remote = 'origin',
   branch?: string
 ): Promise<GitResult> {
-  // Use fake implementation in test mode
-  if (isFakeModeEnabled()) {
-    return fakePullRepository(cwd, token, remote, branch)
-  }
-
   // Get the remote URL to parse it
   const urlResult = await runGitCommand(['remote', 'get-url', remote], { cwd })
   if (!urlResult.success || !urlResult.output) {

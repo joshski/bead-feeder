@@ -207,3 +207,39 @@ The `BEAD_FEEDER_DATA_DIR` environment variable defaulted to `./temp/github-repo
 - api/config.ts (renamed constant and env var, changed default to use os.tmpdir())
 - api/server.ts (updated import and env var check)
 - scripts/e2e.ts (updated env var name)
+
+## Session 6 - 2026-01-17
+
+### Task: Fix flaky contract test (shared state bug)
+
+**Status:** Completed
+
+**Problem Solved:**
+The contract tests in `api/issue-tracker/IssueTracker.contract.test.ts` had a shared state issue that caused intermittent failures. The `tempDir` variable was declared at module level and shared between all test runs. When tests ran with async overlap, one test's cleanup could affect another test's `tempDir`, causing `bd init failed` errors and test failures.
+
+The failing test was "detects self-dependency cycle" which would pass in isolation but fail when run with the full test suite.
+
+**Solution Implemented:**
+Refactored the beads test adapter to use a factory function with closure-scoped state instead of a module-level variable:
+
+1. Changed from:
+   ```typescript
+   let tempDir: string
+   const beadsAdapter: TestAdapter = { ... }
+   ```
+
+2. To:
+   ```typescript
+   function createBeadsAdapter(): TestAdapter {
+     let tempDir: string | undefined
+     return { ... }
+   }
+   const adapters = [fakeAdapter, createBeadsAdapter()]
+   ```
+
+This ensures each adapter instance has its own isolated `tempDir` variable, eliminating the race condition.
+
+**Tests:** All 330 tests pass, e2e test passes
+
+**Files Changed:**
+- api/issue-tracker/IssueTracker.contract.test.ts (refactored beadsAdapter to use closure-scoped tempDir)

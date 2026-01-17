@@ -28,73 +28,78 @@ const fakeAdapter: TestAdapter = {
   },
 }
 
-let tempDir: string
-
 // Beads adapter - creates temp directory with bd init
-const beadsAdapter: TestAdapter = {
-  name: 'beads',
-  createTracker: async () => {
-    // Create unique temp directory for this test
-    tempDir = join(
-      tmpdir(),
-      `beads-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    )
-    mkdirSync(tempDir, { recursive: true })
+// Use a closure to capture tempDir per test run
+function createBeadsAdapter(): TestAdapter {
+  let tempDir: string | undefined
 
-    // Initialize git repo (required for bd)
-    const { spawn } = await import('node:child_process')
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn('git', ['init'], { cwd: tempDir })
-      proc.on('close', code =>
-        code === 0 ? resolve() : reject(new Error('git init failed'))
+  return {
+    name: 'beads',
+    createTracker: async () => {
+      // Create unique temp directory for this test
+      tempDir = join(
+        tmpdir(),
+        `beads-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
       )
-      proc.on('error', reject)
-    })
+      mkdirSync(tempDir, { recursive: true })
 
-    // Configure git user for commits
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn('git', ['config', 'user.email', 'test@test.com'], {
-        cwd: tempDir,
+      // Initialize git repo (required for bd)
+      const { spawn } = await import('node:child_process')
+      await new Promise<void>((resolve, reject) => {
+        const proc = spawn('git', ['init'], { cwd: tempDir })
+        proc.on('close', code =>
+          code === 0 ? resolve() : reject(new Error('git init failed'))
+        )
+        proc.on('error', reject)
       })
-      proc.on('close', code =>
-        code === 0 ? resolve() : reject(new Error('git config email failed'))
-      )
-      proc.on('error', reject)
-    })
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn('git', ['config', 'user.name', 'Test User'], {
-        cwd: tempDir,
+
+      // Configure git user for commits
+      await new Promise<void>((resolve, reject) => {
+        const proc = spawn('git', ['config', 'user.email', 'test@test.com'], {
+          cwd: tempDir,
+        })
+        proc.on('close', code =>
+          code === 0 ? resolve() : reject(new Error('git config email failed'))
+        )
+        proc.on('error', reject)
       })
-      proc.on('close', code =>
-        code === 0 ? resolve() : reject(new Error('git config name failed'))
-      )
-      proc.on('error', reject)
-    })
+      await new Promise<void>((resolve, reject) => {
+        const proc = spawn('git', ['config', 'user.name', 'Test User'], {
+          cwd: tempDir,
+        })
+        proc.on('close', code =>
+          code === 0 ? resolve() : reject(new Error('git config name failed'))
+        )
+        proc.on('error', reject)
+      })
 
-    // Initialize beads
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn('bd', ['init'], { cwd: tempDir })
-      proc.on('close', code =>
-        code === 0 ? resolve() : reject(new Error('bd init failed'))
-      )
-      proc.on('error', reject)
-    })
+      // Initialize beads
+      await new Promise<void>((resolve, reject) => {
+        const proc = spawn('bd', ['init'], { cwd: tempDir })
+        proc.on('close', code =>
+          code === 0 ? resolve() : reject(new Error('bd init failed'))
+        )
+        proc.on('error', reject)
+      })
 
-    return new BeadsIssueTracker({ cwd: tempDir })
-  },
-  cleanup: async () => {
-    if (tempDir) {
-      try {
-        rmSync(tempDir, { recursive: true, force: true })
-      } catch {
-        // Ignore cleanup errors
+      return new BeadsIssueTracker({ cwd: tempDir })
+    },
+    cleanup: async () => {
+      if (tempDir) {
+        try {
+          rmSync(tempDir, { recursive: true, force: true })
+        } catch {
+          // Ignore cleanup errors
+        }
+        tempDir = undefined
       }
-    }
-  },
+    },
+  }
 }
 
 // Run contract tests against both implementations
-const adapters = [fakeAdapter, beadsAdapter]
+// Create a fresh beads adapter for each describe block to avoid shared state
+const adapters = [fakeAdapter, createBeadsAdapter()]
 
 describe.each(adapters)('IssueTracker contract ($name)', adapter => {
   let tracker: IssueTracker

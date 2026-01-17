@@ -305,3 +305,37 @@ Removed all fake implementations and refactored the e2e test to use a real GitHu
 - api/git-service.ts (removed fake mode code)
 - scripts/e2e.ts (removed FAKE_MODE)
 - e2e/load-beads-issues.spec.ts (major rewrite for fork workflow)
+
+## Session 8 - 2026-01-17
+
+### Task: bead-aqf - Update e2e test to use separate auth for gh client and UI login
+
+**Status:** Completed
+
+**Problem Solved:**
+The e2e test was using `TEST_GITHUB_PASSWORD` for both gh CLI authentication (which expects a PAT) and browser login (which expects a password). This conflated two different authentication mechanisms.
+
+**Solution Implemented:**
+Separated the authentication concerns:
+1. `TEST_GITHUB_PERSONAL_ACCESS_TOKEN` - Used for gh CLI operations (fork creation, repo deletion, git clone/pull)
+2. `TEST_GITHUB_USERNAME` / `TEST_GITHUB_PASSWORD` - Used for browser-based GitHub login via Playwright
+
+**Work Done:**
+1. Updated `e2e/load-beads-issues.spec.ts`:
+   - Added `pat` variable from `TEST_GITHUB_PERSONAL_ACCESS_TOKEN` env var
+   - Updated `createTestFork()` to accept PAT instead of password
+   - Updated `cloneFork()` to use PAT-only auth URL (no username needed with PAT)
+   - Updated `pullAndExtractBeadsData()` to use PAT for git operations
+   - Updated error messages to clarify which credentials are needed for what
+
+2. Updated `.env.example`:
+   - Added `TEST_GITHUB_PERSONAL_ACCESS_TOKEN` with documentation
+   - Clarified that username/password are for browser login
+   - Noted required PAT scopes: `repo`, `delete_repo`
+   - Fixed default repo reference from `josh-beads-test-1` to `joshski`
+
+**Tests:** All 330 unit tests pass. Build succeeds.
+
+**Files Changed:**
+- e2e/load-beads-issues.spec.ts (separated PAT from password auth)
+- .env.example (added TEST_GITHUB_PERSONAL_ACCESS_TOKEN documentation)

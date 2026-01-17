@@ -65,19 +65,18 @@ let extractedDagData: DagData | null = null
 
 /**
  * Create a fork of the source repository with a unique name.
- * Uses gh CLI with credentials from environment variables.
+ * Uses gh CLI with PAT from TEST_GITHUB_PERSONAL_ACCESS_TOKEN env var.
  */
-function createTestFork(username: string, password: string): string {
+function createTestFork(username: string, pat: string): string {
   // Generate unique fork name with timestamp
   const timestamp = Date.now()
   const forkName = `bead-feeder-e2e-${timestamp}`
 
   console.log(`Creating fork: ${username}/${forkName}`)
 
-  // Login to gh CLI using the test credentials
-  // Use --with-token to provide the password as a PAT
+  // Login to gh CLI using the personal access token
   try {
-    execSync(`echo "${password}" | gh auth login --with-token`, {
+    execSync(`echo "${pat}" | gh auth login --with-token`, {
       stdio: 'pipe',
     })
   } catch (error) {
@@ -109,20 +108,16 @@ function createTestFork(username: string, password: string): string {
 
 /**
  * Clone the forked repository into a temporary directory.
+ * Uses PAT for authentication with git.
  * Returns the path to the cloned repository.
  */
-function cloneFork(
-  owner: string,
-  repo: string,
-  username: string,
-  password: string
-): string {
+function cloneFork(owner: string, repo: string, pat: string): string {
   // Create a unique temp directory
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bead-feeder-e2e-'))
 
-  // Build authenticated URL (URL-encode password to handle special characters)
-  const encodedPassword = encodeURIComponent(password)
-  const authUrl = `https://${username}:${encodedPassword}@github.com/${owner}/${repo}.git`
+  // Build authenticated URL using PAT (URL-encode to handle special characters)
+  const encodedPat = encodeURIComponent(pat)
+  const authUrl = `https://${encodedPat}@github.com/${owner}/${repo}.git`
 
   // Clone the repository
   try {
@@ -218,16 +213,17 @@ function extractBeadsData(repoPath: string): BeadsData {
 }
 
 /**
- * Pull latest changes from remote and extract beads data
+ * Pull latest changes from remote and extract beads data.
+ * Uses PAT for authentication with git.
  */
 function pullAndExtractBeadsData(
   repoPath: string,
-  username: string,
-  password: string
+  owner: string,
+  pat: string
 ): BeadsData {
-  // Pull latest changes
-  const encodedPassword = encodeURIComponent(password)
-  const authUrl = `https://${username}:${encodedPassword}@github.com/${username}/${forkRepoName}.git`
+  // Pull latest changes using PAT for auth
+  const encodedPat = encodeURIComponent(pat)
+  const authUrl = `https://${encodedPat}@github.com/${owner}/${forkRepoName}.git`
 
   execSync(`git remote set-url origin ${authUrl}`, {
     cwd: repoPath,
@@ -240,7 +236,7 @@ function pullAndExtractBeadsData(
 
   // Restore URL without credentials
   execSync(
-    `git remote set-url origin https://github.com/${username}/${forkRepoName}.git`,
+    `git remote set-url origin https://github.com/${owner}/${forkRepoName}.git`,
     {
       cwd: repoPath,
       stdio: 'pipe',
@@ -268,10 +264,17 @@ test.describe('Load beads issues from GitHub repository', () => {
   }) => {
     const username = process.env.TEST_GITHUB_USERNAME
     const password = process.env.TEST_GITHUB_PASSWORD
+    const pat = process.env.TEST_GITHUB_PERSONAL_ACCESS_TOKEN
 
     if (!username || !password) {
       throw new Error(
-        'TEST_GITHUB_USERNAME and TEST_GITHUB_PASSWORD environment variables are required'
+        'TEST_GITHUB_USERNAME and TEST_GITHUB_PASSWORD environment variables are required for browser login'
+      )
+    }
+
+    if (!pat) {
+      throw new Error(
+        'TEST_GITHUB_PERSONAL_ACCESS_TOKEN environment variable is required for gh CLI operations'
       )
     }
 
@@ -279,7 +282,7 @@ test.describe('Load beads issues from GitHub repository', () => {
 
     // Step 0: Create a fresh fork with a unique name
     await test.step('Create test fork', async () => {
-      forkRepoName = createTestFork(username, password)
+      forkRepoName = createTestFork(username, pat)
       console.log(`Test fork created: ${username}/${forkRepoName}`)
     })
 
@@ -289,7 +292,7 @@ test.describe('Load beads issues from GitHub repository', () => {
         throw new Error('Fork was not created')
       }
 
-      clonedRepoPath = cloneFork(username, forkRepoName, username, password)
+      clonedRepoPath = cloneFork(username, forkRepoName, pat)
       console.log(`Fork cloned to: ${clonedRepoPath}`)
 
       // Verify the .beads directory exists in the cloned repo
@@ -832,11 +835,11 @@ test.describe('Load beads issues from GitHub repository', () => {
         throw new Error('Missing cloned repo path or fork name')
       }
 
-      // Pull latest changes from the fork
+      // Pull latest changes from the fork using PAT for auth
       const updatedData = pullAndExtractBeadsData(
         clonedRepoPath,
         username,
-        password
+        pat
       )
 
       console.log(

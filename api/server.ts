@@ -1165,7 +1165,23 @@ const server = Bun.serve({
 
       // Don't log OPTIONS preflight or SSE connections
       if (req.method !== 'OPTIONS' && !url.pathname.includes('/events')) {
-        log.logRequest(req.method, url.pathname, response.status, durationMs)
+        let errorMessage: string | undefined
+        if (response.status >= 500) {
+          try {
+            const cloned = response.clone()
+            const body = await cloned.json()
+            errorMessage = body?.error
+          } catch {
+            // Ignore parse errors - not all 500s have JSON bodies
+          }
+        }
+        log.logRequest(
+          req.method,
+          url.pathname,
+          response.status,
+          durationMs,
+          errorMessage
+        )
       }
 
       return response

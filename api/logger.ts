@@ -94,11 +94,12 @@ export function logRequest(
   method: string,
   path: string,
   status: number,
-  durationMs: number
+  durationMs: number,
+  error?: string
 ) {
   const level: LogLevel =
     status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
-  log(level, 'Request', { method, path, status, durationMs })
+  log(level, 'Request', { method, path, status, durationMs, error })
 }
 
 export type { LogLevel, LogEntry }

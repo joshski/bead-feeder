@@ -130,3 +130,46 @@ Changed to per-user clones at `temp/github-repositories/{userId}/{owner}/{repo}/
 - api/config.ts (added userId parameter to getRepoPath)
 - api/git-service.ts (added getUserIdFromToken function)
 - api/server.ts (updated /api/graph, /api/chat, and /api/repos/:owner/:repo/pull endpoints)
+
+## Session 4 - 2026-01-17
+
+### Task: bead-0dg - Log error details for 500 responses
+
+**Status:** Completed
+
+**Problem Solved:**
+When 500 errors occurred, the logs only showed the status code but not the actual error message:
+```
+[2026-01-17T07:38:09.546Z] [ERROR] Request GET /api/graph -> 500 (7286ms)
+```
+
+The error message was in the HTTP response body but never passed to the logger.
+
+**Solution Implemented:**
+1. Added optional `error` parameter to `logRequest()` function in `api/logger.ts`
+2. Updated the server fetch handler in `api/server.ts` to extract error messages from 500 responses and pass them to the logger
+
+Now 500 errors log with full context:
+```
+[2026-01-17T07:38:09.546Z] [ERROR] Request GET /api/graph -> 500 (7286ms) | Error: Failed to clone repository
+```
+
+**Work Done:**
+1. Updated `api/logger.ts`:
+   - Added optional `error?: string` parameter to `logRequest()` function
+   - The error is passed through to the `log()` function which already supports the `error` field
+
+2. Updated `api/server.ts`:
+   - Modified the fetch handler to clone 500 responses and extract the error message from JSON body
+   - Passes error message to `logRequest()` for 500+ status codes
+
+3. Added tests in `api/logger.test.ts`:
+   - Test that error message is included in log output for 500 responses when provided
+   - Test that no error section appears when error is undefined
+
+**Tests:** All 330 tests pass (10 logger tests, including 2 new ones), e2e test passes
+
+**Files Changed:**
+- api/logger.ts (added error parameter to logRequest)
+- api/server.ts (extract and log error from 500 responses)
+- api/logger.test.ts (added 2 new tests for error logging)

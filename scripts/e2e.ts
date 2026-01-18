@@ -165,12 +165,12 @@ async function main() {
     process.exit(1)
   }
 
-  console.log(`${COLORS.e2e}[e2e]${COLORS.reset} Running Playwright tests...`)
+  console.log(`${COLORS.e2e}[e2e]${COLORS.reset} Running e2e tests with Bun...`)
   console.log('')
 
-  // Run Playwright tests
+  // Run e2e tests with Bun test runner
   const testProc = spawn({
-    cmd: ['bunx', 'playwright', 'test'],
+    cmd: ['bun', 'test', 'e2e/'],
     stdout: 'inherit',
     stderr: 'inherit',
     cwd: process.cwd(),

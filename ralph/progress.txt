@@ -853,3 +853,52 @@ Removed the div containing "AI Assistant" text from CreateIssueModal.tsx and upd
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (removed AI Assistant label div)
 - src/components/CreateIssueModal.test.tsx (removed AI Assistant text assertion)
+
+## Session 26 - 2026-01-18
+
+### Task: bead-0zb - Switch end-to-end tests to use Bun test runner
+
+**Status:** Completed
+
+**Problem Solved:**
+The end-to-end tests were using `@playwright/test` as the test runner. The task was to replace this with `bun test` for consistency with the project's testing approach.
+
+**Solution Implemented:**
+Converted the e2e test from using `@playwright/test` (which has its own test runner) to using `bun:test` (Bun's built-in test framework) while keeping `playwright` for browser automation.
+
+**Work Done:**
+
+1. Created new e2e test file `e2e/load-beads-issues.test.ts`:
+   - Replaced `@playwright/test` imports with `bun:test` (`describe`, `it`, `expect`, `beforeAll`, `afterAll`)
+   - Added `playwright` imports for browser automation (`Browser`, `Page`, `chromium`)
+   - Converted Playwright test steps to standard test structure
+   - Replaced Playwright's `test.step()` with console.log statements for progress tracking
+   - Added manual polling for async operations instead of using Playwright's `toPass()`
+   - Added `takeScreenshot()` helper function for screenshots
+   - Added 3-minute timeout for the full test
+
+2. Updated `scripts/e2e.ts`:
+   - Changed test runner command from `bunx playwright test` to `bun test e2e/`
+   - Updated console message to say "Running e2e tests with Bun..."
+
+3. Updated `package.json`:
+   - Removed `test:e2e:login` and `test:e2e:load-issues` scripts (which used `playwright test`)
+   - Kept `test:e2e` script which runs the full e2e flow
+
+4. Removed obsolete files:
+   - Deleted `playwright.config.ts` (no longer needed)
+   - Deleted `e2e/load-beads-issues.spec.ts` (replaced by .test.ts file)
+
+5. Updated dependencies:
+   - Added `playwright` package (for browser automation)
+   - Removed `@playwright/test` package (test runner no longer used)
+
+**Tests:** All 339 unit tests pass. E2e test runs with Bun test runner and executes correctly when valid GitHub credentials are provided.
+
+**Files Changed:**
+- e2e/load-beads-issues.test.ts (new file - converted from .spec.ts)
+- e2e/load-beads-issues.spec.ts (deleted)
+- scripts/e2e.ts (changed test runner to bun test)
+- playwright.config.ts (deleted)
+- package.json (removed Playwright test scripts, updated dependencies)
+- bun.lock (updated)

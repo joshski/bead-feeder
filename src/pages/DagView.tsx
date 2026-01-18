@@ -43,6 +43,26 @@ async function createDependency(
   }
 }
 
+async function pullRemoteRepository(
+  owner: string,
+  repo: string
+): Promise<void> {
+  dagLog(`Pulling latest changes for ${owner}/${repo}`)
+  const response = await fetch(
+    `${API_BASE_URL}/api/repos/${owner}/${repo}/pull`,
+    {
+      method: 'POST',
+      credentials: 'include',
+    }
+  )
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || 'Failed to pull repository')
+  }
+  dagLog(`Successfully pulled latest changes for ${owner}/${repo}`)
+}
+
 async function fetchGraph(
   owner?: string,
   repo?: string,
@@ -120,39 +140,47 @@ function DagView() {
   }, [])
 
   // Fetch graph data on mount and provide refresh function
-  const refreshGraph = useCallback(async () => {
-    dagLog('Refreshing graph data')
-    try {
-      const { nodes: newNodes, edges: newEdges } = await fetchGraph(
-        owner,
-        repo,
-        localPath
-      )
-      // Inject onSelect callback into each node's data
-      const nodesWithCallback = newNodes.map(node => ({
-        ...node,
-        data: {
-          ...node.data,
-          onSelect: handleIssueSelect,
-        },
-      }))
-      dagLog(
-        `Setting state: ${nodesWithCallback.length} nodes, ${newEdges.length} edges`
-      )
-      setNodes(nodesWithCallback)
-      setEdges(newEdges)
-    } catch (error) {
-      dagError('Failed to fetch graph', error)
-    }
-  }, [owner, repo, localPath, handleIssueSelect])
+  const refreshGraph = useCallback(
+    async (pullFromRemote = false) => {
+      dagLog('Refreshing graph data')
+      try {
+        // Pull from remote first if requested and viewing a remote repo
+        if (pullFromRemote && owner && repo) {
+          await pullRemoteRepository(owner, repo)
+        }
+
+        const { nodes: newNodes, edges: newEdges } = await fetchGraph(
+          owner,
+          repo,
+          localPath
+        )
+        // Inject onSelect callback into each node's data
+        const nodesWithCallback = newNodes.map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            onSelect: handleIssueSelect,
+          },
+        }))
+        dagLog(
+          `Setting state: ${nodesWithCallback.length} nodes, ${newEdges.length} edges`
+        )
+        setNodes(nodesWithCallback)
+        setEdges(newEdges)
+      } catch (error) {
+        dagError('Failed to fetch graph', error)
+      }
+    },
+    [owner, repo, localPath, handleIssueSelect]
+  )
 
   useEffect(() => {
     refreshGraph()
   }, [refreshGraph])
 
-  // Register refresh callback with SyncContext
+  // Register refresh callback with SyncContext (pulls from remote when button clicked)
   useEffect(() => {
-    setOnRefresh(() => refreshGraph)
+    setOnRefresh(() => () => refreshGraph(true))
     return () => setOnRefresh(null)
   }, [refreshGraph, setOnRefresh])
 

@@ -677,3 +677,32 @@ Increased the width of issue cards from 300px to 400px, providing more space for
 
 **Files Changed:**
 - src/components/IssueNode.tsx (increased card width from 300px to 400px)
+
+## Session 20 - 2026-01-18
+
+### Task: bead-53f - API Call to Pull New Issues
+
+**Status:** Completed
+
+**Problem Solved:**
+When clicking the refresh button in the DAG view, the graph was only being re-fetched from the API without pulling the latest changes from the remote GitHub repository. This meant users couldn't see new issues that had been added to the remote repository since the last clone/pull.
+
+**Solution Implemented:**
+Modified the refresh flow to first pull from the remote repository (for GitHub repos) before refreshing the graph data:
+
+1. Added `pullRemoteRepository()` function that calls the existing `POST /api/repos/{owner}/{repo}/pull` endpoint
+2. Modified `refreshGraph()` to accept an optional `pullFromRemote` parameter
+3. When the refresh button is clicked (via SyncContext's `onRefresh`), `refreshGraph(true)` is called to pull first
+4. On initial mount and after creating dependencies, `refreshGraph()` is called without pulling (to avoid unnecessary network calls)
+
+**Work Done:**
+1. Updated `src/pages/DagView.tsx`:
+   - Added `pullRemoteRepository(owner, repo)` async function to call the pull API endpoint
+   - Modified `refreshGraph` callback to accept `pullFromRemote = false` parameter
+   - When `pullFromRemote` is true and viewing a remote repo (`owner && repo`), calls `pullRemoteRepository` before fetching the graph
+   - Updated the SyncContext registration to pass `() => refreshGraph(true)` so the button click triggers a pull
+
+**Tests:** All 337 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/pages/DagView.tsx (added pullRemoteRepository function, modified refreshGraph to support pull-before-refresh)

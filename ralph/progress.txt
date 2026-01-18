@@ -1034,3 +1034,40 @@ The ref pattern is necessary because:
 
 **Files Changed:**
 - src/context/SyncContext.tsx (added ref for callback, call refreshCallback on syncComplete)
+
+## Session 31 - 2026-01-18
+
+### Task: bead-26r - Fix: Header scrolls with list in RepositorySelector dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+In the 'Select a Repository' dialog, the heading ("Select a Repository") and close button were scrolling along with the repository list when there were many repositories. The header should remain fixed at the top while only the repository list scrolls.
+
+**Root Cause:**
+The `DialogContent` component had `overflow-y-auto` applied to the entire content area (line 121 in `Home.tsx`), causing everything inside (including the header) to scroll together.
+
+**Solution Implemented:**
+Changed the dialog layout to use flexbox with a fixed header and scrollable content area:
+
+1. Updated `DialogContent` className:
+   - From: `max-w-md h-[400px] overflow-y-auto`
+   - To: `max-w-md h-[400px] flex flex-col`
+
+2. Added `flex-shrink-0` to `DialogHeader` to prevent it from shrinking
+
+3. Wrapped the content (loading, error, empty, and list states) in a new div with:
+   - `flex-1` - Takes remaining space
+   - `overflow-y-auto` - Enables scrolling only for this area
+   - `min-h-0` - Required for flex children to scroll properly
+
+**Work Done:**
+1. Updated `src/pages/Home.tsx`:
+   - Changed DialogContent to use flex column layout
+   - Added flex-shrink-0 to DialogHeader
+   - Wrapped content in scrollable div with flex-1 and overflow-y-auto
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/pages/Home.tsx (fixed dialog layout so header stays fixed while list scrolls)

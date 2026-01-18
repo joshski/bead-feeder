@@ -118,51 +118,57 @@ export default function Home() {
 
       {/* GitHub Repository Modal */}
       <Dialog open={showGitHubModal} onOpenChange={setShowGitHubModal}>
-        <DialogContent className="max-w-md h-[400px] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-md h-[400px] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Select a Repository</DialogTitle>
           </DialogHeader>
 
-          {reposLoading && (
-            <div className="py-8 text-center text-gray-500">
-              Loading repositories...
-            </div>
-          )}
-
-          {reposError && (
-            <div className="py-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg mb-3">
-                {reposError}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {reposLoading && (
+              <div className="py-8 text-center text-gray-500">
+                Loading repositories...
               </div>
-              <Button onClick={fetchRepos} variant="outline" className="w-full">
-                Retry
-              </Button>
-            </div>
-          )}
+            )}
 
-          {!reposLoading && !reposError && repos.length === 0 && (
-            <div className="py-8 text-center text-gray-500">
-              No repositories found.
-            </div>
-          )}
+            {reposError && (
+              <div className="py-4">
+                <div className="p-3 bg-red-50 text-red-600 rounded-lg mb-3">
+                  {reposError}
+                </div>
+                <Button
+                  onClick={fetchRepos}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
 
-          {!reposLoading && !reposError && repos.length > 0 && (
-            <ul className="space-y-2">
-              {repos.map(repo => (
-                <li key={`${repo.owner}/${repo.repo}`}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectGitHubRepo(repo)}
-                    className="w-full p-3 rounded-lg bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer text-left"
-                  >
-                    <span className="font-medium text-sm">
-                      {repo.owner}/{repo.repo}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+            {!reposLoading && !reposError && repos.length === 0 && (
+              <div className="py-8 text-center text-gray-500">
+                No repositories found.
+              </div>
+            )}
+
+            {!reposLoading && !reposError && repos.length > 0 && (
+              <ul className="space-y-2">
+                {repos.map(repo => (
+                  <li key={`${repo.owner}/${repo.repo}`}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectGitHubRepo(repo)}
+                      className="w-full p-3 rounded-lg bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer text-left"
+                    >
+                      <span className="font-medium text-sm">
+                        {repo.owner}/{repo.repo}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

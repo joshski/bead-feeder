@@ -562,3 +562,26 @@ Added a refresh button next to the sync status indicator in the header. The butt
 - src/context/SyncContext.tsx (added onRefresh/setOnRefresh to context)
 - src/pages/DagView.tsx (register refreshGraph with SyncContext)
 - src/App.tsx (pass onRefresh to SyncStatusIndicator)
+
+## Session 15 - 2026-01-18
+
+### Task: bead-sw6 - Install Bun types for IDE support
+
+**Status:** Completed
+
+**Problem Solved:**
+The project uses Bun as its runtime and package manager, but TypeScript definitions for Bun-specific APIs were not installed. This meant IDE features like autocompletion and type checking were not available for Bun-specific features.
+
+**Solution Implemented:**
+Installed `@types/bun` as a dev dependency to provide TypeScript definitions for the Bun runtime.
+
+**Work Done:**
+1. Ran `bun add -D @types/bun` to install Bun TypeScript definitions
+2. Verified all tests still pass (337 tests)
+3. Verified e2e test still passes
+
+**Tests:** All 337 tests pass, e2e test passes.
+
+**Files Changed:**
+- package.json (added @types/bun dev dependency)
+- bun.lock (updated lockfile)

@@ -1071,3 +1071,50 @@ Changed the dialog layout to use flexbox with a fixed header and scrollable cont
 
 **Files Changed:**
 - src/pages/Home.tsx (fixed dialog layout so header stays fixed while list scrolls)
+
+## Session 32 - 2026-01-18
+
+### Task: bead-0sr - Update Create Issue dialog to be a general-purpose assistant
+
+**Status:** Completed
+
+**Problem Solved:**
+The 'Create Issue' dialog was named and designed specifically for creating issues, but it's actually a general-purpose AI assistant that can create issues, close issues, add dependencies, and answer questions about the project.
+
+**Solution Implemented:**
+Updated the UI of the CreateIssueModal component to reflect its broader capabilities:
+
+1. **Renamed dialog title**: Changed "Create Issue" to "Assistant"
+
+2. **Replaced empty state with welcome message**: Instead of centered placeholder text "Ask AI to help create issues", the dialog now shows a welcome message styled as an assistant message bubble listing capabilities:
+   - Create issues
+   - Close issues
+   - Add dependencies between issues
+   - Answer questions about the project
+
+3. **Updated placeholder text**: Changed textarea placeholder from "Type a message..." to "What do you want to do?"
+
+4. **Adjusted submit button position**: Moved the send button up slightly by changing `bottom-2` to `bottom-3`
+
+5. **Made dialog larger**: Increased dialog dimensions from `sm:max-w-[500px] max-h-[80vh]` to `sm:max-w-[560px] max-h-[85vh]`
+
+**Work Done:**
+
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Changed DialogTitle from "Create Issue" to "Assistant"
+   - Replaced empty state with welcome message styled as assistant message bubble
+   - Changed placeholder text to "What do you want to do?"
+   - Changed button position from `bottom-2` to `bottom-3`
+   - Increased dialog size to `sm:max-w-[560px] max-h-[85vh]`
+
+2. Updated `src/components/CreateIssueModal.test.tsx`:
+   - Updated "displays empty state when no messages" test to "displays welcome message when no messages"
+   - Updated test to check for new welcome message content
+   - Updated placeholder text expectation from "Type a message..." to "What do you want to do?"
+   - Fixed "renders assistant messages with markdown" test to use `toHaveTextContent` instead of `getByText` to avoid conflict with dialog title "Assistant"
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (updated UI for general-purpose assistant)
+- src/components/CreateIssueModal.test.tsx (updated tests for new UI)

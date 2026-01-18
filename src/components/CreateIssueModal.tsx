@@ -67,10 +67,10 @@ function CreateIssueModal({
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent
         data-testid="create-issue-modal"
-        className="sm:max-w-[500px] max-h-[80vh] overflow-hidden flex flex-col"
+        className="sm:max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col"
       >
         <DialogHeader>
-          <DialogTitle>Create Issue</DialogTitle>
+          <DialogTitle>Assistant</DialogTitle>
         </DialogHeader>
 
         {/* Chat Section */}
@@ -80,41 +80,51 @@ function CreateIssueModal({
             className="flex-1 overflow-y-auto space-y-3 min-h-0 pr-1"
             data-testid="message-history"
           >
-            {chatMessages.length === 0 ? (
+            {chatMessages.length === 0 && (
               <div
-                className="text-center text-gray-500 text-sm py-4"
-                data-testid="empty-state"
+                className="flex flex-col items-start"
+                data-testid="welcome-message"
               >
-                Ask AI to help create issues
-              </div>
-            ) : (
-              chatMessages.map(message => (
-                <div
-                  key={message.id}
-                  className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
-                  data-testid={`message-${message.role}`}
-                >
-                  <div
-                    className={`max-w-[90%] px-3 py-2 rounded-lg text-sm ${
-                      message.role === 'user'
-                        ? 'bg-blue-500 text-white rounded-br-sm'
-                        : 'bg-white border shadow-sm rounded-bl-sm'
-                    }`}
-                  >
-                    {message.role === 'assistant' ? (
-                      <div className="markdown-content prose prose-sm max-w-none">
-                        <Markdown>{message.content}</Markdown>
-                      </div>
-                    ) : (
-                      message.content
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {message.role === 'user' ? 'You' : 'Assistant'}
+                <div className="max-w-[90%] px-3 py-2 rounded-lg text-sm bg-white border shadow-sm rounded-bl-sm">
+                  <div className="markdown-content prose prose-sm max-w-none">
+                    <p>Hi! I can help you with:</p>
+                    <ul>
+                      <li>Create issues</li>
+                      <li>Close issues</li>
+                      <li>Add dependencies between issues</li>
+                      <li>Answer questions about the project</li>
+                    </ul>
                   </div>
                 </div>
-              ))
+                <div className="text-xs text-gray-400 mt-1">Assistant</div>
+              </div>
             )}
+            {chatMessages.map(message => (
+              <div
+                key={message.id}
+                className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
+                data-testid={`message-${message.role}`}
+              >
+                <div
+                  className={`max-w-[90%] px-3 py-2 rounded-lg text-sm ${
+                    message.role === 'user'
+                      ? 'bg-blue-500 text-white rounded-br-sm'
+                      : 'bg-white border shadow-sm rounded-bl-sm'
+                  }`}
+                >
+                  {message.role === 'assistant' ? (
+                    <div className="markdown-content prose prose-sm max-w-none">
+                      <Markdown>{message.content}</Markdown>
+                    </div>
+                  ) : (
+                    message.content
+                  )}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {message.role === 'user' ? 'You' : 'Assistant'}
+                </div>
+              </div>
+            ))}
             {isChatLoading && (
               <div className="flex items-start" data-testid="loading-indicator">
                 <div className="bg-white border shadow-sm px-3 py-2 rounded-lg rounded-bl-sm">
@@ -136,7 +146,7 @@ function CreateIssueModal({
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={handleChatKeyDown}
-                placeholder="Type a message..."
+                placeholder="What do you want to do?"
                 disabled={isChatLoading}
                 rows={3}
                 className="w-full px-3 py-2 pr-12 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -145,7 +155,7 @@ function CreateIssueModal({
               <button
                 type="submit"
                 disabled={isChatLoading || !chatInput.trim()}
-                className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                className="absolute right-2 bottom-3 w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
                 data-testid="send-button"
               >
                 <svg

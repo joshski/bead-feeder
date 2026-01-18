@@ -44,11 +44,17 @@ describe('CreateIssueModal', () => {
       expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
     })
 
-    it('displays empty state when no messages', () => {
+    it('displays welcome message when no messages', () => {
       render(<CreateIssueModal {...defaultProps} />)
-      expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+      expect(screen.getByTestId('welcome-message')).toBeInTheDocument()
+      expect(screen.getByText('Hi! I can help you with:')).toBeInTheDocument()
+      expect(screen.getByText('Create issues')).toBeInTheDocument()
+      expect(screen.getByText('Close issues')).toBeInTheDocument()
       expect(
-        screen.getByText('Ask AI to help create issues')
+        screen.getByText('Add dependencies between issues')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Answer questions about the project')
       ).toBeInTheDocument()
     })
 
@@ -67,8 +73,10 @@ describe('CreateIssueModal', () => {
         { id: '1', role: 'assistant', content: 'Here is **bold** text' },
       ]
       render(<CreateIssueModal {...defaultProps} chatMessages={messages} />)
-      expect(screen.getByTestId('message-assistant')).toBeInTheDocument()
-      expect(screen.getByText('Assistant')).toBeInTheDocument()
+      const messageEl = screen.getByTestId('message-assistant')
+      expect(messageEl).toBeInTheDocument()
+      // Check that the message has the "Assistant" label (not the dialog title)
+      expect(messageEl).toHaveTextContent('Assistant')
       expect(screen.getByText('bold')).toBeInTheDocument()
     })
 
@@ -77,7 +85,7 @@ describe('CreateIssueModal', () => {
       expect(screen.getByTestId('message-input')).toBeInTheDocument()
       expect(screen.getByTestId('send-button')).toBeInTheDocument()
       expect(
-        screen.getByPlaceholderText('Type a message...')
+        screen.getByPlaceholderText('What do you want to do?')
       ).toBeInTheDocument()
     })
 

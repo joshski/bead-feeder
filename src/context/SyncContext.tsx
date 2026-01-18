@@ -28,7 +28,7 @@ interface SyncContextValue extends SyncState {
   dismissToast: (id: string) => void
   resolveConflict: (resolution: 'theirs' | 'ours' | 'abort') => Promise<void>
   onRefresh: (() => void) | null
-  setOnRefresh: (callback: (() => void) | null) => void
+  setOnRefresh: (callback: (() => Promise<void>) | null) => void
 }
 
 const SyncContext = createContext<SyncContextValue | null>(null)
@@ -54,7 +54,30 @@ export function SyncProvider({ children }: SyncProviderProps) {
     conflictInfo: null,
   })
   const [toasts, setToasts] = useState<ToastMessage[]>([])
-  const [onRefresh, setOnRefresh] = useState<(() => void) | null>(null)
+  const [refreshCallback, setRefreshCallback] = useState<
+    (() => Promise<void>) | null
+  >(null)
+
+  // Wrap refresh callback to manage syncing state
+  const onRefresh = useCallback(() => {
+    if (!refreshCallback) return
+    setSyncState(prev => ({ ...prev, status: 'syncing' }))
+    refreshCallback()
+      .then(() => {
+        setSyncState(prev => ({
+          ...prev,
+          status: 'synced',
+          lastSyncTime: Date.now(),
+        }))
+      })
+      .catch(() => {
+        setSyncState(prev => ({ ...prev, status: 'error' }))
+      })
+  }, [refreshCallback])
+
+  const setOnRefresh = useCallback((callback: (() => Promise<void>) | null) => {
+    setRefreshCallback(() => callback)
+  }, [])
 
   const addToast = useCallback((type: ToastType, message: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -176,7 +199,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
     addToast,
     dismissToast,
     resolveConflict,
-    onRefresh,
+    onRefresh: refreshCallback ? onRefresh : null,
     setOnRefresh,
   }
 

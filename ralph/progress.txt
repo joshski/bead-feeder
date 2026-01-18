@@ -706,3 +706,42 @@ Modified the refresh flow to first pull from the remote repository (for GitHub r
 
 **Files Changed:**
 - src/pages/DagView.tsx (added pullRemoteRepository function, modified refreshGraph to support pull-before-refresh)
+
+## Session 21 - 2026-01-18
+
+### Task: bead-wv1 - Refresh DAG View on API Completion
+
+**Status:** Completed
+
+**Problem Solved:**
+When the refresh button was clicked, the DAG view was updated with new data, but the sync status indicator didn't show visual feedback during the refresh operation. The status stayed at "synced" while the pull and fetch were in progress.
+
+**Solution Implemented:**
+Modified the SyncContext to manage the syncing state during refresh operations:
+
+1. Changed the `onRefresh` callback to accept an async function (`() => Promise<void>`)
+2. When the refresh button is clicked, the SyncContext now:
+   - Sets status to "syncing" before starting the refresh
+   - Waits for the refresh operation to complete
+   - Sets status back to "synced" with updated `lastSyncTime` on success
+   - Sets status to "error" on failure
+
+This provides visual feedback via the spinning refresh icon (which was already implemented in SyncStatusIndicator) while the pull and graph fetch are in progress.
+
+**Work Done:**
+
+1. Updated `src/context/SyncContext.tsx`:
+   - Changed `setOnRefresh` to accept `(() => Promise<void>) | null`
+   - Added `refreshCallback` state to store the async callback
+   - Created `onRefresh` wrapper function that manages syncing state
+   - Wrapper sets status to "syncing", calls callback, then updates status based on result
+
+2. Updated `src/pages/DagView.tsx`:
+   - Changed the SyncContext registration to pass an async function
+   - The async function calls `await refreshGraph(true)` for proper promise handling
+
+**Tests:** All 337 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/context/SyncContext.tsx (added syncing state management for refresh)
+- src/pages/DagView.tsx (changed to async callback for SyncContext)

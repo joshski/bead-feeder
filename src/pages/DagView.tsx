@@ -180,7 +180,9 @@ function DagView() {
 
   // Register refresh callback with SyncContext (pulls from remote when button clicked)
   useEffect(() => {
-    setOnRefresh(() => () => refreshGraph(true))
+    setOnRefresh(async () => {
+      await refreshGraph(true)
+    })
     return () => setOnRefresh(null)
   }, [refreshGraph, setOnRefresh])
 

@@ -348,7 +348,9 @@ export class FakeIssueTracker implements IssueTracker {
     }
   }
 
-  async sync(): Promise<OperationResult<void>> {
+  async sync(_options?: {
+    importOnly?: boolean
+  }): Promise<OperationResult<void>> {
     // In-memory implementation - sync is a no-op
     return { success: true }
   }

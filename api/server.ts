@@ -980,6 +980,25 @@ async function handleRequest(req: Request): Promise<Response> {
         )
       }
 
+      // Import the pulled JSONL changes into the beads database
+      const tracker = createTrackerForPath(repoPath)
+      const syncResult = await tracker.sync({ importOnly: true })
+      if (!syncResult.success) {
+        return new Response(
+          JSON.stringify({
+            error: `Pull succeeded but sync failed: ${syncResult.error}`,
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      }
+
       return new Response(
         JSON.stringify({ success: true, message: 'Repository updated' }),
         {

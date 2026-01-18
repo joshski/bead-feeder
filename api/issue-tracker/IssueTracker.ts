@@ -92,5 +92,6 @@ export interface IssueTracker {
   getGraph(): Promise<OperationResult<IssueGraph>>
 
   // Sync (part of contract - all implementations must handle)
-  sync(): Promise<OperationResult<void>>
+  // If importOnly is true, only imports JSONL to database without git operations
+  sync(options?: { importOnly?: boolean }): Promise<OperationResult<void>>
 }

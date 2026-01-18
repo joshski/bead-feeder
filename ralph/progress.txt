@@ -1118,3 +1118,39 @@ Updated the UI of the CreateIssueModal component to reflect its broader capabili
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (updated UI for general-purpose assistant)
 - src/components/CreateIssueModal.test.tsx (updated tests for new UI)
+
+## Session 33 - 2026-01-18
+
+### Task: bead-05l - Run bd sync --import-only after pull in refresh endpoint
+
+**Status:** Completed
+
+**Problem Solved:**
+When the refresh button called `POST /api/repos/:owner/:repo/pull` to fetch the latest changes from GitHub, the beads database was not updated to reflect the new data in the pulled `.beads/issues.jsonl` file. The app reads issue data from `beads.db`, not directly from `issues.jsonl`, so stale data was displayed.
+
+**Solution Implemented:**
+After a successful `pullRepository()` call, run `bd sync --import-only` to import the JSONL changes into the database without triggering another git pull/push cycle.
+
+**Work Done:**
+
+1. Updated `api/issue-tracker/IssueTracker.ts`:
+   - Added optional `options?: { importOnly?: boolean }` parameter to the `sync()` method in the interface
+
+2. Updated `api/issue-tracker/BeadsIssueTracker.ts`:
+   - Modified `sync()` to accept the options parameter
+   - When `importOnly` is true, passes `--import-only` flag to the bd CLI
+
+3. Updated `api/issue-tracker/FakeIssueTracker.ts`:
+   - Updated `sync()` signature to match interface (parameter is ignored in fake implementation)
+
+4. Updated `api/server.ts`:
+   - After successful `pullRepository()` in the pull endpoint, create a tracker and call `sync({ importOnly: true })`
+   - If sync fails, return a 500 error indicating "Pull succeeded but sync failed"
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- api/issue-tracker/IssueTracker.ts (added importOnly option to sync method)
+- api/issue-tracker/BeadsIssueTracker.ts (implemented --import-only flag support)
+- api/issue-tracker/FakeIssueTracker.ts (updated signature to match interface)
+- api/server.ts (call sync after pull in refresh endpoint)

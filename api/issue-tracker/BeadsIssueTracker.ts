@@ -438,9 +438,15 @@ export class BeadsIssueTracker implements IssueTracker {
     }
   }
 
-  async sync(): Promise<OperationResult<void>> {
+  async sync(options?: {
+    importOnly?: boolean
+  }): Promise<OperationResult<void>> {
     try {
-      await runBdCommand(['sync'], this.cwd)
+      const args = ['sync']
+      if (options?.importOnly) {
+        args.push('--import-only')
+      }
+      await runBdCommand(args, this.cwd)
       return { success: true }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'

@@ -81,6 +81,7 @@ function DagCanvasInner({
         onEdgesChange={externalOnEdgesChange ?? onEdgesChange}
         onConnect={handleConnect}
         fitView
+        fitViewOptions={{ maxZoom: 1 }}
         panOnScroll
         selectionOnDrag
         panOnDrag={[1, 2]}

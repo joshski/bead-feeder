@@ -454,3 +454,24 @@ Added CSS classes to the DialogContent to constrain the modal height and enable 
 **Files Changed:**
 - src/components/IssueDetailModal.tsx (added scroll styling)
 - src/components/IssueDetailModal.test.tsx (added scroll styling test)
+
+## Session 12 - 2026-01-18
+
+### Task: bead-pfl - Adjust default zoom in DAG view for small number of issues
+
+**Status:** Completed
+
+**Problem Solved:**
+When the dependency graph view has only a few issues, the `fitView` prop on ReactFlow would zoom in excessively, making issues appear very large and filling the available space. This made the visualization less usable for small graphs.
+
+**Solution Implemented:**
+Added `fitViewOptions={{ maxZoom: 1 }}` to the ReactFlow component. This limits the maximum zoom level when auto-fitting the view to 1x (100%), preventing issues from appearing excessively large while still allowing the view to zoom out for larger graphs.
+
+**Work Done:**
+1. Updated `src/components/DagCanvas.tsx`:
+   - Added `fitViewOptions={{ maxZoom: 1 }}` prop to the ReactFlow component
+
+**Tests:** All 331 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/components/DagCanvas.tsx (added fitViewOptions with maxZoom: 1)

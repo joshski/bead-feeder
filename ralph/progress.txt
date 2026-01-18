@@ -828,3 +828,28 @@ Removed the DialogDescription component and its import from CreateIssueModal.tsx
 
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (removed DialogDescription import and element)
+
+## Session 25 - 2026-01-18
+
+### Task: bead-9ag - Remove 'AI Assistant' label from chat dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The chat dialog displayed "AI Assistant" as a label above the message history, which was redundant UI text that cluttered the interface.
+
+**Solution Implemented:**
+Removed the div containing "AI Assistant" text from CreateIssueModal.tsx and updated the corresponding test to no longer check for this text.
+
+**Work Done:**
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Removed the `<div className="text-sm font-medium text-gray-700 mb-2">AI Assistant</div>` element
+
+2. Updated `src/components/CreateIssueModal.test.tsx`:
+   - Removed the assertion `expect(screen.getByText('AI Assistant')).toBeInTheDocument()` from the "renders chat panel" test
+
+**Tests:** All 339 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (removed AI Assistant label div)
+- src/components/CreateIssueModal.test.tsx (removed AI Assistant text assertion)

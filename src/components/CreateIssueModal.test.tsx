@@ -42,7 +42,6 @@ describe('CreateIssueModal', () => {
     it('renders chat panel', () => {
       render(<CreateIssueModal {...defaultProps} />)
       expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
-      expect(screen.getByText('AI Assistant')).toBeInTheDocument()
     })
 
     it('displays empty state when no messages', () => {

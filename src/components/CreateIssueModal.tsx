@@ -75,10 +75,6 @@ function CreateIssueModal({
 
         {/* Chat Section */}
         <div className="flex flex-col flex-1 min-h-0" data-testid="chat-panel">
-          <div className="text-sm font-medium text-gray-700 mb-2">
-            AI Assistant
-          </div>
-
           {/* Message History */}
           <div
             className="flex-1 overflow-y-auto space-y-3 min-h-0 pr-1"

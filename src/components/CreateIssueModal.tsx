@@ -3,7 +3,6 @@ import Markdown from 'react-markdown'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -72,7 +71,6 @@ function CreateIssueModal({
       >
         <DialogHeader>
           <DialogTitle>Create Issue</DialogTitle>
-          <DialogDescription>Chat with AI to create issues</DialogDescription>
         </DialogHeader>
 
         {/* Chat Section */}

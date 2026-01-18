@@ -806,3 +806,25 @@ Redesigned the chat input area with:
 
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (redesigned chat input with embedded send button)
+
+## Session 24 - 2026-01-18
+
+### Task: bead-3tx - Remove 'Chat with AI to create issues' text from AI chat dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The AI chat dialog had redundant instructional text "Chat with AI to create issues" displayed under the title, which cluttered the interface.
+
+**Solution Implemented:**
+Removed the DialogDescription component and its import from CreateIssueModal.tsx.
+
+**Work Done:**
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Removed `DialogDescription` from the import statement
+   - Removed the `<DialogDescription>Chat with AI to create issues</DialogDescription>` element from the dialog header
+
+**Tests:** All 339 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (removed DialogDescription import and element)

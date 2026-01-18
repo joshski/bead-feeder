@@ -475,3 +475,36 @@ Added `fitViewOptions={{ maxZoom: 1 }}` to the ReactFlow component. This limits 
 
 **Files Changed:**
 - src/components/DagCanvas.tsx (added fitViewOptions with maxZoom: 1)
+
+## Session 13 - 2026-01-18
+
+### Task: bead-z41 - Auto-scroll chat messages to bottom
+
+**Status:** Completed
+
+**Problem Solved:**
+When users added new messages in the chat dialog, they had to manually scroll down to see the latest messages. This made the chat experience inconvenient, especially during longer conversations with the AI assistant.
+
+**Solution Implemented:**
+Added a `useEffect` hook that automatically scrolls the message history to the bottom whenever:
+1. New messages are added (tracked by `messageCount`)
+2. The loading state changes (to show the loading indicator)
+
+The scroll uses `scrollIntoView({ behavior: 'smooth' })` for a pleasant user experience.
+
+**Work Done:**
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Added `useEffect` import
+   - Added `messageCount` variable derived from `chatMessages.length`
+   - Added `useEffect` that calls `scrollIntoView({ behavior: 'smooth' })` on the `messagesEndRef` element when `messageCount` or `isChatLoading` changes
+   - Added biome-ignore comment for the linter rule that incorrectly flagged the dependencies
+
+2. Updated `src/components/CreateIssueModal.test.tsx`:
+   - Added test "auto-scrolls to bottom when new messages are added" that verifies scroll is triggered when messages array grows
+   - Added test "auto-scrolls when loading state changes" that verifies scroll is triggered when loading state toggles
+
+**Tests:** All 333 tests pass (2 new tests added), e2e test passes.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (added auto-scroll useEffect)
+- src/components/CreateIssueModal.test.tsx (added 2 scroll behavior tests)

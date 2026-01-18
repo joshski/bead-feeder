@@ -220,5 +220,43 @@ describe('CreateIssueModal', () => {
 
       expect(screen.getByText('console.log()')).toBeInTheDocument()
     })
+
+    it('auto-scrolls to bottom when new messages are added', () => {
+      const scrollIntoViewMock = vi.fn()
+      Element.prototype.scrollIntoView = scrollIntoViewMock
+
+      const messages: ChatMessage[] = [
+        { id: '1', role: 'user', content: 'First message' },
+      ]
+      const { rerender } = render(
+        <CreateIssueModal {...defaultProps} chatMessages={messages} />
+      )
+
+      // Clear any scroll calls from initial render
+      scrollIntoViewMock.mockClear()
+
+      // Adding a new message triggers scroll
+      const newMessages: ChatMessage[] = [
+        ...messages,
+        { id: '2', role: 'assistant', content: 'Second message' },
+      ]
+      rerender(
+        <CreateIssueModal {...defaultProps} chatMessages={newMessages} />
+      )
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth' })
+    })
+
+    it('auto-scrolls when loading state changes', () => {
+      const scrollIntoViewMock = vi.fn()
+      Element.prototype.scrollIntoView = scrollIntoViewMock
+
+      const { rerender } = render(<CreateIssueModal {...defaultProps} />)
+      scrollIntoViewMock.mockClear()
+
+      // Changing to loading state triggers scroll
+      rerender(<CreateIssueModal {...defaultProps} isChatLoading />)
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth' })
+    })
   })
 })

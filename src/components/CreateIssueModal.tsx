@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +32,12 @@ function CreateIssueModal({
 }: CreateIssueModalProps) {
   const [chatInput, setChatInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const messageCount = chatMessages.length
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when messages change or loading state changes
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messageCount, isChatLoading])
 
   const handleChatSubmit = useCallback(
     (e: React.FormEvent) => {

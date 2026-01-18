@@ -114,4 +114,29 @@ describe('SyncStatusIndicator', () => {
     expect(screen.queryByText('Pull')).toBeNull()
     expect(screen.queryByText('Abort')).toBeNull()
   })
+
+  it('shows refresh button when onRefresh is provided', () => {
+    const onRefresh = vi.fn()
+    render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)
+    expect(screen.getByTestId('refresh-button')).toBeDefined()
+  })
+
+  it('does not show refresh button without onRefresh callback', () => {
+    render(<SyncStatusIndicator status="synced" />)
+    expect(screen.queryByTestId('refresh-button')).toBeNull()
+  })
+
+  it('calls onRefresh when refresh button is clicked', () => {
+    const onRefresh = vi.fn()
+    render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)
+    fireEvent.click(screen.getByTestId('refresh-button'))
+    expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables refresh button when syncing', () => {
+    const onRefresh = vi.fn()
+    render(<SyncStatusIndicator status="syncing" onRefresh={onRefresh} />)
+    const button = screen.getByTestId('refresh-button')
+    expect(button.hasAttribute('disabled')).toBe(true)
+  })
 })

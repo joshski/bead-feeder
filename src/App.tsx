@@ -24,6 +24,7 @@ function App() {
     toasts,
     dismissToast,
     resolveConflict,
+    onRefresh,
   } = useSyncStatus()
 
   return (
@@ -59,6 +60,7 @@ function App() {
                   errorMessage={errorMessage}
                   conflictInfo={conflictInfo}
                   onResolve={resolveConflict}
+                  onRefresh={onRefresh ?? undefined}
                 />
               </>
             )}

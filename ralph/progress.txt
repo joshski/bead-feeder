@@ -508,3 +508,57 @@ The scroll uses `scrollIntoView({ behavior: 'smooth' })` for a pleasant user exp
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (added auto-scroll useEffect)
 - src/components/CreateIssueModal.test.tsx (added 2 scroll behavior tests)
+
+## Session 14 - 2026-01-18
+
+### Task: bead-lrm - Add refresh button to DAG view near sync label
+
+**Status:** Completed
+
+**Problem Solved:**
+Users had no way to manually refresh the DAG view to see updated issues. They had to reload the page to see changes.
+
+**Solution Implemented:**
+Added a refresh button next to the sync status indicator in the header. The button:
+- Displays a circular refresh icon (SVG)
+- Triggers the `refreshGraph` function from DagView
+- Is disabled during syncing (with reduced opacity)
+- Shows spinning animation while syncing
+- Uses the SyncContext to pass the refresh callback from DagView to the App header
+
+**Work Done:**
+1. Updated `src/components/SyncStatusIndicator.tsx`:
+   - Added `onRefresh` prop to the component interface
+   - Added a circular refresh button with SVG icon
+   - Button is disabled when status is "syncing"
+   - Added spin animation keyframes for syncing state
+   - Added `title` element in SVG for accessibility
+
+2. Updated `src/context/SyncContext.tsx`:
+   - Added `onRefresh` and `setOnRefresh` to the context value
+   - Added `onRefresh` state to store the refresh callback
+   - DagView can register its `refreshGraph` function via `setOnRefresh`
+
+3. Updated `src/pages/DagView.tsx`:
+   - Added import for `useSyncStatus` from SyncContext
+   - Added `useEffect` to register `refreshGraph` with the SyncContext on mount
+   - Cleanup unregisters the callback on unmount
+
+4. Updated `src/App.tsx`:
+   - Added `onRefresh` to useSyncStatus destructuring
+   - Pass `onRefresh` prop to SyncStatusIndicator
+
+5. Updated `src/components/SyncStatusIndicator.test.tsx`:
+   - Added test "shows refresh button when onRefresh is provided"
+   - Added test "does not show refresh button without onRefresh callback"
+   - Added test "calls onRefresh when refresh button is clicked"
+   - Added test "disables refresh button when syncing"
+
+**Tests:** All 337 tests pass (4 new tests added), e2e test passes.
+
+**Files Changed:**
+- src/components/SyncStatusIndicator.tsx (added refresh button with SVG icon)
+- src/components/SyncStatusIndicator.test.tsx (added 4 tests for refresh button)
+- src/context/SyncContext.tsx (added onRefresh/setOnRefresh to context)
+- src/pages/DagView.tsx (register refreshGraph with SyncContext)
+- src/App.tsx (pass onRefresh to SyncStatusIndicator)

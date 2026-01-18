@@ -8,6 +8,7 @@ import DagCanvas from '../components/DagCanvas'
 import FloatingActionButton from '../components/FloatingActionButton'
 import IssueDetailModal from '../components/IssueDetailModal'
 import type { IssueNodeData } from '../components/IssueNode'
+import { useSyncStatus } from '../context/SyncContext'
 import { applyDagLayout } from '../transformers/dagLayout'
 import {
   type BdDependency,
@@ -112,6 +113,7 @@ function DagView() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [isChatLoading, setIsChatLoading] = useState(false)
   const [selectedIssue, setSelectedIssue] = useState<IssueNodeData | null>(null)
+  const { setOnRefresh } = useSyncStatus()
 
   const handleIssueSelect = useCallback((issueData: IssueNodeData) => {
     setSelectedIssue(issueData)
@@ -147,6 +149,12 @@ function DagView() {
   useEffect(() => {
     refreshGraph()
   }, [refreshGraph])
+
+  // Register refresh callback with SyncContext
+  useEffect(() => {
+    setOnRefresh(() => refreshGraph)
+    return () => setOnRefresh(null)
+  }, [refreshGraph, setOnRefresh])
 
   const handleConnect = useCallback(
     (connection: Connection) => {

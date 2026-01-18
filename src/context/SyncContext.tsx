@@ -27,6 +27,8 @@ interface SyncContextValue extends SyncState {
   addToast: (type: ToastType, message: string) => void
   dismissToast: (id: string) => void
   resolveConflict: (resolution: 'theirs' | 'ours' | 'abort') => Promise<void>
+  onRefresh: (() => void) | null
+  setOnRefresh: (callback: (() => void) | null) => void
 }
 
 const SyncContext = createContext<SyncContextValue | null>(null)
@@ -52,6 +54,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
     conflictInfo: null,
   })
   const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const [onRefresh, setOnRefresh] = useState<(() => void) | null>(null)
 
   const addToast = useCallback((type: ToastType, message: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -173,6 +176,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
     addToast,
     dismissToast,
     resolveConflict,
+    onRefresh,
+    setOnRefresh,
   }
 
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>

@@ -3,4 +3,3 @@ set -e
 bun run build
 bunx biome check --write .
 bun run test
-bun run test:e2e

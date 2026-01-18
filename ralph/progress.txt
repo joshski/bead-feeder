@@ -932,3 +932,29 @@ Both helpers accept an optional timeout parameter (default 5000ms) matching the 
 
 **Files Changed:**
 - e2e/load-beads-issues.test.ts (added helper functions, replaced Playwright assertions)
+
+## Session 28 - 2026-01-18
+
+### Task: bead-y1f - Remove test:e2e from ./check file
+
+**Status:** Completed
+
+**Problem Solved:**
+The `./check` script was running `bun run test:e2e` as a separate step after `bun run test`. This was deemed redundant since e2e tests are slow and require GitHub credentials, making them unsuitable for quick quality gate checks.
+
+**Solution Implemented:**
+Removed the `bun run test:e2e` line from the `./check` script. The script now runs:
+1. `bun run build` - Build the project
+2. `bunx biome check --write .` - Lint the codebase
+3. `bun run test` - Run unit tests with vitest
+
+E2e tests can still be run manually via `bun run test:e2e` when needed.
+
+**Work Done:**
+1. Updated `./check`:
+   - Removed the `bun run test:e2e` line
+
+**Tests:** All 339 unit tests pass. `./check` completes successfully.
+
+**Files Changed:**
+- check (removed test:e2e line)

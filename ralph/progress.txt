@@ -958,3 +958,47 @@ E2e tests can still be run manually via `bun run test:e2e` when needed.
 
 **Files Changed:**
 - check (removed test:e2e line)
+
+## Session 29 - 2026-01-18
+
+### Task: bead-xu0 - Add TypeScript type checking to ./check script
+
+**Status:** Completed
+
+**Problem Solved:**
+The `./check` script didn't include TypeScript type checking, meaning type errors could go undetected during quality gate checks. Additionally, the `tsconfig.json` only included frontend code (`src/**/*`), leaving API, scripts, and e2e code unchecked.
+
+**Solution Implemented:**
+
+1. **Updated tsconfig.json to match Bun's recommended configuration:**
+   - Changed `target` from `ES2022` to `ESNext`
+   - Changed `lib` from `["ES2022", "DOM", "DOM.Iterable"]` to `["ESNext", "DOM", "DOM.Iterable"]`
+   - Changed `module` from `ESNext` to `Preserve`
+   - Added `moduleDetection: "force"`
+   - Added `allowJs: true`
+   - Added `allowImportingTsExtensions: true`
+   - Added `verbatimModuleSyntax: true`
+   - Added `noFallthroughCasesInSwitch: true`
+   - Added `noImplicitOverride: true`
+   - Set `noUncheckedIndexedAccess: false` (kept disabled to avoid extensive test file changes)
+   - Removed `esModuleInterop` and `forceConsistentCasingInFileNames` (not in Bun's recommended config)
+   - Removed `resolveJsonModule` and `isolatedModules` (not needed with `verbatimModuleSyntax`)
+
+2. **Extended include paths to cover all project code:**
+   - Added `api/**/*` for backend API code
+   - Added `scripts/**/*` for build scripts
+   - Added `e2e/**/*` for end-to-end tests
+
+3. **Added type checking to ./check script:**
+   - Added `bunx tsc --noEmit` as the first step in the quality gates
+
+4. **Fixed type errors discovered by expanded type checking:**
+   - Updated `api/server.ts` to use `ChatCompletionMessageFunctionToolCall` instead of `ChatCompletionMessageToolCall` (the union type was causing issues with accessing `.function` property)
+   - Fixed CORS headers construction to use `Record<string, string>` instead of conditional spread with optional properties
+
+**Tests:** All 339 unit tests pass. `./check` completes successfully with type checking.
+
+**Files Changed:**
+- tsconfig.json (updated to Bun's recommended config, expanded include paths)
+- check (added bunx tsc --noEmit as first step)
+- api/server.ts (fixed type errors in chat endpoint)

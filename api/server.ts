@@ -1,8 +1,8 @@
 import { mkdirSync } from 'node:fs'
 import OpenAI from 'openai'
 import type {
+  ChatCompletionMessageFunctionToolCall,
   ChatCompletionMessageParam,
-  ChatCompletionMessageToolCall,
 } from 'openai/resources/chat/completions'
 import {
   DEFAULT_GITHUB_REPOS_DIR,
@@ -475,7 +475,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
             // Collect the full response
             let textContent = ''
-            const toolCalls: ChatCompletionMessageToolCall[] = []
+            const toolCalls: ChatCompletionMessageFunctionToolCall[] = []
             // Track partial tool calls as they stream in
             const partialToolCalls: Map<
               number,
@@ -638,22 +638,19 @@ async function handleRequest(req: Request): Promise<Response> {
       })
 
       // Use specific origin for CORS when credentials are included (remote repos)
-      const corsHeaders =
-        owner && repo
-          ? {
-              'Access-Control-Allow-Origin': origin,
-              'Access-Control-Allow-Credentials': 'true',
-            }
-          : { 'Access-Control-Allow-Origin': '*' }
+      const headers: Record<string, string> = {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      }
+      if (owner && repo) {
+        headers['Access-Control-Allow-Origin'] = origin
+        headers['Access-Control-Allow-Credentials'] = 'true'
+      } else {
+        headers['Access-Control-Allow-Origin'] = '*'
+      }
 
-      return new Response(responseStream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-          ...corsHeaders,
-        },
-      })
+      return new Response(responseStream, { headers })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       // For error responses, use specific origin with credentials support

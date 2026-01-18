@@ -139,4 +139,20 @@ describe('SyncStatusIndicator', () => {
     const button = screen.getByTestId('refresh-button')
     expect(button.hasAttribute('disabled')).toBe(true)
   })
+
+  it('spins refresh icon when syncing', () => {
+    const onRefresh = vi.fn()
+    render(<SyncStatusIndicator status="syncing" onRefresh={onRefresh} />)
+    const button = screen.getByTestId('refresh-button')
+    const svg = button.querySelector('svg')
+    expect(svg?.style.animation).toBe('spin 1s linear infinite')
+  })
+
+  it('does not spin refresh icon when synced', () => {
+    const onRefresh = vi.fn()
+    render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)
+    const button = screen.getByTestId('refresh-button')
+    const svg = button.querySelector('svg')
+    expect(svg?.style.animation).toBe('')
+  })
 })

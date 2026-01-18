@@ -745,3 +745,31 @@ This provides visual feedback via the spinning refresh icon (which was already i
 **Files Changed:**
 - src/context/SyncContext.tsx (added syncing state management for refresh)
 - src/pages/DagView.tsx (changed to async callback for SyncContext)
+
+## Session 22 - 2026-01-18
+
+### Task: bead-nha & bead-cxx - Add tests for refresh button spinning animation
+
+**Status:** Completed
+
+**Problem Solved:**
+Tasks bead-nha (Spin Refresh Symbol on Button Click) and bead-cxx (Stop Refresh Symbol After Complete) were already implemented in Sessions 14 and 21:
+- Session 14 added the refresh button with SVG that spins when status is 'syncing'
+- Session 21 added the SyncContext state management that sets status to 'syncing' during refresh and back to 'synced' after completion
+
+However, there were no explicit tests verifying the spinning animation behavior. Added tests to document and verify this functionality.
+
+**Solution Implemented:**
+Added two tests to `SyncStatusIndicator.test.tsx` that verify the SVG animation style:
+1. `spins refresh icon when syncing` - Verifies that the SVG has `animation: 'spin 1s linear infinite'` when status is 'syncing'
+2. `does not spin refresh icon when synced` - Verifies that the SVG has no animation when status is 'synced'
+
+**Work Done:**
+1. Updated `src/components/SyncStatusIndicator.test.tsx`:
+   - Added test to verify spin animation is applied when syncing
+   - Added test to verify spin animation is not applied when synced
+
+**Tests:** All 339 tests pass (2 new tests added), e2e test passes.
+
+**Files Changed:**
+- src/components/SyncStatusIndicator.test.tsx (added 2 tests for spin animation behavior)

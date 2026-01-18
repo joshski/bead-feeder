@@ -902,3 +902,33 @@ Converted the e2e test from using `@playwright/test` (which has its own test run
 - playwright.config.ts (deleted)
 - package.json (removed Playwright test scripts, updated dependencies)
 - bun.lock (updated)
+
+## Session 27 - 2026-01-18
+
+### Task: bead-i0f - Fix e2e test assertions after switching to Bun test runner
+
+**Status:** Completed
+
+**Problem Solved:**
+After switching the e2e test runner from `@playwright/test` to `bun:test`, Playwright-specific assertions like `expect(...).toBeVisible()` were no longer available. These matchers are part of `@playwright/test`'s extended expect, not Bun's built-in expect.
+
+**Solution Implemented:**
+Created helper functions to replace Playwright's expect matchers using Playwright's native locator methods:
+
+1. `waitForVisible(locator, options?)` - Replaces `expect(locator).toBeVisible()` by calling `locator.waitFor({ state: 'visible' })`
+2. `waitForHidden(locator, options?)` - Replaces `expect(locator).not.toBeVisible()` by calling `locator.waitFor({ state: 'hidden' })`
+
+Both helpers accept an optional timeout parameter (default 5000ms) matching the typical Playwright behavior.
+
+**Work Done:**
+1. Updated `e2e/load-beads-issues.test.ts`:
+   - Added `Locator` type import from `playwright`
+   - Added `waitForVisible()` helper function
+   - Added `waitForHidden()` helper function
+   - Replaced all 13 `await expect(...).toBeVisible()` calls with `await waitForVisible(...)`
+   - Replaced `await expect(...).not.toBeVisible()` call with `await waitForHidden(...)`
+
+**Tests:** All 339 unit tests pass. E2e test passes with full GitHub fork workflow.
+
+**Files Changed:**
+- e2e/load-beads-issues.test.ts (added helper functions, replaced Playwright assertions)

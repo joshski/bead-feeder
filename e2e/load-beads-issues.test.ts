@@ -3,8 +3,30 @@ import { execSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import { type Browser, chromium, type Page } from 'playwright'
+import { type Browser, chromium, type Locator, type Page } from 'playwright'
 import { TEST_PORTS } from '../config/ports'
+
+/**
+ * Helper to wait for a locator to be visible.
+ * Replaces Playwright's expect(...).toBeVisible() which isn't available in bun:test.
+ */
+async function waitForVisible(
+  locator: Locator,
+  options?: { timeout?: number }
+): Promise<void> {
+  await locator.waitFor({ state: 'visible', timeout: options?.timeout ?? 5000 })
+}
+
+/**
+ * Helper to wait for a locator to be hidden/detached.
+ * Replaces Playwright's expect(...).not.toBeVisible() which isn't available in bun:test.
+ */
+async function waitForHidden(
+  locator: Locator,
+  options?: { timeout?: number }
+): Promise<void> {
+  await locator.waitFor({ state: 'hidden', timeout: options?.timeout ?? 5000 })
+}
 
 const BASE_URL = `http://localhost:${TEST_PORTS.VITE}`
 
@@ -414,20 +436,17 @@ describe('Load beads issues from GitHub repository', () => {
     }
 
     // Verify we're logged in by checking for user avatar or profile link
-    await expect(
-      page.locator('[data-login], .AppHeader-user, img.avatar').first()
-    ).toBeVisible({
-      timeout: 10000,
-    })
+    await waitForVisible(
+      page.locator('[data-login], .AppHeader-user, img.avatar').first(),
+      { timeout: 10000 }
+    )
 
     // Step 4: Navigate to the Bead Feeder app
     console.log('Step: Navigate to app and click GitHub login')
     await page.goto(BASE_URL)
 
     // Wait for the home page to load
-    await expect(
-      page.getByRole('heading', { name: /bead feeder/i })
-    ).toBeVisible({
+    await waitForVisible(page.getByRole('heading', { name: /bead feeder/i }), {
       timeout: 10000,
     })
 
@@ -435,7 +454,7 @@ describe('Load beads issues from GitHub repository', () => {
     const loginButton = page
       .getByRole('button', { name: /sign in with github/i })
       .first()
-    await expect(loginButton).toBeVisible()
+    await waitForVisible(loginButton)
     await loginButton.click()
 
     // Step 5: Handle OAuth authorization
@@ -483,11 +502,10 @@ describe('Load beads issues from GitHub repository', () => {
     await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 })
 
     // Wait for repository selection modal to open automatically (no button click needed)
-    await expect(
-      page.getByText(/select a repository/i, { exact: false })
-    ).toBeVisible({
-      timeout: 15000,
-    })
+    await waitForVisible(
+      page.getByText(/select a repository/i, { exact: false }),
+      { timeout: 15000 }
+    )
 
     // Look for the test fork in the list
     const repoItem = page.locator(
@@ -495,7 +513,7 @@ describe('Load beads issues from GitHub repository', () => {
     )
 
     // Wait for repo list to load and find our fork
-    await expect(repoItem.first()).toBeVisible({ timeout: 30000 })
+    await waitForVisible(repoItem.first(), { timeout: 30000 })
     await repoItem.first().click()
 
     // Step 7: Verify the DAG view loaded for the fork
@@ -510,16 +528,16 @@ describe('Load beads issues from GitHub repository', () => {
     })
 
     // Wait for the DAG canvas to be present
-    await expect(page.locator('.react-flow')).toBeVisible({ timeout: 15000 })
+    await waitForVisible(page.locator('.react-flow'), { timeout: 15000 })
 
     // Verify the repo name is shown in the header
-    await expect(page.getByText(`${username}/${forkRepoName}`)).toBeVisible()
+    await waitForVisible(page.getByText(`${username}/${forkRepoName}`))
 
     // Wait for issue nodes to appear in the DAG view
     const issueNodes = page.locator('[data-testid="issue-node"]')
 
     // Wait for at least one issue to appear
-    await expect(issueNodes.first()).toBeVisible({ timeout: 30000 })
+    await waitForVisible(issueNodes.first(), { timeout: 30000 })
 
     const issueCount = await issueNodes.count()
     console.log(`Found ${issueCount} issue(s) displayed in the DAG view`)
@@ -529,7 +547,7 @@ describe('Load beads issues from GitHub repository', () => {
       const firstIssueTitle = page
         .locator('[data-testid="issue-title"]')
         .first()
-      await expect(firstIssueTitle).toBeVisible()
+      await waitForVisible(firstIssueTitle)
       const titleText = await firstIssueTitle.textContent()
       console.log(`First issue title: ${titleText}`)
     }
@@ -758,17 +776,15 @@ describe('Load beads issues from GitHub repository', () => {
     console.log('Step: Create issue via AI chat')
     // Click the floating action button to open the Create Issue modal
     const fabButton = page.locator('[data-testid="fab-create-issue"]')
-    await expect(fabButton).toBeVisible()
+    await waitForVisible(fabButton)
     await fabButton.click()
 
     // Wait for the modal to open
-    await expect(
-      page.getByRole('heading', { name: /create issue/i })
-    ).toBeVisible()
+    await waitForVisible(page.getByRole('heading', { name: /create issue/i }))
 
     // Find the chat input and send a message to create an issue
     const chatInput = page.locator('[data-testid="message-input"]')
-    await expect(chatInput).toBeVisible()
+    await waitForVisible(chatInput)
 
     // Generate a unique issue title for this test run
     const testIssueTitle = `E2E Test Issue ${Date.now()}`
@@ -815,9 +831,9 @@ describe('Load beads issues from GitHub repository', () => {
     }
 
     // Wait for modal to close
-    await expect(
-      page.getByRole('heading', { name: /create issue/i })
-    ).not.toBeVisible({ timeout: 5000 })
+    await waitForHidden(page.getByRole('heading', { name: /create issue/i }), {
+      timeout: 5000,
+    })
 
     // Wait for the graph to refresh
     await new Promise(resolve => setTimeout(resolve, 2000))
@@ -830,7 +846,7 @@ describe('Load beads issues from GitHub repository', () => {
     const updatedIssueNodes = page.locator('[data-testid="issue-node"]')
 
     // Wait for at least one more issue than before
-    await expect(updatedIssueNodes.first()).toBeVisible({ timeout: 10000 })
+    await waitForVisible(updatedIssueNodes.first(), { timeout: 10000 })
 
     const updatedIssueCount = await updatedIssueNodes.count()
     console.log(

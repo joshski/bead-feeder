@@ -82,6 +82,10 @@ function createBeadsAdapter(): TestAdapter {
         proc.on('error', reject)
       })
 
+      // Create empty issues.jsonl (needed for BD_NO_DAEMON mode)
+      const { writeFileSync } = await import('node:fs')
+      writeFileSync(join(tempDir, '.beads', 'issues.jsonl'), '')
+
       return new BeadsIssueTracker({ cwd: tempDir })
     },
     cleanup: async () => {

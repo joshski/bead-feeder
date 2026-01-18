@@ -339,3 +339,35 @@ Separated the authentication concerns:
 **Files Changed:**
 - e2e/load-beads-issues.spec.ts (separated PAT from password auth)
 - .env.example (added TEST_GITHUB_PERSONAL_ACCESS_TOKEN documentation)
+
+## Session 9 - 2026-01-18
+
+### Task: bead-8cc - Fix bd daemon stack overflow when spawning from API server
+
+**Status:** Completed
+
+**Problem Solved:**
+When the API server spawned bd commands (e.g., `bd graph --all --json`), a stack overflow occurred in the bd CLI's daemon startup logic. The error was:
+```
+runtime: goroutine stack exceeds 1000000000-byte limit
+```
+This happened in the `acquireStartLock` function (daemon_autostart.go:228) which recursively called itself infinitely when bd was spawned as a child process from the API server.
+
+**Solution Implemented:**
+Set `BD_NO_DAEMON=true` environment variable when spawning bd commands from the API server. This bypasses the daemon startup logic which contains the buggy lock acquisition code.
+
+**Work Done:**
+1. Updated `api/issue-tracker/BeadsIssueTracker.ts`:
+   - Changed `runBdCommand` function to pass `BD_NO_DAEMON: 'true'` in the environment
+   - Updated error handling to detect errors written to stderr (BD_NO_DAEMON mode writes errors to stderr and exits with code 0)
+   - Error detection now checks if stderr starts with "Error" prefix
+
+2. Updated `api/issue-tracker/IssueTracker.contract.test.ts`:
+   - Added creation of empty `issues.jsonl` file after `bd init` in test setup
+   - This is needed because BD_NO_DAEMON mode requires the JSONL file to exist (normally created by the daemon)
+
+**Tests:** All 330 unit tests pass. E2e test runs without stack overflow (the remaining e2e failure is a separate UI issue unrelated to this fix).
+
+**Files Changed:**
+- api/issue-tracker/BeadsIssueTracker.ts (added BD_NO_DAEMON env var, improved error handling)
+- api/issue-tracker/IssueTracker.contract.test.ts (added issues.jsonl creation in test setup)

@@ -99,7 +99,7 @@ async function runBdCommand(args: string[], cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn('bd', args, {
       cwd: workDir,
-      env: process.env,
+      env: { ...process.env, BD_NO_DAEMON: 'true' },
     })
 
     let stdout = ''
@@ -114,13 +114,16 @@ async function runBdCommand(args: string[], cwd?: string): Promise<string> {
     })
 
     proc.on('close', code => {
-      if (code === 0) {
+      const output = stdout.trim()
+      const errOutput = stderr.trim()
+      // BD_NO_DAEMON mode may exit with code 0 even on errors, detect by checking for Error prefix on stderr
+      if (code === 0 && !errOutput.startsWith('Error')) {
         resolve(stdout)
       } else {
-        // For non-zero exit, try to extract error from JSON first
-        const output = stdout.trim() || stderr.trim()
+        // For errors, try to extract error from JSON first
+        const errorOutput = output || errOutput
         try {
-          const json = extractJson(output)
+          const json = extractJson(errorOutput)
           const parsed = JSON.parse(json)
           if (parsed.error) {
             reject(new Error(parsed.error))
@@ -129,7 +132,7 @@ async function runBdCommand(args: string[], cwd?: string): Promise<string> {
         } catch {
           // Not JSON, use raw output
         }
-        reject(new Error(output || `bd command failed with code ${code}`))
+        reject(new Error(errorOutput || `bd command failed with code ${code}`))
       }
     })
 

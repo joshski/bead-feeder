@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 import type {
@@ -57,6 +58,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const [refreshCallback, setRefreshCallback] = useState<
     (() => Promise<void>) | null
   >(null)
+  // Ref to hold the refresh callback for use in the SSE effect without causing reconnects
+  const refreshCallbackRef = useRef<(() => Promise<void>) | null>(null)
+  refreshCallbackRef.current = refreshCallback
 
   // Wrap refresh callback to manage syncing state
   const onRefresh = useCallback(() => {
@@ -159,6 +163,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
             pendingChanges: false,
           }))
           addToast('success', 'Changes synced successfully')
+          // Refresh the DAG to show updated data after sync
+          if (refreshCallbackRef.current) {
+            refreshCallbackRef.current().catch(() => {
+              // Ignore refresh errors - sync itself succeeded
+            })
+          }
         } else if (data.type === 'syncError') {
           setSyncState(prev => ({
             ...prev,

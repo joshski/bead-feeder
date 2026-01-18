@@ -1002,3 +1002,35 @@ The `./check` script didn't include TypeScript type checking, meaning type error
 - tsconfig.json (updated to Bun's recommended config, expanded include paths)
 - check (added bunx tsc --noEmit as first step)
 - api/server.ts (fixed type errors in chat endpoint)
+
+## Session 30 - 2026-01-18
+
+### Task: bead-i59 - Fix: DAG not refreshed after syncComplete SSE event
+
+**Status:** Completed
+
+**Problem Solved:**
+When the backend completed a sync and emitted a `syncComplete` event via SSE, the DAG view would show "Changes synced successfully" toast but the actual graph data was never refreshed. Users had to manually click the refresh button to see updated issues.
+
+**Root Cause:**
+In `src/context/SyncContext.tsx`, the `syncComplete` event handler only updated the UI sync status (status indicator, lastSyncTime, toast) but did NOT call `refreshCallback()` to refresh the actual DAG data.
+
+**Solution Implemented:**
+1. Added a `useRef` to hold the refresh callback (`refreshCallbackRef`) so it can be accessed in the SSE effect without causing reconnects
+2. Added call to `refreshCallbackRef.current()` in the `syncComplete` handler to refresh the DAG after sync
+
+The ref pattern is necessary because:
+- The SSE EventSource is created in a `useEffect` with `[addToast]` as dependencies
+- If we added `refreshCallback` to the dependencies, the EventSource would disconnect/reconnect every time DagView registers its callback
+- Using a ref allows us to access the latest callback value without triggering effect re-runs
+
+**Work Done:**
+1. Updated `src/context/SyncContext.tsx`:
+   - Added `useRef` import
+   - Added `refreshCallbackRef` ref that mirrors the `refreshCallback` state
+   - Added call to `refreshCallbackRef.current()` in the `syncComplete` handler (with error silencing since sync itself succeeded)
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/context/SyncContext.tsx (added ref for callback, call refreshCallback on syncComplete)

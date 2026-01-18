@@ -15,6 +15,7 @@ const SOURCE_REPO_NAME = 'bead-feeder-example-issues'
 let forkRepoName: string | null = null
 let clonedRepoPath: string | null = null
 let testUsername: string | null = null
+let testPat: string | null = null
 
 // Data structure representing issues and their dependencies extracted from beads CLI
 interface BeadsIssue {
@@ -74,16 +75,8 @@ function createTestFork(username: string, pat: string): string {
 
   console.log(`Creating fork: ${username}/${forkName}`)
 
-  // Login to gh CLI using the personal access token
-  try {
-    execSync(`echo "${pat}" | gh auth login --with-token`, {
-      stdio: 'pipe',
-    })
-  } catch (error) {
-    throw new Error(
-      `Failed to authenticate gh CLI: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
-  }
+  // Use GH_TOKEN env var instead of gh auth login to avoid modifying global gh config
+  const ghEnv = { ...process.env, GH_TOKEN: pat }
 
   // Create the fork with a custom name
   try {
@@ -91,6 +84,7 @@ function createTestFork(username: string, pat: string): string {
       `gh repo fork ${SOURCE_REPO_OWNER}/${SOURCE_REPO_NAME} --fork-name ${forkName} --clone=false`,
       {
         stdio: 'pipe',
+        env: ghEnv,
       }
     )
     console.log(`Created fork: ${username}/${forkName}`)
@@ -137,11 +131,13 @@ function cloneFork(owner: string, repo: string, pat: string): string {
 
 /**
  * Delete the test fork using gh CLI
+ * Uses GH_TOKEN env var for authentication to avoid modifying global gh config
  */
-function deleteFork(owner: string, repo: string): void {
+function deleteFork(owner: string, repo: string, pat: string): void {
   try {
     execSync(`gh repo delete ${owner}/${repo} --yes`, {
       stdio: 'pipe',
+      env: { ...process.env, GH_TOKEN: pat },
     })
     console.log(`Deleted fork: ${owner}/${repo}`)
   } catch (error) {
@@ -253,9 +249,10 @@ test.describe('Load beads issues from GitHub repository', () => {
       cleanupClonedRepo(clonedRepoPath)
       clonedRepoPath = null
     }
-    if (forkRepoName && testUsername) {
-      deleteFork(testUsername, forkRepoName)
+    if (forkRepoName && testUsername && testPat) {
+      deleteFork(testUsername, forkRepoName, testPat)
       forkRepoName = null
+      testPat = null
     }
   })
 
@@ -279,6 +276,7 @@ test.describe('Load beads issues from GitHub repository', () => {
     }
 
     testUsername = username
+    testPat = pat
 
     // Step 0: Create a fresh fork with a unique name
     await test.step('Create test fork', async () => {

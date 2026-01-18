@@ -54,7 +54,7 @@ function IssueNode({ data }: NodeProps) {
         border: `2px solid ${statusColors[issueData.status]}`,
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
         cursor: 'pointer',
-        width: '300px',
+        width: '400px',
         textAlign: 'left',
         display: 'block',
         position: 'relative',

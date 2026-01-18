@@ -656,3 +656,24 @@ Removed both the DialogDescription component and the branch name display from ea
 
 **Files Changed:**
 - src/pages/Home.tsx (removed DialogDescription and branch display)
+
+## Session 19 - 2026-01-18
+
+### Task: bead-ce8 - Increase width of issue cards
+
+**Status:** Completed
+
+**Problem Solved:**
+Issue cards in the DAG view were 300px wide, which limited readability and content visibility, especially for issues with longer titles.
+
+**Solution Implemented:**
+Increased the width of issue cards from 300px to 400px, providing more space for issue titles and improving readability.
+
+**Work Done:**
+1. Updated `src/components/IssueNode.tsx`:
+   - Changed `width: '300px'` to `width: '400px'` in the button style
+
+**Tests:** All 337 tests pass.
+
+**Files Changed:**
+- src/components/IssueNode.tsx (increased card width from 300px to 400px)

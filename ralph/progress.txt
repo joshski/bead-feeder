@@ -426,3 +426,31 @@ Set `BD_NO_DAEMON=true` environment variable when spawning bd commands from the 
 - api/server.ts (added idleTimeout, fixed CORS headers for chat endpoint)
 - api/server.test.ts (updated CORS test expectations)
 - e2e/load-beads-issues.spec.ts (added bd sync, fixed branch detection, added debug logging)
+
+## Session 11 - 2026-01-18
+
+### Task: bead-xy8 - Add scrolling to issue modal for long descriptions
+
+**Status:** Completed
+
+**Problem Solved:**
+When an issue has a very long description, the issue modal would overflow the viewport, making it impossible to read the full content or access the close button.
+
+**Solution Implemented:**
+Added CSS classes to the DialogContent to constrain the modal height and enable scrolling:
+- `max-h-[80vh]` - Limits the modal height to 80% of the viewport height
+- `overflow-y-auto` - Enables vertical scrolling when content exceeds the max height
+
+**Work Done:**
+
+1. Updated `src/components/IssueDetailModal.tsx`:
+   - Added `max-h-[80vh] overflow-y-auto` to the DialogContent className
+
+2. Updated `src/components/IssueDetailModal.test.tsx`:
+   - Added test "modal content has scroll styling for long descriptions" that verifies the modal has the correct CSS classes for scrolling
+
+**Tests:** All 331 tests pass (1 new test added), e2e test passes.
+
+**Files Changed:**
+- src/components/IssueDetailModal.tsx (added scroll styling)
+- src/components/IssueDetailModal.test.tsx (added scroll styling test)

@@ -53,7 +53,7 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent
         data-testid="issue-detail-modal"
-        className="sm:max-w-[480px]"
+        className="sm:max-w-[480px] max-h-[80vh] overflow-y-auto"
       >
         {issue && (
           <>

@@ -151,4 +151,17 @@ describe('IssueDetailModal', () => {
     expect(descriptionElement).toHaveTextContent('Line 2')
     expect(descriptionElement).toHaveTextContent('Line 3')
   })
+
+  it('modal content has scroll styling for long descriptions', () => {
+    const issueWithLongDescription: IssueNodeData = {
+      ...mockIssue,
+      description: 'A'.repeat(5000),
+    }
+    render(
+      <IssueDetailModal issue={issueWithLongDescription} onClose={vi.fn()} />
+    )
+    const modal = screen.getByTestId('issue-detail-modal')
+    expect(modal).toHaveClass('overflow-y-auto')
+    expect(modal).toHaveClass('max-h-[80vh]')
+  })
 })

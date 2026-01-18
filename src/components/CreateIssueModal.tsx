@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -137,25 +136,39 @@ function CreateIssueModal({
           </div>
 
           {/* Chat Input */}
-          <form onSubmit={handleChatSubmit} className="mt-2 flex gap-2">
-            <textarea
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={handleChatKeyDown}
-              placeholder="Type a message..."
-              disabled={isChatLoading}
-              rows={3}
-              className="flex-1 px-3 py-2 border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              data-testid="message-input"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isChatLoading || !chatInput.trim()}
-              data-testid="send-button"
-            >
-              Send
-            </Button>
+          <form onSubmit={handleChatSubmit} className="mt-2">
+            <div className="relative">
+              <textarea
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={handleChatKeyDown}
+                placeholder="Type a message..."
+                disabled={isChatLoading}
+                rows={3}
+                className="w-full px-3 py-2 pr-12 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-testid="message-input"
+              />
+              <button
+                type="submit"
+                disabled={isChatLoading || !chatInput.trim()}
+                className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                data-testid="send-button"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                >
+                  <title>Send message</title>
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </button>
+            </div>
           </form>
         </div>
 

@@ -779,8 +779,8 @@ describe('Load beads issues from GitHub repository', () => {
     await waitForVisible(fabButton)
     await fabButton.click()
 
-    // Wait for the modal to open
-    await waitForVisible(page.getByRole('heading', { name: /create issue/i }))
+    // Wait for the modal to open (dialog title is "Assistant")
+    await waitForVisible(page.getByRole('heading', { name: /assistant/i }))
 
     // Find the chat input and send a message to create an issue
     const chatInput = page.locator('[data-testid="message-input"]')
@@ -831,7 +831,7 @@ describe('Load beads issues from GitHub repository', () => {
     }
 
     // Wait for modal to close
-    await waitForHidden(page.getByRole('heading', { name: /create issue/i }), {
+    await waitForHidden(page.getByRole('heading', { name: /assistant/i }), {
       timeout: 5000,
     })
 
@@ -898,12 +898,102 @@ describe('Load beads issues from GitHub repository', () => {
 
     console.log('✓ Remote sync verified - AI-created issue is in repository')
 
-    // Step 13: Cleanup summary
+    // Step 13: Test refresh button syncs external changes
+    console.log('Step: Test refresh button syncs external changes')
+
+    // Clone a fresh copy of the repo into a new directory
+    const freshClonePath = cloneFork(username, forkRepoName, pat)
+    console.log(`Cloned fresh copy to: ${freshClonePath}`)
+
+    try {
+      // Initialize beads database in the fresh clone (it only has JSONL file)
+      console.log('Initializing beads database in fresh clone')
+      execSync('bd init', {
+        cwd: freshClonePath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+
+      // Generate a unique issue title for this external issue
+      const externalIssueTitle = `External Issue ${Date.now()}`
+
+      // Run bd create in the fresh clone to create a new issue
+      console.log(`Creating external issue: "${externalIssueTitle}"`)
+      execSync(`bd create "${externalIssueTitle}" --type task --priority 2`, {
+        cwd: freshClonePath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+
+      // Run bd sync in the fresh clone to push the issue to GitHub
+      console.log('Running bd sync to push external issue to GitHub')
+      execSync('bd sync', {
+        cwd: freshClonePath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+
+      console.log('External issue created and synced to GitHub')
+
+      // Get the current issue count before refresh
+      const beforeRefreshCount = await page
+        .locator('[data-testid="issue-node"]')
+        .count()
+      console.log(`Issue count before refresh: ${beforeRefreshCount}`)
+
+      // Click the refresh button in the UI
+      console.log('Clicking refresh button')
+      const refreshButton = page.locator('button[title="Refresh"]')
+      await waitForVisible(refreshButton, { timeout: 5000 })
+      await refreshButton.click()
+
+      // Wait for the sync to complete (refresh icon should stop spinning)
+      // Give the pull and sync time to complete
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      // Poll for the new issue to appear
+      let externalIssueFound = false
+      const refreshStartTime = Date.now()
+      const refreshTimeout = 30000
+
+      while (
+        !externalIssueFound &&
+        Date.now() - refreshStartTime < refreshTimeout
+      ) {
+        const issueTitles = page.locator('[data-testid="issue-title"]')
+        const titleCount = await issueTitles.count()
+
+        for (let i = 0; i < titleCount; i++) {
+          const titleText = await issueTitles.nth(i).textContent()
+          if (titleText?.includes('External Issue')) {
+            externalIssueFound = true
+            console.log(`Found external issue in DAG: "${titleText}"`)
+            break
+          }
+        }
+
+        if (!externalIssueFound) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      }
+
+      // Assert the external issue is now visible
+      expect(externalIssueFound).toBe(true)
+
+      // Take a screenshot showing the external issue
+      await takeScreenshot('e2e-dag-with-external-issue.png')
+      console.log('✓ External issue is visible in DAG after refresh')
+      console.log(
+        'Success screenshot saved to screenshots/e2e-dag-with-external-issue.png'
+      )
+    } finally {
+      // Clean up the fresh clone
+      cleanupClonedRepo(freshClonePath)
+    }
+
+    // Step 14: Cleanup summary
     console.log('Step: Cleanup summary')
     console.log('✓ Test completed successfully')
     console.log(
       `✓ Fork ${testUsername}/${forkRepoName} will be deleted in afterAll hook`
     )
     console.log('✓ Cloned repository will be deleted in afterAll hook')
-  }, 180000) // 3 minute timeout for the full test
+  }, 240000) // 4 minute timeout for the full test (increased for external issue test)
 })

@@ -1154,3 +1154,26 @@ After a successful `pullRepository()` call, run `bd sync --import-only` to impor
 - api/issue-tracker/BeadsIssueTracker.ts (implemented --import-only flag support)
 - api/issue-tracker/FakeIssueTracker.ts (updated signature to match interface)
 - api/server.ts (call sync after pull in refresh endpoint)
+
+### Follow-up: Add e2e test for refresh button syncing external changes
+
+**Problem Solved:**
+The e2e test didn't cover the scenario where changes are made externally (e.g., by another developer) and then the refresh button is used to pull those changes into the UI.
+
+**Solution Implemented:**
+Added a new test step (Step 13) that:
+1. Clones a fresh copy of the fork into a new directory
+2. Initializes the beads database with `bd init`
+3. Creates a new issue using `bd create`
+4. Syncs to GitHub using `bd sync`
+5. Clicks the refresh button in the UI
+6. Verifies the externally-created issue appears in the DAG view
+
+**Additional Fixes:**
+- Updated e2e test to use correct dialog title "Assistant" (was still looking for "Create Issue" which was renamed in Session 32)
+- Increased test timeout from 3 minutes to 4 minutes to accommodate the additional step
+
+**Tests:** All 339 unit tests pass, e2e test passes.
+
+**Files Changed:**
+- e2e/load-beads-issues.test.ts (added external issue creation and refresh test step)

@@ -585,3 +585,24 @@ Installed `@types/bun` as a dev dependency to provide TypeScript definitions for
 **Files Changed:**
 - package.json (added @types/bun dev dependency)
 - bun.lock (updated lockfile)
+
+## Session 16 - 2026-01-18
+
+### Task: bead-7dm - Enhance textarea for entering new issues
+
+**Status:** Completed
+
+**Problem Solved:**
+The textarea for entering new messages in the Create Issue modal was only 1 row tall, making it difficult to view multiple lines of text when composing messages.
+
+**Solution Implemented:**
+Changed the `rows` prop on the textarea from `1` to `3`, giving users more vertical space to view and compose their messages comfortably.
+
+**Work Done:**
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Changed `rows={1}` to `rows={3}` on the message input textarea
+
+**Tests:** All 337 tests pass.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (increased textarea rows from 1 to 3)

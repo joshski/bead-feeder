@@ -5,7 +5,6 @@ import { Button } from '../components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog'
@@ -122,9 +121,6 @@ export default function Home() {
         <DialogContent className="max-w-md h-[400px] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Select a Repository</DialogTitle>
-            <DialogDescription>
-              Choose a GitHub repository to view its dependency graph.
-            </DialogDescription>
           </DialogHeader>
 
           {reposLoading && (
@@ -157,16 +153,11 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => handleSelectGitHubRepo(repo)}
-                    className="w-full flex justify-between items-center p-3 rounded-lg bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                    className="w-full p-3 rounded-lg bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer text-left"
                   >
                     <span className="font-medium text-sm">
                       {repo.owner}/{repo.repo}
                     </span>
-                    {repo.branch && (
-                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                        {repo.branch}
-                      </span>
-                    )}
                   </button>
                 </li>
               ))}

@@ -628,3 +628,31 @@ Changed the DialogContent className from `max-h-[80vh]` to `h-[400px]` to give t
 
 **Files Changed:**
 - src/pages/Home.tsx (changed dialog to fixed height)
+
+## Session 18 - 2026-01-18
+
+### Task: bead-zs9 - Remove explanatory text and branch name from each repository in dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The 'Select Repository' dialog had unnecessary UI elements:
+1. Explanatory text ("Choose a GitHub repository to view its dependency graph.") under the title
+2. Branch name badges displayed for each repository entry
+
+These made the dialog visually cluttered and provided information that wasn't essential for repository selection.
+
+**Solution Implemented:**
+Removed both the DialogDescription component and the branch name display from each repository button, leaving a cleaner interface with just the repository name.
+
+**Work Done:**
+1. Updated `src/pages/Home.tsx`:
+   - Removed `DialogDescription` import (no longer used)
+   - Removed the `<DialogDescription>` component with explanatory text
+   - Removed the conditional block showing `repo.branch` in a badge
+   - Simplified the button styling from `flex justify-between items-center` to `text-left`
+
+**Tests:** All 337 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/pages/Home.tsx (removed DialogDescription and branch display)

@@ -360,6 +360,8 @@ async function handleRequest(req: Request): Promise<Response> {
       }
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        // Use specific origin with credentials for validation errors too
+        // since this endpoint may receive credentialed requests
         return new Response(
           JSON.stringify({
             error: 'messages is required and must be a non-empty array',
@@ -368,7 +370,8 @@ async function handleRequest(req: Request): Promise<Response> {
             status: 400,
             headers: {
               'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
             },
           }
         )
@@ -634,21 +637,33 @@ async function handleRequest(req: Request): Promise<Response> {
         },
       })
 
+      // Use specific origin for CORS when credentials are included (remote repos)
+      const corsHeaders =
+        owner && repo
+          ? {
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            }
+          : { 'Access-Control-Allow-Origin': '*' }
+
       return new Response(responseStream, {
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
           Connection: 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders,
         },
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
+      // For error responses, use specific origin with credentials support
+      // since this endpoint may receive credentialed requests for remote repos
       return new Response(JSON.stringify({ error: message }), {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
         },
       })
     }
@@ -1145,6 +1160,7 @@ if (!process.env.BEAD_FEEDER_GITHUB_REPOS_DIR) {
 
 const server = Bun.serve({
   port: PORT,
+  idleTimeout: 120, // 2 minutes - allow long-running SSE streams for AI chat
   async fetch(req) {
     const start = Date.now()
     const url = new URL(req.url)

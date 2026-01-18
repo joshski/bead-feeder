@@ -350,7 +350,12 @@ describe('API Server', () => {
         body: JSON.stringify({}),
       })
 
-      expect(response.headers.get('access-control-allow-origin')).toBe('*')
+      // Chat endpoint uses specific origin with credentials support
+      // to allow credentialed requests from remote repo pages
+      expect(response.headers.get('access-control-allow-origin')).toBeTruthy()
+      expect(response.headers.get('access-control-allow-credentials')).toBe(
+        'true'
+      )
     })
   })
 

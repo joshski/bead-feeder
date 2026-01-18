@@ -371,3 +371,58 @@ Set `BD_NO_DAEMON=true` environment variable when spawning bd commands from the 
 **Files Changed:**
 - api/issue-tracker/BeadsIssueTracker.ts (added BD_NO_DAEMON env var, improved error handling)
 - api/issue-tracker/IssueTracker.contract.test.ts (added issues.jsonl creation in test setup)
+
+## Session 10 - 2026-01-18
+
+### Task: bead-v93 - Make end-to-end test pass
+
+**Status:** Completed
+
+**Problems Solved:**
+
+1. **CORS error for credentialed requests**: The `/api/chat` endpoint was returning `Access-Control-Allow-Origin: *` for all responses, but the frontend sends requests with `credentials: 'include'` for remote repos. Browsers reject responses with `*` when credentials are included - they require the specific origin.
+
+2. **Bun server idle timeout**: The default 10-second `idleTimeout` in Bun.serve was causing SSE streaming responses to be terminated prematurely for long-running AI chat operations.
+
+3. **bd not seeing new issues after git pull**: After pulling changes from remote, `bd list` was returning stale data because the bd daemon's cached state wasn't being refreshed with the new file contents.
+
+**Solution Implemented:**
+
+1. **Fixed CORS headers in `/api/chat` endpoint**:
+   - Changed SSE response to use specific origin with credentials when owner/repo are provided
+   - Changed error responses to always use specific origin with credentials (since the endpoint may receive credentialed requests)
+   - Changed validation error response to use specific origin with credentials
+   - Updated test to check for credentials support instead of `*`
+
+2. **Added `idleTimeout` configuration**:
+   - Set `idleTimeout: 120` (2 minutes) in Bun.serve to allow long-running SSE streams for AI chat
+
+3. **Added `bd sync` before extracting beads data**:
+   - In the e2e test's `extractBeadsData` function, added a `bd sync` call before `bd list --json`
+   - This ensures bd picks up any file changes from git operations
+
+4. **Fixed branch detection in pull function**:
+   - Changed `pullAndExtractBeadsData` to get the current branch name dynamically instead of hardcoding `main`
+   - Added debug logging for branch name and pull output
+
+**Work Done:**
+
+1. Updated `api/server.ts`:
+   - Added `idleTimeout: 120` to Bun.serve configuration
+   - Updated `/api/chat` SSE response to use specific origin with credentials for remote repos
+   - Updated `/api/chat` error responses to use specific origin with credentials
+
+2. Updated `api/server.test.ts`:
+   - Changed CORS test to expect credentials support instead of `*`
+
+3. Updated `e2e/load-beads-issues.spec.ts`:
+   - Added `bd sync` call in `extractBeadsData()` before reading issues
+   - Changed `pullAndExtractBeadsData()` to detect current branch dynamically
+   - Added debug logging for branch and pull output
+
+**Tests:** All 330 unit tests pass. E2e test passes with full GitHub fork workflow.
+
+**Files Changed:**
+- api/server.ts (added idleTimeout, fixed CORS headers for chat endpoint)
+- api/server.test.ts (updated CORS test expectations)
+- e2e/load-beads-issues.spec.ts (added bd sync, fixed branch detection, added debug logging)

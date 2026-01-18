@@ -166,6 +166,16 @@ function cleanupClonedRepo(repoPath: string): void {
  * Runs `bd list --json` and `bd graph --all --json` in the specified directory.
  */
 function extractBeadsData(repoPath: string): BeadsData {
+  // Run bd sync first to ensure bd is up to date with any file changes
+  try {
+    execSync('bd sync', {
+      cwd: repoPath,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
+  } catch {
+    // Ignore sync errors - it might fail if there are no changes
+  }
+
   // Run bd list --json to get all issues
   const listOutput = execSync('bd list --json', {
     cwd: repoPath,
@@ -225,10 +235,21 @@ function pullAndExtractBeadsData(
     cwd: repoPath,
     stdio: 'pipe',
   })
-  execSync('git pull origin main', {
+
+  // Get the current branch name first
+  const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
     cwd: repoPath,
-    stdio: 'pipe',
+    encoding: 'utf-8',
+  }).trim()
+
+  console.log(`Current branch: ${currentBranch}`)
+
+  // Pull from the current branch
+  const pullOutput = execSync(`git pull origin ${currentBranch}`, {
+    cwd: repoPath,
+    encoding: 'utf-8',
   })
+  console.log(`Pull output: ${pullOutput}`)
 
   // Restore URL without credentials
   execSync(
@@ -834,11 +855,7 @@ test.describe('Load beads issues from GitHub repository', () => {
       }
 
       // Pull latest changes from the fork using PAT for auth
-      const updatedData = pullAndExtractBeadsData(
-        clonedRepoPath,
-        username,
-        pat
-      )
+      const updatedData = pullAndExtractBeadsData(clonedRepoPath, username, pat)
 
       console.log(
         `After sync: ${updatedData.issues.length} issue(s) in repository`

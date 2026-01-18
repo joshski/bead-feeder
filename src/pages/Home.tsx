@@ -119,7 +119,7 @@ export default function Home() {
 
       {/* GitHub Repository Modal */}
       <Dialog open={showGitHubModal} onOpenChange={setShowGitHubModal}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-md h-[400px] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Select a Repository</DialogTitle>
             <DialogDescription>

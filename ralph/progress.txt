@@ -606,3 +606,25 @@ Changed the `rows` prop on the textarea from `1` to `3`, giving users more verti
 
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (increased textarea rows from 1 to 3)
+
+## Session 17 - 2026-01-18
+
+### Task: bead-jbl - Fix height of 'Select Repository' dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The 'Select Repository' dialog changed height when the repository list loaded, causing a jarring visual jump. The dialog was using `max-h-[80vh]` which only set a maximum height, allowing the dialog to be smaller during the loading state and then grow when repositories appeared.
+
+**Solution Implemented:**
+Changed the DialogContent className from `max-h-[80vh]` to `h-[400px]` to give the dialog a fixed height. This ensures the dialog maintains a consistent size regardless of whether it's loading, showing an error, empty, or displaying the repository list.
+
+**Work Done:**
+1. Updated `src/pages/Home.tsx`:
+   - Changed DialogContent className from `max-w-md max-h-[80vh] overflow-y-auto` to `max-w-md h-[400px] overflow-y-auto`
+   - The fixed height of 400px provides enough room for several repositories while keeping the dialog compact
+
+**Tests:** All 337 tests pass, e2e test passes.
+
+**Files Changed:**
+- src/pages/Home.tsx (changed dialog to fixed height)

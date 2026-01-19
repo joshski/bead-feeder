@@ -139,7 +139,7 @@ describe('IssueDetailModal', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('preserves whitespace in description', () => {
+  it('renders multiline descriptions', () => {
     const issueWithMultilineDescription: IssueNodeData = {
       ...mockIssue,
       description: 'Line 1\nLine 2\nLine 3',
@@ -154,6 +154,92 @@ describe('IssueDetailModal', () => {
     expect(descriptionElement).toHaveTextContent('Line 1')
     expect(descriptionElement).toHaveTextContent('Line 2')
     expect(descriptionElement).toHaveTextContent('Line 3')
+  })
+
+  it('renders markdown bold text', () => {
+    const issueWithMarkdown: IssueNodeData = {
+      ...mockIssue,
+      description: 'This is **bold** text',
+    }
+    render(
+      <IssueDetailModal issue={issueWithMarkdown} onClose={mock(() => {})} />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    const strongElement = descriptionElement.querySelector('strong')
+    expect(strongElement).toBeInTheDocument()
+    expect(strongElement).toHaveTextContent('bold')
+  })
+
+  it('renders markdown italic text', () => {
+    const issueWithMarkdown: IssueNodeData = {
+      ...mockIssue,
+      description: 'This is *italic* text',
+    }
+    render(
+      <IssueDetailModal issue={issueWithMarkdown} onClose={mock(() => {})} />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    const emElement = descriptionElement.querySelector('em')
+    expect(emElement).toBeInTheDocument()
+    expect(emElement).toHaveTextContent('italic')
+  })
+
+  it('renders markdown links', () => {
+    const issueWithMarkdown: IssueNodeData = {
+      ...mockIssue,
+      description: 'Check out [this link](https://example.com)',
+    }
+    render(
+      <IssueDetailModal issue={issueWithMarkdown} onClose={mock(() => {})} />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    const linkElement = descriptionElement.querySelector('a')
+    expect(linkElement).toBeInTheDocument()
+    expect(linkElement).toHaveTextContent('this link')
+    expect(linkElement).toHaveAttribute('href', 'https://example.com')
+  })
+
+  it('renders markdown headers', () => {
+    const issueWithMarkdown: IssueNodeData = {
+      ...mockIssue,
+      description: '## Section Header\n\nSome content',
+    }
+    render(
+      <IssueDetailModal issue={issueWithMarkdown} onClose={mock(() => {})} />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    const h2Element = descriptionElement.querySelector('h2')
+    expect(h2Element).toBeInTheDocument()
+    expect(h2Element).toHaveTextContent('Section Header')
+  })
+
+  it('renders markdown unordered lists', () => {
+    const issueWithMarkdown: IssueNodeData = {
+      ...mockIssue,
+      description: '- Item 1\n- Item 2\n- Item 3',
+    }
+    render(
+      <IssueDetailModal issue={issueWithMarkdown} onClose={mock(() => {})} />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    const ulElement = descriptionElement.querySelector('ul')
+    expect(ulElement).toBeInTheDocument()
+    const listItems = descriptionElement.querySelectorAll('li')
+    expect(listItems.length).toBe(3)
+  })
+
+  it('renders markdown code blocks', () => {
+    const issueWithMarkdown: IssueNodeData = {
+      ...mockIssue,
+      description: 'Use `console.log()` for debugging',
+    }
+    render(
+      <IssueDetailModal issue={issueWithMarkdown} onClose={mock(() => {})} />
+    )
+    const descriptionElement = screen.getByTestId('issue-detail-description')
+    const codeElement = descriptionElement.querySelector('code')
+    expect(codeElement).toBeInTheDocument()
+    expect(codeElement).toHaveTextContent('console.log()')
   })
 
   it('modal content has scroll styling for long descriptions', () => {

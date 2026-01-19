@@ -1,3 +1,4 @@
+import Markdown from 'react-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -110,10 +111,10 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
                   Description
                 </div>
                 <div
-                  className="text-sm text-foreground whitespace-pre-wrap"
+                  className="markdown-content prose prose-sm max-w-none text-foreground"
                   data-testid="issue-detail-description"
                 >
-                  {issue.description}
+                  <Markdown>{issue.description}</Markdown>
                 </div>
               </div>
             )}

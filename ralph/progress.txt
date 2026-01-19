@@ -408,3 +408,40 @@ Enhanced the ralph loop in `ralph/run` with two changes:
 
 **Files Changed:**
 - ralph/run (added bd sync at start, changed exit to sleep when no work)
+
+## Session 9 - 2026-01-19
+
+### Task: bead-68b - Render markdown in issue detail dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The issue detail dialog displayed description text as plain text with whitespace preservation. The goal was to render markdown formatting in issue descriptions to enhance readability and provide better formatting for descriptions that contain markdown syntax.
+
+**Solution Implemented:**
+Used the existing `react-markdown` library (already installed) to render issue descriptions as markdown:
+
+1. **Updated IssueDetailModal.tsx**:
+   - Added import for `Markdown` from `react-markdown`
+   - Replaced plain text description rendering with `<Markdown>` component
+   - Changed CSS classes from `whitespace-pre-wrap` to `markdown-content prose prose-sm max-w-none` (same styling pattern used in CreateIssueModal for AI chat messages)
+
+2. **Added comprehensive tests for markdown rendering**:
+   - Test for bold text (`**bold**` → `<strong>`)
+   - Test for italic text (`*italic*` → `<em>`)
+   - Test for links (`[text](url)` → `<a href="url">`)
+   - Test for headers (`## Header` → `<h2>`)
+   - Test for unordered lists (`- Item` → `<ul><li>`)
+   - Test for inline code (`\`code\`` → `<code>`)
+   - Renamed existing whitespace test to "renders multiline descriptions"
+
+**Technical Notes:**
+- The `react-markdown` library was already a dependency (v10.1.0)
+- The same `prose prose-sm` styling pattern was already used in CreateIssueModal for AI chat responses
+- The existing test for multiline descriptions still passes since markdown preserves line structure
+
+**Tests:** All 328 tests pass (6 new tests added). TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/components/IssueDetailModal.tsx (added Markdown import and rendering)
+- src/app/components/IssueDetailModal.test.tsx (added 6 tests for markdown rendering)

@@ -7,10 +7,15 @@ echo "Starting Ralph loop (max $MAX_ITERATIONS iterations)"
 echo ""
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
+    # Sync with remote to get latest issues and priority changes
+    echo "Syncing with remote..."
+    bd sync 2>/dev/null || true
+
     # Check if there's work available
     if [[ -z "$(bd list --status open -n 1 2>/dev/null)" ]]; then
-        echo "No open issues remaining. Exiting loop."
-        break
+        echo "No open issues remaining. Sleeping for 1 minute..."
+        sleep 60
+        continue
     fi
 
     echo "=========================================="

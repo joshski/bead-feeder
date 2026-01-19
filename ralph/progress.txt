@@ -374,3 +374,37 @@ Replaced the complex `SyncQueue` with a simpler `SyncDebouncer`:
 - src/api/server.test.ts (removed tests for sync/resolve endpoint)
 - src/api/sync-queue.ts (deleted)
 - src/api/sync-queue.test.ts (deleted)
+
+## Session 8 - 2026-01-19
+
+### Task: bead-kkq - Enhance the ralph loop
+
+**Status:** Completed
+
+**Problem Solved:**
+The `ralph/run` script had two limitations:
+1. It didn't sync with the remote at the start of each iteration, so it couldn't pick up new issues or priority changes that were added externally
+2. When there were no open issues remaining, the loop exited entirely instead of waiting for new work to appear
+
+**Solution Implemented:**
+Enhanced the ralph loop in `ralph/run` with two changes:
+
+1. **Added `bd sync` at the start of each iteration**:
+   - Syncs with the remote before checking for available work
+   - Picks up new issues and priority changes added externally
+   - Uses `|| true` to continue even if sync fails (e.g., no remote configured)
+
+2. **Changed no-work behavior from exit to sleep**:
+   - When no open issues are found, sleeps for 1 minute instead of breaking out of the loop
+   - Uses `continue` to restart the loop after sleeping
+   - This allows the loop to pick up new work that appears while waiting
+
+**Technical Notes:**
+- The `bd sync 2>/dev/null || true` pattern silently handles sync failures (e.g., when running locally without a remote)
+- The loop still respects MAX_ITERATIONS, so it won't run forever
+- After sleeping, the next iteration syncs again, ensuring fresh data
+
+**Tests:** All 322 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- ralph/run (added bd sync at start, changed exit to sleep when no work)

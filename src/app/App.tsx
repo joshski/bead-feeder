@@ -10,6 +10,7 @@ import {
 } from './components/ui/popover'
 import { useAuth } from './context/AuthContext'
 import { useSyncStatus } from './context/SyncContext'
+import iconImage from './public/icon-128.png'
 
 function App() {
   const { user, isLoading, logout } = useAuth()
@@ -42,7 +43,11 @@ function App() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <h1 style={{ margin: 0, fontSize: '1.25rem' }}>Bead Feeder</h1>
+              <img
+                src={iconImage}
+                alt="Bead Feeder"
+                style={{ height: '32px', width: 'auto' }}
+              />
             </Link>
             {owner && repo && (
               <>

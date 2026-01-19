@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog'
 import { useAuth } from '../context/AuthContext'
+import iconImage from '../public/icon.png'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -87,6 +88,11 @@ export default function Home() {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
         <div className="max-w-lg w-full text-center">
+          <img
+            src={iconImage}
+            alt="Bead Feeder"
+            className="w-32 h-32 mx-auto mb-4"
+          />
           <h1 className="text-5xl font-bold mb-4">Bead Feeder</h1>
           <p className="text-xl text-gray-600 mb-8">Keep your agent busy!</p>
           <Button onClick={triggerGitHubLogin} size="lg" className="gap-2">
@@ -102,6 +108,11 @@ export default function Home() {
   return (
     <div className="flex items-center justify-center min-h-screen p-6">
       <div className="max-w-lg w-full text-center">
+        <img
+          src={iconImage}
+          alt="Bead Feeder"
+          className="w-32 h-32 mx-auto mb-4"
+        />
         <h1 className="text-5xl font-bold mb-4">Bead Feeder</h1>
         <p className="text-xl text-gray-600 mb-8">Keep your agent busy!</p>
         {!showGitHubModal && (

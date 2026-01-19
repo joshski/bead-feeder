@@ -39,7 +39,7 @@ describe('App', () => {
     )
   })
 
-  it('renders the heading on non-home routes', () => {
+  it('renders the logo on non-home routes', () => {
     render(
       <MemoryRouter initialEntries={['/local?path=/tmp/test']}>
         <AuthProvider>
@@ -49,6 +49,6 @@ describe('App', () => {
         </AuthProvider>
       </MemoryRouter>
     )
-    expect(screen.getByRole('heading', { name: 'Bead Feeder' })).toBeDefined()
+    expect(screen.getByRole('img', { name: 'Bead Feeder' })).toBeDefined()
   })
 })

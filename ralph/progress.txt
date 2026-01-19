@@ -472,3 +472,43 @@ Added a counter decrement when the loop sleeps due to no available work:
 
 **Files Changed:**
 - ralph/run (added counter decrement after sleep)
+
+## Session 11 - 2026-01-19
+
+### Task: bead-ru4 - Show the icon
+
+**Status:** Completed
+
+**Problem Solved:**
+The application used text headings ("Bead Feeder") in the main navigation and home page. The goal was to replace the nav heading with the bird mascot icon and add the icon above the "Bead Feeder" heading on the home page (both logged out and authenticated views).
+
+**Solution Implemented:**
+
+1. **Updated App.tsx (main nav)**:
+   - Imported the smaller icon (`icon-128.png`) for the navigation bar
+   - Replaced the `<h1>Bead Feeder</h1>` heading with an `<img>` element
+   - Set icon height to 32px with auto width for proper aspect ratio
+
+2. **Updated Home.tsx (home page)**:
+   - Imported the larger icon (`icon.png`) for the home page
+   - Added the icon image above the "Bead Feeder" heading in both:
+     - Unauthenticated landing page (line 91-95)
+     - Authenticated view (line 111-115)
+   - Styled with `w-32 h-32 mx-auto mb-4` for centered 128px display with margin
+
+3. **Updated App.test.tsx**:
+   - Changed test from looking for a heading role to looking for an image role
+   - Test now verifies `getByRole('img', { name: 'Bead Feeder' })` instead of heading
+
+**Technical Notes:**
+- Used `icon-128.png` (17KB) for nav to keep bundle smaller
+- Used `icon.png` (275KB) for home page where larger display is needed
+- Vite handles the image imports and bundles them into the dist folder
+- Alt text "Bead Feeder" maintains accessibility
+
+**Tests:** All 328 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/App.tsx (replaced heading with icon in nav)
+- src/app/pages/Home.tsx (added icon above heading)
+- src/app/App.test.tsx (updated test to check for image instead of heading)

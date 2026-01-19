@@ -643,3 +643,40 @@ Added a `disabled` prop to the FloatingActionButton component:
 - src/app/components/FloatingActionButton.tsx (added disabled prop and visual styling)
 - src/app/pages/DagView.tsx (pass isModalOpen as disabled prop)
 - src/app/components/FloatingActionButton.test.tsx (added 4 tests for disabled state)
+
+## Session 16 - 2026-01-19
+
+### Task: bead-0i0 - Simplify the readme
+
+**Status:** Completed
+
+**Problem Solved:**
+The README.md file contained extensive information including tech stack details, project structure, and testing commands. The goal was to simplify it to focus on the core message: keeping a single agent running continuously while the project manager feeds it work.
+
+**Solution Implemented:**
+Rewrote the README to be minimal and focused:
+
+1. **Added the Bead Feeder logo** (128px) at the top using the `icon-128.png` from `src/app/public/`
+
+2. **Simplified introduction** to convey the core concept:
+   - Visual interface for feeding work to a continuously running AI agent
+   - Connects to Beads issue tracking system
+   - Displays tasks as an interactive dependency graph
+   - Project manager adds/prioritizes issues while agent works through them
+
+3. **Streamlined Getting Started** to just two steps:
+   - Create `.env` based on `.env.example`
+   - Run `bun install` and `bun run dev`
+
+4. **Removed sections**:
+   - Tech Stack
+   - Project Structure
+   - Features list
+   - Testing commands
+   - Prerequisites (beyond the essential setup)
+   - License
+
+**Tests:** All 332 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- README.md (simplified to intro, logo, and getting started)

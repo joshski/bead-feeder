@@ -27,7 +27,6 @@ interface SyncContextValue extends SyncState {
   toasts: ToastMessage[]
   addToast: (type: ToastType, message: string) => void
   dismissToast: (id: string) => void
-  resolveConflict: (resolution: 'theirs' | 'ours' | 'abort') => Promise<void>
   onRefresh: (() => void) | null
   setOnRefresh: (callback: (() => Promise<void>) | null) => void
 }
@@ -91,37 +90,6 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
-
-  const resolveConflict = useCallback(
-    async (resolution: 'theirs' | 'ours' | 'abort') => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/sync/resolve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ resolution }),
-        })
-
-        if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || 'Failed to resolve conflict')
-        }
-
-        setSyncState(prev => ({
-          ...prev,
-          status: 'syncing',
-          conflictInfo: null,
-          errorMessage: null,
-        }))
-
-        addToast('info', `Resolving conflict with "${resolution}" strategy...`)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
-        addToast('error', `Failed to resolve: ${message}`)
-      }
-    },
-    [addToast]
-  )
 
   // Subscribe to sync status updates via SSE
   useEffect(() => {
@@ -208,7 +176,6 @@ export function SyncProvider({ children }: SyncProviderProps) {
     toasts,
     addToast,
     dismissToast,
-    resolveConflict,
     onRefresh: refreshCallback ? onRefresh : null,
     setOnRefresh,
   }

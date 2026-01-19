@@ -746,3 +746,68 @@ The "Select a Repository" heading in the RepositorySelector component lacked vis
 **Files Changed:**
 - src/app/components/RepositorySelector.tsx (added GitHub icon import and rendering, updated heading style)
 - src/app/components/RepositorySelector.test.tsx (added test for GitHub icon)
+
+## Session 20 - 2026-01-19
+
+### Task: bead-pst - Add test coverage reporting and remove dead code
+
+**Status:** Completed
+
+**Problem Solved:**
+The `./check` script didn't include test coverage reporting, and there was dead code in the codebase that was never executed. The goal was to add `--dots --coverage` flags to the test command and remove any code not covered by tests.
+
+**Solution Implemented:**
+
+1. **Updated ./check script**:
+   - Changed `bun test` to `bun test --dots --coverage`
+   - This adds coverage reporting and uses dot format for test output
+
+2. **Removed dead code from src/api/issue-tracker/index.ts**:
+   - Deleted `createIssueTracker` factory function (never imported anywhere)
+   - Function was defined but never used - direct class instantiation was used instead
+
+3. **Removed dead code from src/api/git-service.ts**:
+   - Deleted `cloneRepository()` - unused (sparseCloneRepository is used instead)
+   - Deleted `fetchRepository()` - never imported anywhere
+   - Deleted `abortMerge()` - never imported anywhere
+   - Deleted `resolveConflictsTheirs()` - never imported (conflict resolution removed in Session 7)
+   - Deleted `resolveConflictsOurs()` - never imported (conflict resolution removed in Session 7)
+   - Deleted `stageFiles()` - never imported (sync debouncer uses shell commands)
+   - Deleted `createCommit()` - never imported (sync debouncer uses shell commands)
+   - Deleted `runBdSync()` - never imported (sync debouncer calls bd directly)
+
+4. **Removed dead code from src/app/context/SyncContext.tsx**:
+   - Deleted `resolveConflict` function - called `/api/sync/resolve` endpoint which was removed in Session 7
+   - Removed from SyncContextValue interface
+
+5. **Removed dead code from src/app/components/SyncStatusIndicator.tsx**:
+   - Removed `onResolve` prop from interface
+   - Removed conflict resolution buttons (Pull/Abort) from UI
+
+6. **Updated src/app/App.tsx**:
+   - Removed `resolveConflict` from useSyncStatus destructuring
+   - Removed `onResolve` prop from SyncStatusIndicator
+
+7. **Updated src/app/components/SyncStatusIndicator.test.tsx**:
+   - Removed 4 tests related to onResolve functionality
+
+**Coverage Improvements:**
+- `src/api/issue-tracker/index.ts`: 33.33% → 100% (removed unused factory function)
+- `src/api/git-service.ts`: 20% → 25.61% (removed 8 unused functions)
+- Overall: 85.78% → 87.97% line coverage
+
+**Technical Notes:**
+- The conflict resolution UI was dead code because the `/api/sync/resolve` endpoint was removed in Session 7
+- `bd sync` handles conflicts automatically with 3-way merge, so manual resolution is no longer needed
+- Many git-service functions were created for manual sync operations but became obsolete when SyncDebouncer was introduced
+
+**Tests:** All 329 tests pass (4 tests removed for deleted functionality). TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- check (added --dots --coverage flags)
+- src/api/issue-tracker/index.ts (removed createIssueTracker factory)
+- src/api/git-service.ts (removed 8 unused functions)
+- src/app/context/SyncContext.tsx (removed resolveConflict function)
+- src/app/components/SyncStatusIndicator.tsx (removed onResolve prop and conflict buttons)
+- src/app/App.tsx (removed resolveConflict usage)
+- src/app/components/SyncStatusIndicator.test.tsx (removed 4 tests for removed functionality)

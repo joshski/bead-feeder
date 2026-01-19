@@ -10,7 +10,6 @@ export interface SyncStatusIndicatorProps {
   lastSyncTime?: number | null
   errorMessage?: string | null
   conflictInfo?: ConflictInfo | null
-  onResolve?: (resolution: 'theirs' | 'ours' | 'abort') => void
   onRefresh?: () => void
 }
 
@@ -46,7 +45,6 @@ function SyncStatusIndicator({
   lastSyncTime,
   errorMessage,
   conflictInfo,
-  onResolve,
   onRefresh,
 }: SyncStatusIndicatorProps) {
   const { color, label } = statusStyles[status]
@@ -84,42 +82,6 @@ function SyncStatusIndicator({
         <span style={{ color: '#9ca3af', fontSize: '12px' }}>
           ({conflictInfo.ahead} ahead, {conflictInfo.behind} behind)
         </span>
-      )}
-      {status === 'conflict' && onResolve && (
-        <div style={{ display: 'flex', gap: '4px', marginLeft: '4px' }}>
-          <button
-            type="button"
-            onClick={() => onResolve('theirs')}
-            style={{
-              padding: '2px 8px',
-              fontSize: '11px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            title="Accept remote changes and discard local conflicts"
-          >
-            Pull
-          </button>
-          <button
-            type="button"
-            onClick={() => onResolve('abort')}
-            style={{
-              padding: '2px 8px',
-              fontSize: '11px',
-              backgroundColor: '#6b7280',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            title="Abort the merge and revert to previous state"
-          >
-            Abort
-          </button>
-        </div>
       )}
       {lastSyncTime && status === 'synced' && (
         <span style={{ color: '#9ca3af', fontSize: '12px' }}>

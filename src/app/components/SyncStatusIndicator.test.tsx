@@ -69,56 +69,6 @@ describe('SyncStatusIndicator', () => {
     expect(screen.getByText('(2 ahead, 3 behind)')).toBeDefined()
   })
 
-  it('shows resolution buttons when in conflict state with onResolve', () => {
-    const onResolve = mock(() => {})
-    render(
-      <SyncStatusIndicator
-        status="conflict"
-        conflictInfo={{ ahead: 1, behind: 1 }}
-        onResolve={onResolve}
-      />
-    )
-    expect(screen.getByText('Pull')).toBeDefined()
-    expect(screen.getByText('Abort')).toBeDefined()
-  })
-
-  it('calls onResolve with theirs when Pull is clicked', () => {
-    const onResolve = mock(() => {})
-    render(
-      <SyncStatusIndicator
-        status="conflict"
-        conflictInfo={{ ahead: 1, behind: 1 }}
-        onResolve={onResolve}
-      />
-    )
-    fireEvent.click(screen.getByText('Pull'))
-    expect(onResolve).toHaveBeenCalledWith('theirs')
-  })
-
-  it('calls onResolve with abort when Abort is clicked', () => {
-    const onResolve = mock(() => {})
-    render(
-      <SyncStatusIndicator
-        status="conflict"
-        conflictInfo={{ ahead: 1, behind: 1 }}
-        onResolve={onResolve}
-      />
-    )
-    fireEvent.click(screen.getByText('Abort'))
-    expect(onResolve).toHaveBeenCalledWith('abort')
-  })
-
-  it('does not show resolution buttons without onResolve callback', () => {
-    render(
-      <SyncStatusIndicator
-        status="conflict"
-        conflictInfo={{ ahead: 1, behind: 1 }}
-      />
-    )
-    expect(screen.queryByText('Pull')).toBeNull()
-    expect(screen.queryByText('Abort')).toBeNull()
-  })
-
   it('shows refresh button when onRefresh is provided', () => {
     const onRefresh = mock(() => {})
     render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)

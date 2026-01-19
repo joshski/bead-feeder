@@ -3,4 +3,20 @@ set -e
 bunx tsc --noEmit
 bun run build
 bunx biome check --write .
-bun test --dots --coverage
+
+# Run tests with NODE_ENV=test so logs go to file
+TEST_LOG_FILE="./temp/test.log"
+if NODE_ENV=test bun test --dots --coverage; then
+  # Tests passed - no need to show logs
+  exit 0
+else
+  # Tests failed - show the log file for debugging
+  echo ""
+  echo "=== Test logs (from $TEST_LOG_FILE) ==="
+  if [ -f "$TEST_LOG_FILE" ]; then
+    cat "$TEST_LOG_FILE"
+  else
+    echo "(No log file found)"
+  fi
+  exit 1
+fi

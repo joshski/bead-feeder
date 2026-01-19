@@ -811,3 +811,52 @@ The `./check` script didn't include test coverage reporting, and there was dead 
 - src/app/components/SyncStatusIndicator.tsx (removed onResolve prop and conflict buttons)
 - src/app/App.tsx (removed resolveConflict usage)
 - src/app/components/SyncStatusIndicator.test.tsx (removed 4 tests for removed functionality)
+
+## Session 21 - 2026-01-19
+
+### Task: bead-0cd - Redirect test logs to file to reduce stdout noise
+
+**Status:** Completed
+
+**Problem Solved:**
+Test output was polluted with log messages from the API server, sync debouncer, tool executor, etc. These messages cluttered stdout and expanded AI agent context windows unnecessarily. The goal was to redirect logs to a file when running tests, and only show the logs when tests fail.
+
+**Solution Implemented:**
+
+1. **Updated src/api/logger.ts**:
+   - Added file-based logging when `NODE_ENV=test`
+   - Logs are written to `./temp/test.log` instead of stdout
+   - The log file is cleared at the start of each test run
+   - Added export of `TEST_LOG_FILE` constant for tests to access
+
+2. **Updated ./check script**:
+   - Added `NODE_ENV=test` when running tests
+   - If tests fail, the script echoes the contents of `./temp/test.log` before exiting
+   - If tests pass, no log output is shown (clean stdout)
+
+3. **Updated src/api/server.test.ts**:
+   - Set `NODE_ENV=development` for the spawned server process
+   - This ensures the spawned server writes to stdout so the test can detect when it's ready
+   - The test waits for "API server started" on stdout
+
+4. **Updated test/end-to-end/setup.ts**:
+   - Set `NODE_ENV=development` for the spawned API server
+   - Ensures e2e server startup isn't affected by test logging mode
+
+5. **Updated src/api/logger.test.ts**:
+   - Changed tests to read from the log file instead of spying on console methods
+   - Each test clears the log file before and after running
+
+**Technical Notes:**
+- The logger uses `appendFileSync` for immediate, synchronous writes
+- The temp directory is created if it doesn't exist
+- Spawned server processes explicitly set `NODE_ENV=development` to avoid inheriting the test environment
+
+**Tests:** All 329 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/api/logger.ts (added file-based logging for test mode)
+- src/api/logger.test.ts (updated to read from file instead of console spies)
+- check (run tests with NODE_ENV=test, show logs on failure)
+- src/api/server.test.ts (spawn server with NODE_ENV=development)
+- test/end-to-end/setup.ts (spawn API server with NODE_ENV=development)

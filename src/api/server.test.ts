@@ -7,8 +7,11 @@ describe('API Server', () => {
   const port = 3099
 
   beforeAll(async () => {
+    // Spawn server with NODE_ENV=development so logs go to stdout (not file)
+    // This allows the test to detect when the server starts
+    const env = { ...process.env, PORT: String(port), NODE_ENV: 'development' }
     serverProcess = spawn('bun', ['run', 'src/api/server.ts'], {
-      env: { ...process.env, PORT: String(port) },
+      env,
       cwd: process.cwd(),
     })
 

@@ -159,6 +159,7 @@ export async function startServers(): Promise<void> {
   })
 
   // Start API server on test port with temp data directory
+  // Set NODE_ENV=development so logs go to stdout (not test log file)
   const apiProc = spawn({
     cmd: ['bun', 'run', 'src/api/server.ts'],
     stdout: 'ignore',
@@ -167,6 +168,7 @@ export async function startServers(): Promise<void> {
     env: {
       ...process.env,
       PORT: String(TEST_PORTS.API),
+      NODE_ENV: 'development',
       BEAD_FEEDER_GITHUB_REPOS_DIR: localBeadsDir,
     },
   })

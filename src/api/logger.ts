@@ -1,3 +1,6 @@
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogEntry {
@@ -12,6 +15,18 @@ interface LogEntry {
 }
 
 const LOG_LEVEL: LogLevel = (process.env.LOG_LEVEL as LogLevel) || 'info'
+const IS_TEST = process.env.NODE_ENV === 'test'
+const TEST_LOG_FILE = './temp/test.log'
+
+// Initialize log file at module load if in test mode
+if (IS_TEST) {
+  const logDir = dirname(TEST_LOG_FILE)
+  if (!existsSync(logDir)) {
+    mkdirSync(logDir, { recursive: true })
+  }
+  // Clear the log file at the start of each test run
+  writeFileSync(TEST_LOG_FILE, '')
+}
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 0,
@@ -65,7 +80,10 @@ function log(level: LogLevel, message: string, meta?: Partial<LogEntry>) {
 
   const formatted = formatLog(entry)
 
-  if (level === 'error') {
+  if (IS_TEST) {
+    // In test mode, write to file instead of stdout
+    appendFileSync(TEST_LOG_FILE, `${formatted}\n`)
+  } else if (level === 'error') {
     console.error(formatted)
   } else if (level === 'warn') {
     console.warn(formatted)
@@ -101,5 +119,8 @@ export function logRequest(
     status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
   log(level, 'Request', { method, path, status, durationMs, error })
 }
+
+// Export for testing
+export { TEST_LOG_FILE }
 
 export type { LogLevel, LogEntry }

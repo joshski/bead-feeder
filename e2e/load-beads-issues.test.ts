@@ -779,7 +779,7 @@ describe('Load beads issues from GitHub repository', () => {
     await waitForVisible(fabButton)
     await fabButton.click()
 
-    // Wait for the modal to open (dialog title is "Assistant")
+    // Wait for the modal to open (dialog title is "Issue Assistant")
     await waitForVisible(page.getByRole('heading', { name: /assistant/i }))
 
     // Find the chat input and send a message to create an issue

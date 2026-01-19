@@ -70,7 +70,7 @@ function CreateIssueModal({
         className="sm:max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col"
       >
         <DialogHeader>
-          <DialogTitle>Assistant</DialogTitle>
+          <DialogTitle>Issue Assistant</DialogTitle>
         </DialogHeader>
 
         {/* Chat Section */}

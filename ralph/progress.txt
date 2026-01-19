@@ -1204,3 +1204,28 @@ Simplified the welcome message from a multi-line bulleted list to a single, conc
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (simplified welcome message)
 - src/components/CreateIssueModal.test.tsx (updated test for new message format)
+
+## Session 35 - 2026-01-19
+
+### Task: bead-dks - Change the chat dialog title to 'Issue Assistant'
+
+**Status:** Completed
+
+**Problem Solved:**
+The chat dialog had the generic title "Assistant" which didn't clearly communicate its purpose related to issue management.
+
+**Solution Implemented:**
+Changed the dialog title from "Assistant" to "Issue Assistant" to better describe the dialog's purpose.
+
+**Work Done:**
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Changed DialogTitle from "Assistant" to "Issue Assistant"
+
+2. Updated `e2e/load-beads-issues.test.ts`:
+   - Updated comment to reflect the new dialog title (the test uses a regex `/assistant/i` which still matches)
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (changed dialog title)
+- e2e/load-beads-issues.test.ts (updated comment)

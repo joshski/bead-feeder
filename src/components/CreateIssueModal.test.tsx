@@ -47,14 +47,10 @@ describe('CreateIssueModal', () => {
     it('displays welcome message when no messages', () => {
       render(<CreateIssueModal {...defaultProps} />)
       expect(screen.getByTestId('welcome-message')).toBeInTheDocument()
-      expect(screen.getByText('Hi! I can help you with:')).toBeInTheDocument()
-      expect(screen.getByText('Create issues')).toBeInTheDocument()
-      expect(screen.getByText('Close issues')).toBeInTheDocument()
       expect(
-        screen.getByText('Add dependencies between issues')
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText('Answer questions about the project')
+        screen.getByText(
+          'Hi! I can create issues, close issues, add dependencies, and more.'
+        )
       ).toBeInTheDocument()
     })
 

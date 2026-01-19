@@ -86,15 +86,8 @@ function CreateIssueModal({
                 data-testid="welcome-message"
               >
                 <div className="max-w-[90%] px-3 py-2 rounded-lg text-sm bg-white border shadow-sm rounded-bl-sm">
-                  <div className="markdown-content prose prose-sm max-w-none">
-                    <p>Hi! I can help you with:</p>
-                    <ul>
-                      <li>Create issues</li>
-                      <li>Close issues</li>
-                      <li>Add dependencies between issues</li>
-                      <li>Answer questions about the project</li>
-                    </ul>
-                  </div>
+                  Hi! I can create issues, close issues, add dependencies, and
+                  more.
                 </div>
                 <div className="text-xs text-gray-400 mt-1">Assistant</div>
               </div>

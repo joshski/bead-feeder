@@ -1177,3 +1177,30 @@ Added a new test step (Step 13) that:
 
 **Files Changed:**
 - e2e/load-beads-issues.test.ts (added external issue creation and refresh test step)
+
+## Session 34 - 2026-01-19
+
+### Task: bead-2ke - Simplify assistant text in chat dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The welcome message in the Assistant dialog used a structured list format with heading and bullet points, which was unnecessarily verbose.
+
+**Solution Implemented:**
+Simplified the welcome message from a multi-line bulleted list to a single, concise sentence: "Hi! I can create issues, close issues, add dependencies, and more."
+
+**Work Done:**
+1. Updated `src/components/CreateIssueModal.tsx`:
+   - Replaced the structured welcome message (heading + ul/li list wrapped in markdown-content div) with plain text
+   - Changed from "Hi! I can help you with:" + 4 bullet points to "Hi! I can create issues, close issues, add dependencies, and more."
+
+2. Updated `src/components/CreateIssueModal.test.tsx`:
+   - Simplified the "displays welcome message when no messages" test
+   - Changed assertion from checking for heading + 4 list items to checking for the single sentence
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/components/CreateIssueModal.tsx (simplified welcome message)
+- src/components/CreateIssueModal.test.tsx (updated test for new message format)

@@ -322,3 +322,55 @@ bead-feeder/
 - test/end-to-end/github-beads-issues.test.ts (updated imports)
 - src/api/server.test.ts (updated server spawn path)
 - All files moved to new locations
+
+## Session 7 - 2026-01-19
+
+### Task: bead-zqz - Simplify SyncQueue to commit + bd sync
+
+**Status:** Completed
+
+**Problem Solved:**
+The `SyncQueue` class (src/api/sync-queue.ts) reimplemented git operations (pull, push, conflict detection, retry logic) that `bd sync` already handles internally with its 3-way merge algorithm. This caused issues like:
+- Pull endpoint bypassed SyncQueue and called `pullRepository()` directly, which failed if there were uncommitted local changes to `.beads/issues.jsonl`
+- Chat endpoint called `pushRepository()` directly, bypassing SyncQueue
+- The SyncQueue's conflict resolution was more fragile than bd's built-in 3-way merge with LWW
+
+**Solution Implemented:**
+Replaced the complex `SyncQueue` with a simpler `SyncDebouncer`:
+
+1. **Created src/api/sync-debouncer.ts**:
+   - Simple debounced flow for sync operations
+   - After a change: `git add .beads && git commit -m "..." && bd sync --no-push`
+   - Uses `--no-push` because remote repos need explicit token auth for push
+   - Per-repo debouncers (Map keyed by cwd) to avoid conflicts between users
+   - Event emitters for status changes, sync complete, and sync error
+
+2. **Updated src/api/server.ts**:
+   - Replaced `getSyncQueue()` with `getSyncDebouncer()`
+   - Chat endpoint: Uses debouncer to commit/sync, then `pushRepository()` for remote repos
+   - Pull endpoint: Uses `tracker.sync()` (bd sync) instead of `pullRepository()` + `sync({ importOnly: true })`
+   - SSE endpoint: Accepts optional owner/repo params for per-repo status tracking
+   - Removed imports for `createCommit`, `stageFiles` (handled by debouncer)
+   - Removed `/api/sync/resolve` endpoint (conflicts handled by bd sync's 3-way merge)
+
+3. **Deleted src/api/sync-queue.ts and sync-queue.test.ts**
+
+4. **Created src/api/sync-debouncer.test.ts** for the new implementation
+
+5. **Updated src/api/server.test.ts** to remove tests for the deleted `/api/sync/resolve` endpoint
+
+**Technical Notes:**
+- `bd sync` does: pull → 3-way merge → export to JSONL → commit → push
+- The problem was that `bd sync` pulls BEFORE committing, so uncommitted local changes cause the pull to fail
+- Solution: commit local changes first, then run `bd sync --no-push`, then push with token auth for remote repos
+- Each repo (cwd) gets its own debouncer to avoid conflicts between users/repos
+
+**Tests:** All 322 tests pass. TypeScript compiles. Biome lint passes. Build succeeds. E2E test confirms AI-created issues are synced to GitHub.
+
+**Files Changed:**
+- src/api/sync-debouncer.ts (new - simplified sync implementation)
+- src/api/sync-debouncer.test.ts (new - tests for sync debouncer)
+- src/api/server.ts (updated to use sync debouncer, removed sync/resolve endpoint)
+- src/api/server.test.ts (removed tests for sync/resolve endpoint)
+- src/api/sync-queue.ts (deleted)
+- src/api/sync-queue.test.ts (deleted)

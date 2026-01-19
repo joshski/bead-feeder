@@ -10,18 +10,15 @@ import {
   getRepoPath,
 } from './config'
 import {
-  createCommit,
   ensureRepoCloned,
   getUserIdFromToken,
   listUserRepositories,
-  pullRepository,
   pushRepository,
-  stageFiles,
 } from './git-service'
 import { BeadsIssueTracker, type IssueTracker } from './issue-tracker'
 import * as log from './logger'
 import { openaiTools } from './openai-tools'
-import { getSyncQueue } from './sync-queue'
+import { getSyncDebouncer } from './sync-debouncer'
 import { executeTool } from './tool-executor'
 
 const PORT = process.env.PORT || 3001
@@ -565,51 +562,32 @@ async function handleRequest(req: Request): Promise<Response> {
               }
             }
 
-            // If any tools modified beads, commit the changes and sync
+            // If any tools modified beads, commit and sync
             if (commitMessages.length > 0) {
               const commitMessage =
                 commitMessages.length === 1
                   ? commitMessages[0]
                   : `feat(beads): Multiple changes\n\n${commitMessages.map(m => `- ${m}`).join('\n')}`
 
-              // Stage .beads directory changes
-              const stageResult = await stageFiles(repoWorkDir, '.beads')
-              if (stageResult.success) {
-                // Create commit
-                const commitResult = await createCommit(
-                  repoWorkDir,
-                  commitMessage
-                )
-                if (commitResult.success) {
-                  log.info(`Committed beads changes: ${commitMessage}`)
-                  // Run sync to keep beads in sync with git
-                  const syncResult = await tracker.sync()
-                  if (syncResult.success) {
-                    log.info('bd sync completed successfully')
-                  } else {
-                    log.warn(`bd sync failed: ${syncResult.error}`)
-                  }
+              // Use sync debouncer to commit and run bd sync --no-push
+              // For chat operations, we flush immediately
+              const syncDebouncer = getSyncDebouncer({ cwd: repoWorkDir })
+              syncDebouncer.enqueue(commitMessage)
+              await syncDebouncer.flush()
 
-                  // For remote repos, push the changes to GitHub
-                  if (token && owner && repo) {
-                    const pushResult = await pushRepository(
-                      repoWorkDir,
-                      token,
-                      'origin'
-                    )
-                    if (pushResult.success) {
-                      log.info('Pushed changes to remote repository')
-                    } else {
-                      log.warn(`Failed to push changes: ${pushResult.error}`)
-                    }
-                  }
+              // For remote repos, push with explicit token auth
+              // (bd sync --no-push doesn't push, so we need to push separately)
+              if (token && owner && repo) {
+                const pushResult = await pushRepository(
+                  repoWorkDir,
+                  token,
+                  'origin'
+                )
+                if (pushResult.success) {
+                  log.info('Pushed changes to remote repository')
                 } else {
-                  log.warn(
-                    `Failed to commit beads changes: ${commitResult.error}`
-                  )
+                  log.warn(`Failed to push changes: ${pushResult.error}`)
                 }
-              } else {
-                log.warn(`Failed to stage .beads: ${stageResult.error}`)
               }
             }
 
@@ -965,40 +943,20 @@ async function handleRequest(req: Request): Promise<Response> {
 
       const repoPath = getRepoPath(owner, repo, userIdResult.userId)
       log.info(
-        `Pull endpoint: pulling from remote for ${owner}/${repo} at ${repoPath}`
-      )
-      const result = await pullRepository(repoPath, token, 'origin')
-      log.info(
-        `Pull result: ${result.success ? 'success' : 'failed'} - ${result.output || result.error || 'no output'}`
+        `Pull endpoint: running bd sync for ${owner}/${repo} at ${repoPath}`
       )
 
-      if (!result.success) {
-        return new Response(
-          JSON.stringify({ error: result.error || 'Pull failed' }),
-          {
-            status: 500,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': origin,
-              'Access-Control-Allow-Credentials': 'true',
-            },
-          }
-        )
-      }
-
-      // Import the pulled JSONL changes into the beads database
-      log.info(
-        `Pull endpoint: running bd sync --import-only for ${owner}/${repo}`
-      )
+      // Use bd sync which handles: pull, 3-way merge, commit, push
+      // This is simpler and more robust than manual pullRepository() + sync({ importOnly: true })
       const tracker = createTrackerForPath(repoPath)
-      const syncResult = await tracker.sync({ importOnly: true })
+      const syncResult = await tracker.sync()
       log.info(
         `Sync result: ${syncResult.success ? 'success' : 'failed'}${syncResult.error ? ` - ${syncResult.error}` : ''}`
       )
       if (!syncResult.success) {
         return new Response(
           JSON.stringify({
-            error: `Pull succeeded but sync failed: ${syncResult.error}`,
+            error: `Sync failed: ${syncResult.error}`,
           }),
           {
             status: 500,
@@ -1034,31 +992,23 @@ async function handleRequest(req: Request): Promise<Response> {
     }
   }
 
-  // Conflict resolution endpoint
-  if (url.pathname === '/api/sync/resolve' && req.method === 'POST') {
-    const token = getTokenFromCookies(req)
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      })
-    }
+  // SSE endpoint for sync status updates
+  // Note: Conflict resolution is now handled by bd sync's 3-way merge algorithm,
+  // so we no longer need a separate /api/sync/resolve endpoint
+  if (url.pathname === '/api/sync/events' && req.method === 'GET') {
+    // Determine the working directory based on owner/repo params
+    const owner = url.searchParams.get('owner')
+    const repo = url.searchParams.get('repo')
+    let syncCwd: string
 
-    try {
-      const body = await req.json()
-      const resolution = body.resolution as 'theirs' | 'ours' | 'abort'
-
-      if (!resolution || !['theirs', 'ours', 'abort'].includes(resolution)) {
+    if (owner && repo) {
+      // For remote repos, we need the user's token to get their clone path
+      const token = getTokenFromCookies(req)
+      if (!token) {
         return new Response(
-          JSON.stringify({
-            error: 'Invalid resolution. Must be "theirs", "ours", or "abort"',
-          }),
+          JSON.stringify({ error: 'Authentication required' }),
           {
-            status: 400,
+            status: 401,
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': origin,
@@ -1067,50 +1017,43 @@ async function handleRequest(req: Request): Promise<Response> {
           }
         )
       }
-
-      const syncQueue = getSyncQueue()
-      syncQueue.setToken(token)
-      syncQueue.enqueueResolve(resolution)
-
-      return new Response(JSON.stringify({ success: true, resolution }), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      })
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      })
+      const userIdResult = await getUserIdFromToken(token)
+      if (!userIdResult.success || !userIdResult.userId) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to get user ID' }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          }
+        )
+      }
+      syncCwd = getRepoPath(owner, repo, userIdResult.userId)
+    } else {
+      // Local mode - use local repo path
+      syncCwd = getLocalRepoPath()
     }
-  }
 
-  // SSE endpoint for sync status updates
-  if (url.pathname === '/api/sync/events' && req.method === 'GET') {
-    const syncQueue = getSyncQueue()
+    const syncDebouncer = getSyncDebouncer({ cwd: syncCwd })
 
     const responseStream = new ReadableStream({
       start(controller) {
         const encoder = new TextEncoder()
 
         // Send initial state
-        const initialState = syncQueue.getState()
+        const initialState = syncDebouncer.getState()
         const initialData = `data: ${JSON.stringify({ type: 'status', ...initialState })}\n\n`
         controller.enqueue(encoder.encode(initialData))
 
         // Subscribe to status changes
-        const unsubscribeStatus = syncQueue.on('statusChange', data => {
+        const unsubscribeStatus = syncDebouncer.on('statusChange', data => {
           const statusData = data as {
             status: string
             state: {
-              pendingJobs: number
+              pending: boolean
               lastSync: number | null
               lastError: string | null
             }
@@ -1120,28 +1063,16 @@ async function handleRequest(req: Request): Promise<Response> {
         })
 
         // Subscribe to sync complete events
-        const unsubscribeComplete = syncQueue.on('syncComplete', data => {
+        const unsubscribeComplete = syncDebouncer.on('syncComplete', data => {
           const completeData = data as { timestamp: number }
           const eventData = `data: ${JSON.stringify({ type: 'syncComplete', timestamp: completeData.timestamp })}\n\n`
           controller.enqueue(encoder.encode(eventData))
         })
 
         // Subscribe to sync error events
-        const unsubscribeError = syncQueue.on('syncError', data => {
-          const errorData = data as { job: unknown; error: string }
+        const unsubscribeError = syncDebouncer.on('syncError', data => {
+          const errorData = data as { error: string }
           const eventData = `data: ${JSON.stringify({ type: 'syncError', error: errorData.error })}\n\n`
-          controller.enqueue(encoder.encode(eventData))
-        })
-
-        // Subscribe to conflict events
-        const unsubscribeConflict = syncQueue.on('conflict', data => {
-          const conflictData = data as {
-            ahead: number
-            behind: number
-            message: string
-            hasConflicts?: boolean
-          }
-          const eventData = `data: ${JSON.stringify({ type: 'conflict', ...conflictData })}\n\n`
           controller.enqueue(encoder.encode(eventData))
         })
 
@@ -1162,7 +1093,6 @@ async function handleRequest(req: Request): Promise<Response> {
           unsubscribeStatus()
           unsubscribeComplete()
           unsubscribeError()
-          unsubscribeConflict()
         }
       },
     })

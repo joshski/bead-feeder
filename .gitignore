@@ -11,3 +11,6 @@ screenshots
 
 # Temporary data
 temp
+
+# MacOS
+.DS_Store

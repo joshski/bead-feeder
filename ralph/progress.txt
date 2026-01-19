@@ -715,3 +715,34 @@ Restructured the modal layout using flexbox to create independent scroll regions
 **Files Changed:**
 - src/app/components/IssueDetailModal.tsx (restructured layout for independent description scrolling)
 - src/app/components/IssueDetailModal.test.tsx (updated test to verify new scroll behavior)
+
+## Session 19 - 2026-01-19
+
+### Task: bead-9i5 - Improve 'Select a Repository' modal dialog
+
+**Status:** Completed
+
+**Problem Solved:**
+The "Select a Repository" heading in the RepositorySelector component lacked visual identification. The task was to add a GitHub icon to the heading for better branding alignment. (Note: The background color change from blue to grey was already completed in Session 14.)
+
+**Solution Implemented:**
+
+1. **Updated src/app/components/RepositorySelector.tsx**:
+   - Imported `GitHubIcon` from `./GitHubLoginButton` (reusing existing component)
+   - Added `<GitHubIcon size={24} />` inside the heading element
+   - Updated `heading` style to use flexbox with `display: 'flex'`, `alignItems: 'center'`, and `gap: '8px'` for proper icon/text alignment
+
+2. **Added test in src/app/components/RepositorySelector.test.tsx**:
+   - New test: "displays GitHub icon in the heading"
+   - Verifies that the heading contains an SVG element (the GitHub icon)
+
+**Technical Notes:**
+- Reused the existing `GitHubIcon` component from `GitHubLoginButton.tsx` to maintain consistency
+- The icon size of 24px matches well with the 24px heading font size
+- Flexbox alignment ensures the icon and text are vertically centered
+
+**Tests:** All 333 tests pass (1 new test added). TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/components/RepositorySelector.tsx (added GitHub icon import and rendering, updated heading style)
+- src/app/components/RepositorySelector.test.tsx (added test for GitHub icon)

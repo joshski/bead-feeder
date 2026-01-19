@@ -116,6 +116,26 @@ describe('RepositorySelector', () => {
     })
   })
 
+  it('displays GitHub icon in the heading', async () => {
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ repos: [] }),
+      })
+    ) as unknown as typeof fetch
+
+    render(<RepositorySelector onSelect={mockOnSelect} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Select a Repository')).toBeInTheDocument()
+    })
+
+    // Check that the heading contains an SVG (the GitHub icon)
+    const heading = screen.getByText('Select a Repository')
+    const svg = heading.parentElement?.querySelector('svg')
+    expect(svg).toBeInTheDocument()
+  })
+
   it('retries fetch when retry button is clicked', async () => {
     let callCount = 0
     globalThis.fetch = mock(() => {

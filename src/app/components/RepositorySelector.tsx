@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { GitHubIcon } from './GitHubLoginButton'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -69,7 +70,10 @@ export default function RepositorySelector({
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>Select a Repository</h2>
+      <h2 style={styles.heading}>
+        <GitHubIcon size={24} />
+        Select a Repository
+      </h2>
 
       <section style={styles.section}>
         <h3 style={styles.sectionHeading}>
@@ -113,6 +117,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '24px',
     fontWeight: 600,
     marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   section: {
     marginBottom: '32px',

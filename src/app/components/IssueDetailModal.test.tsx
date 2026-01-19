@@ -242,7 +242,7 @@ describe('IssueDetailModal', () => {
     expect(codeElement).toHaveTextContent('console.log()')
   })
 
-  it('modal content has scroll styling for long descriptions', () => {
+  it('description section has independent scroll styling', () => {
     const issueWithLongDescription: IssueNodeData = {
       ...mockIssue,
       description: 'A'.repeat(5000),
@@ -254,7 +254,9 @@ describe('IssueDetailModal', () => {
       />
     )
     const modal = screen.getByTestId('issue-detail-modal')
-    expect(modal).toHaveClass('overflow-y-auto')
+    expect(modal).toHaveClass('overflow-hidden')
     expect(modal).toHaveClass('max-h-[80vh]')
+    const description = screen.getByTestId('issue-detail-description')
+    expect(description).toHaveClass('overflow-y-auto')
   })
 })

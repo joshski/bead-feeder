@@ -54,11 +54,11 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent
         data-testid="issue-detail-modal"
-        className="sm:max-w-[480px] max-h-[80vh] overflow-y-auto"
+        className="sm:max-w-[480px] max-h-[80vh] flex flex-col overflow-hidden"
       >
         {issue && (
           <>
-            <DialogHeader>
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle data-testid="issue-detail-title">
                 {issue.title}
               </DialogTitle>
@@ -70,7 +70,7 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
               </div>
             </DialogHeader>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-shrink-0">
               <div className="flex-1">
                 <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
                   Status
@@ -106,12 +106,12 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
             </div>
 
             {issue.description && (
-              <div>
-                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+              <div className="flex flex-col min-h-0 flex-1">
+                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground flex-shrink-0">
                   Description
                 </div>
                 <div
-                  className="markdown-content prose prose-sm max-w-none text-foreground"
+                  className="markdown-content prose prose-sm max-w-none text-foreground overflow-y-auto"
                   data-testid="issue-detail-description"
                 >
                   <Markdown>{issue.description}</Markdown>
@@ -119,7 +119,7 @@ function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
               </div>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0">
               <Button
                 variant="outline"
                 onClick={onClose}

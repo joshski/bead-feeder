@@ -680,3 +680,38 @@ Rewrote the README to be minimal and focused:
 
 **Files Changed:**
 - README.md (simplified to intro, logo, and getting started)
+
+## Session 17 - 2026-01-19
+
+### Task: bead-6h9 - Implement scrolling for description without the header
+
+**Status:** Completed
+
+**Problem Solved:**
+The issue detail dialog had `overflow-y-auto` on the entire modal content, which meant when viewing issues with long descriptions, the header (title, ID, status, type, priority) would scroll out of view. The goal was to make only the description section scroll independently while keeping the header fixed.
+
+**Solution Implemented:**
+Restructured the modal layout using flexbox to create independent scroll regions:
+
+1. **Updated src/app/components/IssueDetailModal.tsx**:
+   - Changed DialogContent from `overflow-y-auto` to `overflow-hidden flex flex-col`
+   - Added `flex-shrink-0` to DialogHeader, status/type/priority row, and DialogFooter to prevent shrinking
+   - Wrapped description section in a container with `flex flex-col min-h-0 flex-1`
+   - Added `overflow-y-auto` to the description content div so only it scrolls
+   - The "Description" label has `flex-shrink-0` to stay visible while content scrolls
+
+2. **Updated test in src/app/components/IssueDetailModal.test.tsx**:
+   - Renamed test from "modal content has scroll styling for long descriptions" to "description section has independent scroll styling"
+   - Test now verifies modal has `overflow-hidden` (not `overflow-y-auto`)
+   - Test verifies description element has `overflow-y-auto`
+
+**Technical Notes:**
+- `min-h-0` on the description container is crucial for flexbox to allow the content to shrink and scroll
+- `flex-shrink-0` prevents header/footer from being compressed when content is long
+- The description content div takes remaining space with `flex-1` and scrolls independently
+
+**Tests:** All 332 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/components/IssueDetailModal.tsx (restructured layout for independent description scrolling)
+- src/app/components/IssueDetailModal.test.tsx (updated test to verify new scroll behavior)

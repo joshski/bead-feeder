@@ -445,3 +445,30 @@ Used the existing `react-markdown` library (already installed) to render issue d
 **Files Changed:**
 - src/app/components/IssueDetailModal.tsx (added Markdown import and rendering)
 - src/app/components/IssueDetailModal.test.tsx (added 6 tests for markdown rendering)
+
+## Session 10 - 2026-01-19
+
+### Task: bead-5xv - Exclude sleep iterations from MAX_ITERATIONS count in Ralph loop
+
+**Status:** Completed
+
+**Problem Solved:**
+The Ralph loop (`./ralph/run`) counted every iteration towards `MAX_ITERATIONS`, including iterations where no work was done and the loop just slept for 1 minute. This meant that if there were no tasks available for extended periods, the loop would exhaust its iteration count without doing any actual work.
+
+**Solution Implemented:**
+Added a counter decrement when the loop sleeps due to no available work:
+
+1. **Updated ralph/run**:
+   - Added `((i--))` after the `sleep 60` command in the no-work branch
+   - This effectively "undoes" the iteration increment from the for loop when no work is done
+   - The loop continues to sleep and sync, but doesn't count toward `MAX_ITERATIONS`
+
+**Technical Notes:**
+- The `((i--))` syntax is bash arithmetic that decrements `i` by 1
+- Since the for loop will increment `i` at the start of the next iteration, the net effect is that the counter stays the same after a sleep iteration
+- This ensures that `MAX_ITERATIONS` reflects actual work iterations, not total loop cycles
+
+**Tests:** All 328 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- ralph/run (added counter decrement after sleep)

@@ -15,6 +15,7 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
     if [[ -z "$(bd list --status open -n 1 2>/dev/null)" ]]; then
         echo "No open issues remaining. Sleeping for 1 minute..."
         sleep 60
+        ((i--))  # Don't count sleep iterations towards MAX_ITERATIONS
         continue
     fi
 

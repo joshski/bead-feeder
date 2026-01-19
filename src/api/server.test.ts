@@ -7,7 +7,7 @@ describe('API Server', () => {
   const port = 3099
 
   beforeAll(async () => {
-    serverProcess = spawn('bun', ['run', 'api/server.ts'], {
+    serverProcess = spawn('bun', ['run', 'src/api/server.ts'], {
       env: { ...process.env, PORT: String(port) },
       cwd: process.cwd(),
     })

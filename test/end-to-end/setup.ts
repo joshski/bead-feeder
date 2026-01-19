@@ -11,7 +11,7 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import { type Subprocess, spawn } from 'bun'
 import type { Locator, Page } from 'playwright'
-import { TEST_PORTS } from '../config/ports'
+import { TEST_PORTS } from '../../config/ports'
 
 // ============================================================================
 // Types
@@ -160,7 +160,7 @@ export async function startServers(): Promise<void> {
 
   // Start API server on test port with temp data directory
   const apiProc = spawn({
-    cmd: ['bun', 'run', 'api/server.ts'],
+    cmd: ['bun', 'run', 'src/api/server.ts'],
     stdout: 'ignore',
     stderr: 'ignore',
     cwd: process.cwd(),

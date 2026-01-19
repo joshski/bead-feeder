@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { type Browser, chromium, type Page } from 'playwright'
-import { TEST_PORTS } from '../config/ports'
+import { TEST_PORTS } from '../../config/ports'
 import {
   type BeadsData,
   cleanupClonedRepo,

@@ -246,3 +246,79 @@ The `./check` script only ran `bun run test:unit` (306 unit tests), excluding in
 - e2e/setup.ts (use Bun.fetch for server polling)
 - e2e/github-beads-issues.test.ts (fixed fab-create-issue → fab-issue-assistant)
 - api/server.test.ts (increased hook timeout, improved error handling)
+
+## Session 6 - 2026-01-19
+
+### Task: bead-3yz - Reorganize source code structure
+
+**Status:** Completed
+
+**Problem Solved:**
+The project had source files scattered across multiple top-level directories (`src/`, `api/`, `e2e/`). The goal was to reorganize into a cleaner structure with better separation of concerns:
+- `src/*` → `src/app/` (frontend application code)
+- `api/*` → `src/api/` (backend API code)
+- `e2e/*` → `test/end-to-end/` (end-to-end tests)
+
+**Solution Implemented:**
+
+1. **Created new directory structure**:
+   - `src/app/` - Frontend React application
+   - `src/api/` - Backend API server and utilities
+   - `test/end-to-end/` - E2E tests with Playwright
+
+2. **Moved files using git mv**:
+   - All frontend files from `src/` to `src/app/`
+   - All API files from `api/` to `src/api/`
+   - All E2E test files from `e2e/` to `test/end-to-end/`
+
+3. **Updated configuration files**:
+   - `index.html`: Updated entry point from `/src/main.tsx` to `/src/app/main.tsx`
+   - `vite.config.ts`: Updated `@` alias from `./src` to `./src/app`
+   - `tsconfig.json`: Updated `@/*` path mapping and `include` patterns
+   - `package.json`: Updated script paths for `dev:api`, `test:unit`, `test:integration`, `test:e2e`
+   - `scripts/dev.ts`: Updated API server path to `src/api/server.ts`
+
+4. **Updated import paths**:
+   - `test/end-to-end/setup.ts`: Updated config import to `../../config/ports`, API server path to `src/api/server.ts`
+   - `test/end-to-end/github-beads-issues.test.ts`: Updated config import to `../../config/ports`
+   - `src/api/server.test.ts`: Updated server spawn path to `src/api/server.ts`
+
+**New Project Structure:**
+```
+bead-feeder/
+├── src/
+│   ├── app/           # Frontend React application
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   ├── transformers/
+│   │   ├── utils/
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── *.test.tsx
+│   └── api/           # Backend API server
+│       ├── issue-tracker/
+│       ├── server.ts
+│       └── *.test.ts
+├── test/
+│   └── end-to-end/    # E2E tests
+│       ├── setup.ts
+│       └── github-beads-issues.test.ts
+├── config/            # Shared configuration
+├── scripts/           # Build/dev scripts
+└── ...
+```
+
+**Tests:** All 340 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- index.html (updated entry point path)
+- vite.config.ts (updated @ alias)
+- tsconfig.json (updated paths and includes)
+- package.json (updated script paths)
+- scripts/dev.ts (updated API server path)
+- test/end-to-end/setup.ts (updated imports and server path)
+- test/end-to-end/github-beads-issues.test.ts (updated imports)
+- src/api/server.test.ts (updated server spawn path)
+- All files moved to new locations

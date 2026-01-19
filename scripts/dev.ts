@@ -55,7 +55,7 @@ async function main() {
   })
 
   const apiProc = spawn({
-    cmd: ['bun', 'run', 'api/server.ts'],
+    cmd: ['bun', 'run', 'src/api/server.ts'],
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: process.cwd(),

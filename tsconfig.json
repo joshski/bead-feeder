@@ -20,14 +20,13 @@
     "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/app/*"]
     }
   },
   "include": [
     "src/**/*",
-    "api/**/*",
     "scripts/**/*",
-    "e2e/**/*",
+    "test/**/*",
     "vite.config.ts",
     "bun-test.d.ts",
     "test-preload.ts"

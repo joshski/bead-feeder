@@ -79,6 +79,10 @@ const API_URL = `http://localhost:${TEST_PORTS.API}`
 const MAX_WAIT_MS = 30000
 const POLL_INTERVAL_MS = 500
 
+// Bun's native fetch is not replaced by happy-dom - access it directly
+// This avoids CORS restrictions imposed by happy-dom's fetch implementation
+const nativeFetch: typeof fetch = Bun.fetch || globalThis.fetch
+
 interface ServerState {
   viteProc: Subprocess
   apiProc: Subprocess
@@ -97,7 +101,8 @@ async function waitForServer(url: string, name: string): Promise<boolean> {
 
   while (Date.now() - startTime < MAX_WAIT_MS) {
     try {
-      const response = await fetch(url)
+      // Use nativeFetch to avoid CORS restrictions from happy-dom
+      const response = await nativeFetch(url)
       if (response.ok || response.status < 500) {
         console.log(`[e2e] ${name} is ready (${Date.now() - startTime}ms)`)
         return true

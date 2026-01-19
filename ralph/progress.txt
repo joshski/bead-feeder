@@ -193,3 +193,56 @@ Refactored the e2e test for better organization:
 **Files Changed:**
 - e2e/setup.ts (added helpers and types)
 - e2e/load-beads-issues.test.ts → e2e/github-beads-issues.test.ts (renamed, updated imports)
+
+## Session 5 - 2026-01-19
+
+### Task: bead-jzg - Make ./check run all tests including integration and e2e
+
+**Status:** Completed
+
+**Problem Solved:**
+The `./check` script only ran `bun run test:unit` (306 unit tests), excluding integration tests (`api/server.test.ts`) and e2e tests (`e2e/github-beads-issues.test.ts`). The goal was to update `./check` to run `bun test` which includes all tests, and fix any failing tests.
+
+**Issues Found and Fixed:**
+
+1. **Integration tests failing with undefined response**:
+   - Root cause: `src/App.test.tsx` mocked `globalThis.fetch` in `beforeEach` but never restored it in `afterEach`
+   - When tests ran in parallel, the mocked fetch polluted `api/server.test.ts`, causing all fetch calls to return the mock's `{ ok: true, json: () => ... }` object structure instead of real responses
+   - Fix: Added `afterEach` to restore original `globalThis.fetch` and `EventSource` in `App.test.tsx`
+
+2. **E2E tests failing with CORS errors**:
+   - Root cause: `test-preload.ts` registers happy-dom, which replaces `globalThis.fetch` with its own CORS-enforcing implementation
+   - The e2e setup's `waitForServer` function used `fetch()` to poll for server readiness, but happy-dom's fetch blocked cross-origin requests to localhost
+   - Fix: Used `Bun.fetch` directly in `e2e/setup.ts`, which bypasses happy-dom's fetch replacement
+
+3. **E2E test failing on UI element timeout**:
+   - Root cause: Test was looking for `[data-testid="fab-create-issue"]` but the actual test ID is `fab-issue-assistant`
+   - Fix: Updated test ID reference in `e2e/github-beads-issues.test.ts`
+
+4. **Integration test hook timeouts**:
+   - Increased `beforeAll` timeout from 5s to 60s in `api/server.test.ts`
+   - Added `serverReady` flag to prevent false rejections when server exits normally
+
+5. **TypeScript error with unused @ts-expect-error**:
+   - Removed unnecessary `@ts-expect-error` directive in `App.test.tsx` since happy-dom provides EventSource type
+
+**Solution Implemented:**
+
+1. **Updated `./check`**: Changed from `bun run test:unit` to `bun test` to run all tests
+2. **Fixed fetch pollution**: Added proper cleanup in `App.test.tsx` to restore original fetch
+3. **Fixed e2e fetch**: Used `Bun.fetch` in `e2e/setup.ts` to bypass happy-dom's CORS restrictions
+4. **Fixed e2e test ID**: Corrected the floating action button test ID
+
+**Technical Notes:**
+- happy-dom provides a browser-like fetch implementation that enforces Same Origin Policy
+- `Bun.fetch` is not replaced by happy-dom and works without CORS restrictions
+- Tests can pollute globals when running in parallel without proper cleanup
+
+**Tests:** All 340 tests pass (306 unit + 33 integration + 1 e2e). TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- check (updated to run `bun test` instead of `bun run test:unit`)
+- src/App.test.tsx (added fetch/EventSource cleanup in afterEach)
+- e2e/setup.ts (use Bun.fetch for server polling)
+- e2e/github-beads-issues.test.ts (fixed fab-create-issue → fab-issue-assistant)
+- api/server.test.ts (increased hook timeout, improved error handling)

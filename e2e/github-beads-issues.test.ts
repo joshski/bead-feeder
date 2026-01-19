@@ -526,7 +526,7 @@ describe('adds beads issues to github repositories', () => {
     // Step 10: Create a new issue via AI chat (real AI, not fake)
     console.log('Step: Create issue via AI chat')
     // Click the floating action button to open the Create Issue modal
-    const fabButton = page.locator('[data-testid="fab-create-issue"]')
+    const fabButton = page.locator('[data-testid="fab-issue-assistant"]')
     await waitForVisible(fabButton)
     await fabButton.click()
 

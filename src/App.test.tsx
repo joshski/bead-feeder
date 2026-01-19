@@ -13,8 +13,15 @@ class MockEventSource {
 }
 
 describe('App', () => {
+  // Store original globals to restore after tests
+  const originalFetch = globalThis.fetch
+  const originalEventSource = globalThis.EventSource
+
   afterEach(() => {
     cleanup()
+    // Restore original globals to avoid polluting other tests
+    globalThis.fetch = originalFetch
+    globalThis.EventSource = originalEventSource
   })
 
   beforeEach(() => {

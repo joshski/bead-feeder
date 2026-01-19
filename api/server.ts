@@ -964,7 +964,9 @@ async function handleRequest(req: Request): Promise<Response> {
       }
 
       const repoPath = getRepoPath(owner, repo, userIdResult.userId)
+      log.info(`Pull endpoint: pulling from remote for ${owner}/${repo} at ${repoPath}`)
       const result = await pullRepository(repoPath, token, 'origin')
+      log.info(`Pull result: ${result.success ? 'success' : 'failed'} - ${result.output || result.error || 'no output'}`)
 
       if (!result.success) {
         return new Response(
@@ -981,8 +983,10 @@ async function handleRequest(req: Request): Promise<Response> {
       }
 
       // Import the pulled JSONL changes into the beads database
+      log.info(`Pull endpoint: running bd sync --import-only for ${owner}/${repo}`)
       const tracker = createTrackerForPath(repoPath)
       const syncResult = await tracker.sync({ importOnly: true })
+      log.info(`Sync result: ${syncResult.success ? 'success' : 'failed'}${syncResult.error ? ` - ${syncResult.error}` : ''}`)
       if (!syncResult.success) {
         return new Response(
           JSON.stringify({

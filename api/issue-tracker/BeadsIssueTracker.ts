@@ -3,6 +3,7 @@
  */
 
 import { spawn } from 'node:child_process'
+import * as log from '../logger'
 import type {
   CreateIssueInput,
   Dependency,
@@ -446,10 +447,13 @@ export class BeadsIssueTracker implements IssueTracker {
       if (options?.importOnly) {
         args.push('--import-only')
       }
-      await runBdCommand(args, this.cwd)
+      log.info(`Running bd ${args.join(' ')} in ${this.cwd}`)
+      const output = await runBdCommand(args, this.cwd)
+      log.info(`bd sync output: ${output.trim()}`)
       return { success: true }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
+      log.error(`bd sync failed: ${message}`)
       return { success: false, error: message }
     }
   }

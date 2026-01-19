@@ -1265,3 +1265,25 @@ The floating action button (FAB) for opening the Issue Assistant had several iss
 **Files Changed:**
 - src/components/FloatingActionButton.tsx (SVG icon, updated aria-label and data-testid)
 - src/components/FloatingActionButton.test.tsx (updated tests for new implementation)
+
+## Session 37 - 2026-01-19
+
+### Task: bead-8qb - Replace slash with GitHub logo after name in header
+
+**Status:** Completed
+
+**Problem Solved:**
+In the header, between "Bead Feeder" and the repository name (e.g., "owner/repo"), there was a plain text slash character `/` used as a separator. The task was to replace this with a GitHub logo icon.
+
+**Solution Implemented:**
+Replaced the slash text with the existing `GitHubIcon` component (already used in the login button). The icon is rendered at 16px size and inherits the gray color from the parent span.
+
+**Work Done:**
+1. Updated `src/App.tsx`:
+   - Added `GitHubIcon` to the import from `./components/GitHubLoginButton`
+   - Replaced the `/` text character with `<GitHubIcon size={16} />` in the header navigation
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/App.tsx (replaced slash with GitHubIcon in header)

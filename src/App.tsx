@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useParams } from 'react-router'
-import GitHubLoginButton from './components/GitHubLoginButton'
+import GitHubLoginButton, { GitHubIcon } from './components/GitHubLoginButton'
 import SyncStatusIndicator from './components/SyncStatusIndicator'
 import ToastContainer from './components/Toast'
 import { Button } from './components/ui/button'
@@ -49,7 +49,9 @@ function App() {
                 <nav
                   style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
-                  <span style={{ color: '#9ca3af' }}>/</span>
+                  <span style={{ color: '#9ca3af' }}>
+                    <GitHubIcon size={16} />
+                  </span>
                   <span style={{ fontWeight: 500, color: '#374151' }}>
                     {owner}/{repo}
                   </span>

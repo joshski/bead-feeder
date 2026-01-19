@@ -147,3 +147,49 @@ Added timeout parameters to the `beforeAll` and `afterAll` hooks:
 
 **Files Changed:**
 - e2e/load-beads-issues.test.ts (added timeout parameters to beforeAll and afterAll hooks)
+
+## Session 4 - 2026-01-19
+
+### Task: bead-cqy - Rework e2e test structure
+
+**Status:** Completed
+
+**Problem Solved:**
+The e2e test file `e2e/load-beads-issues.test.ts` contained helper functions and types that should be shared utilities in the setup module. The file also had a generic name that didn't clearly describe its purpose.
+
+**Solution Implemented:**
+Refactored the e2e test for better organization:
+
+1. **Moved helper functions to e2e/setup.ts**:
+   - `createTestFork()` - Creates a GitHub fork for testing
+   - `cloneFork()` - Clones a fork to a temp directory
+   - `deleteFork()` - Deletes a test fork
+   - `cleanupClonedRepo()` - Cleans up cloned repo directory
+   - `extractBeadsData()` - Extracts issues/dependencies via beads CLI
+   - `pullAndExtractBeadsData()` - Pulls changes and extracts data
+   - `waitForVisible()` - Playwright helper for visibility check
+   - `waitForHidden()` - Playwright helper for hidden check
+   - `takeScreenshot()` - Saves screenshots to screenshots directory
+
+2. **Moved types to e2e/setup.ts**:
+   - `BeadsIssue` - Issue data from beads CLI
+   - `BeadsDependency` - Dependency data from beads CLI
+   - `BeadsData` - Container for issues and dependencies from CLI
+   - `DagIssue` - Issue data extracted from DAG view
+   - `DagDependency` - Dependency data from DAG view
+   - `DagData` - Container for issues and dependencies from UI
+
+3. **Renamed test file and description**:
+   - File: `e2e/load-beads-issues.test.ts` → `e2e/github-beads-issues.test.ts`
+   - Test: "Load beads issues from GitHub repository" → "adds beads issues to github repositories"
+
+4. **Updated function signatures**:
+   - `createTestFork()` now takes `sourceOwner` and `sourceRepo` as parameters (moved constants out)
+   - `pullAndExtractBeadsData()` now takes `forkRepoName` as an explicit parameter
+   - `takeScreenshot()` now takes `page` as a parameter (decoupled from global state)
+
+**Tests:** All 306 unit tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- e2e/setup.ts (added helpers and types)
+- e2e/load-beads-issues.test.ts → e2e/github-beads-issues.test.ts (renamed, updated imports)

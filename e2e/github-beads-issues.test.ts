@@ -1,33 +1,26 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { execSync } from 'node:child_process'
 import * as fs from 'node:fs'
-import * as os from 'node:os'
 import * as path from 'node:path'
-import { type Browser, chromium, type Locator, type Page } from 'playwright'
+import { type Browser, chromium, type Page } from 'playwright'
 import { TEST_PORTS } from '../config/ports'
-import { startServers, stopServers } from './setup'
-
-/**
- * Helper to wait for a locator to be visible.
- * Replaces Playwright's expect(...).toBeVisible() which isn't available in bun:test.
- */
-async function waitForVisible(
-  locator: Locator,
-  options?: { timeout?: number }
-): Promise<void> {
-  await locator.waitFor({ state: 'visible', timeout: options?.timeout ?? 5000 })
-}
-
-/**
- * Helper to wait for a locator to be hidden/detached.
- * Replaces Playwright's expect(...).not.toBeVisible() which isn't available in bun:test.
- */
-async function waitForHidden(
-  locator: Locator,
-  options?: { timeout?: number }
-): Promise<void> {
-  await locator.waitFor({ state: 'hidden', timeout: options?.timeout ?? 5000 })
-}
+import {
+  type BeadsData,
+  cleanupClonedRepo,
+  cloneFork,
+  createTestFork,
+  type DagData,
+  type DagDependency,
+  type DagIssue,
+  deleteFork,
+  extractBeadsData,
+  pullAndExtractBeadsData,
+  startServers,
+  stopServers,
+  takeScreenshot,
+  waitForHidden,
+  waitForVisible,
+} from './setup'
 
 const BASE_URL = `http://localhost:${TEST_PORTS.VITE}`
 
@@ -45,267 +38,13 @@ let testPat: string | null = null
 let browser: Browser
 let page: Page
 
-// Data structure representing issues and their dependencies extracted from beads CLI
-interface BeadsIssue {
-  id: string
-  title: string
-  status: string
-  priority: number
-  issue_type: string
-  dependency_count: number
-  dependent_count: number
-}
-
-interface BeadsDependency {
-  issue_id: string
-  depends_on_id: string
-  type: string
-}
-
-interface BeadsData {
-  issues: BeadsIssue[]
-  dependencies: BeadsDependency[]
-}
-
 // Shared extracted data (available for later comparison with DAG view)
 let extractedBeadsData: BeadsData | null = null
-
-// Data structure representing issues and dependencies extracted from DAG view UI
-interface DagIssue {
-  id: string
-  title: string
-  status: string
-  priority: string
-  issue_type: string
-}
-
-interface DagDependency {
-  issue_id: string // blocked issue
-  depends_on_id: string // blocker issue
-}
-
-interface DagData {
-  issues: DagIssue[]
-  dependencies: DagDependency[]
-}
 
 // Shared extracted DAG data (available for comparison with beads CLI data)
 let extractedDagData: DagData | null = null
 
-/**
- * Create a fork of the source repository with a unique name.
- * Uses gh CLI with PAT from TEST_GITHUB_PERSONAL_ACCESS_TOKEN env var.
- */
-function createTestFork(username: string, pat: string): string {
-  // Generate unique fork name with timestamp
-  const timestamp = Date.now()
-  const forkName = `bead-feeder-e2e-${timestamp}`
-
-  console.log(`Creating fork: ${username}/${forkName}`)
-
-  // Use GH_TOKEN env var instead of gh auth login to avoid modifying global gh config
-  const ghEnv = { ...process.env, GH_TOKEN: pat }
-
-  // Create the fork with a custom name
-  try {
-    execSync(
-      `gh repo fork ${SOURCE_REPO_OWNER}/${SOURCE_REPO_NAME} --fork-name ${forkName} --clone=false`,
-      {
-        stdio: 'pipe',
-        env: ghEnv,
-      }
-    )
-    console.log(`Created fork: ${username}/${forkName}`)
-  } catch (error) {
-    throw new Error(
-      `Failed to create fork: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
-  }
-
-  // Wait a moment for GitHub to process the fork
-  execSync('sleep 5')
-
-  return forkName
-}
-
-/**
- * Clone the forked repository into a temporary directory.
- * Uses PAT for authentication with git.
- * Returns the path to the cloned repository.
- */
-function cloneFork(owner: string, repo: string, pat: string): string {
-  // Create a unique temp directory
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bead-feeder-e2e-'))
-
-  // Build authenticated URL using PAT (URL-encode to handle special characters)
-  const encodedPat = encodeURIComponent(pat)
-  const authUrl = `https://${encodedPat}@github.com/${owner}/${repo}.git`
-
-  // Clone the repository
-  try {
-    execSync(`git clone ${authUrl} ${tempDir}`, {
-      stdio: 'pipe', // Suppress output to avoid leaking credentials
-    })
-    console.log(`Cloned fork to ${tempDir}`)
-    return tempDir
-  } catch (error) {
-    // Clean up temp directory on failure
-    fs.rmSync(tempDir, { recursive: true, force: true })
-    throw new Error(
-      `Failed to clone fork: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
-  }
-}
-
-/**
- * Delete the test fork using gh CLI
- * Uses GH_TOKEN env var for authentication to avoid modifying global gh config
- */
-function deleteFork(owner: string, repo: string, pat: string): void {
-  try {
-    execSync(`gh repo delete ${owner}/${repo} --yes`, {
-      stdio: 'pipe',
-      env: { ...process.env, GH_TOKEN: pat },
-    })
-    console.log(`Deleted fork: ${owner}/${repo}`)
-  } catch (error) {
-    console.warn(
-      `Failed to delete fork ${owner}/${repo}: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
-  }
-}
-
-/**
- * Clean up the cloned repository directory
- */
-function cleanupClonedRepo(repoPath: string): void {
-  try {
-    fs.rmSync(repoPath, { recursive: true, force: true })
-    console.log(`Cleaned up cloned repository at ${repoPath}`)
-  } catch (error) {
-    console.warn(
-      `Failed to clean up ${repoPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
-  }
-}
-
-/**
- * Extract issues and dependencies from a beads repository using the CLI.
- * Runs `bd list --json` and `bd graph --all --json` in the specified directory.
- */
-function extractBeadsData(repoPath: string): BeadsData {
-  // Run bd sync first to ensure bd is up to date with any file changes
-  try {
-    execSync('bd sync', {
-      cwd: repoPath,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-  } catch {
-    // Ignore sync errors - it might fail if there are no changes
-  }
-
-  // Run bd list --json to get all issues
-  const listOutput = execSync('bd list --json', {
-    cwd: repoPath,
-    encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe'],
-  })
-
-  const issues: BeadsIssue[] = JSON.parse(listOutput)
-
-  // Run bd graph --all --json to get dependencies
-  const graphOutput = execSync('bd graph --all --json', {
-    cwd: repoPath,
-    encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe'],
-  })
-
-  const graphData = JSON.parse(graphOutput)
-
-  // Collect all unique dependencies from all graph entries
-  const dependencyMap = new Map<string, BeadsDependency>()
-  for (const entry of graphData) {
-    if (entry.Dependencies) {
-      for (const dep of entry.Dependencies) {
-        // Use a unique key to avoid duplicates
-        const key = `${dep.issue_id}-${dep.depends_on_id}`
-        if (!dependencyMap.has(key)) {
-          dependencyMap.set(key, {
-            issue_id: dep.issue_id,
-            depends_on_id: dep.depends_on_id,
-            type: dep.type,
-          })
-        }
-      }
-    }
-  }
-
-  return {
-    issues,
-    dependencies: Array.from(dependencyMap.values()),
-  }
-}
-
-/**
- * Pull latest changes from remote and extract beads data.
- * Uses PAT for authentication with git.
- */
-function pullAndExtractBeadsData(
-  repoPath: string,
-  owner: string,
-  pat: string
-): BeadsData {
-  // Pull latest changes using PAT for auth
-  const encodedPat = encodeURIComponent(pat)
-  const authUrl = `https://${encodedPat}@github.com/${owner}/${forkRepoName}.git`
-
-  execSync(`git remote set-url origin ${authUrl}`, {
-    cwd: repoPath,
-    stdio: 'pipe',
-  })
-
-  // Get the current branch name first
-  const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
-    cwd: repoPath,
-    encoding: 'utf-8',
-  }).trim()
-
-  console.log(`Current branch: ${currentBranch}`)
-
-  // Pull from the current branch
-  const pullOutput = execSync(`git pull origin ${currentBranch}`, {
-    cwd: repoPath,
-    encoding: 'utf-8',
-  })
-  console.log(`Pull output: ${pullOutput}`)
-
-  // Restore URL without credentials
-  execSync(
-    `git remote set-url origin https://github.com/${owner}/${forkRepoName}.git`,
-    {
-      cwd: repoPath,
-      stdio: 'pipe',
-    }
-  )
-
-  return extractBeadsData(repoPath)
-}
-
-/**
- * Take a screenshot and save it to the screenshots directory
- */
-async function takeScreenshot(name: string): Promise<void> {
-  const screenshotsDir = path.join(process.cwd(), 'screenshots')
-  if (!fs.existsSync(screenshotsDir)) {
-    fs.mkdirSync(screenshotsDir, { recursive: true })
-  }
-  await page.screenshot({
-    path: path.join(screenshotsDir, name),
-    fullPage: true,
-  })
-}
-
-describe('Load beads issues from GitHub repository', () => {
+describe('adds beads issues to github repositories', () => {
   beforeAll(async () => {
     // Start dev servers for e2e tests
     await startServers()
@@ -357,7 +96,12 @@ describe('Load beads issues from GitHub repository', () => {
 
     // Step 0: Create a fresh fork with a unique name
     console.log('Step: Create test fork')
-    forkRepoName = createTestFork(username, pat)
+    forkRepoName = createTestFork(
+      username,
+      pat,
+      SOURCE_REPO_OWNER,
+      SOURCE_REPO_NAME
+    )
     console.log(`Test fork created: ${username}/${forkRepoName}`)
 
     // Step 1: Clone the fork into a temp directory
@@ -436,7 +180,7 @@ describe('Load beads issues from GitHub repository', () => {
       currentUrl.includes('two-factor') ||
       currentUrl.includes('sessions/two-factor')
     ) {
-      await takeScreenshot('e2e-2fa-prompt.png')
+      await takeScreenshot(page, 'e2e-2fa-prompt.png')
       throw new Error(
         'Two-factor authentication detected. Cannot proceed with automated test. Screenshot saved to screenshots/e2e-2fa-prompt.png'
       )
@@ -560,7 +304,7 @@ describe('Load beads issues from GitHub repository', () => {
     }
 
     // Take a success screenshot
-    await takeScreenshot('e2e-issues-loaded.png')
+    await takeScreenshot(page, 'e2e-issues-loaded.png')
     console.log('Success screenshot saved to screenshots/e2e-issues-loaded.png')
 
     // Step 8: Extract issues and dependencies data structure from DAG view
@@ -866,7 +610,7 @@ describe('Load beads issues from GitHub repository', () => {
     )
 
     // Take a screenshot
-    await takeScreenshot('e2e-dag-with-ai-issue.png')
+    await takeScreenshot(page, 'e2e-dag-with-ai-issue.png')
 
     console.log('✓ AI-created issue is visible in DAG view')
     console.log(
@@ -880,7 +624,12 @@ describe('Load beads issues from GitHub repository', () => {
     }
 
     // Pull latest changes from the fork using PAT for auth
-    const updatedData = pullAndExtractBeadsData(clonedRepoPath, username, pat)
+    const updatedData = pullAndExtractBeadsData(
+      clonedRepoPath,
+      username,
+      forkRepoName,
+      pat
+    )
 
     console.log(
       `After sync: ${updatedData.issues.length} issue(s) in repository`
@@ -985,7 +734,7 @@ describe('Load beads issues from GitHub repository', () => {
       expect(externalIssueFound).toBe(true)
 
       // Take a screenshot showing the external issue
-      await takeScreenshot('e2e-dag-with-external-issue.png')
+      await takeScreenshot(page, 'e2e-dag-with-external-issue.png')
       console.log('✓ External issue is visible in DAG after refresh')
       console.log(
         'Success screenshot saved to screenshots/e2e-dag-with-external-issue.png'

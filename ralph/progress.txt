@@ -1229,3 +1229,39 @@ Changed the dialog title from "Assistant" to "Issue Assistant" to better describ
 **Files Changed:**
 - src/components/CreateIssueModal.tsx (changed dialog title)
 - e2e/load-beads-issues.test.ts (updated comment)
+
+## Session 36 - 2026-01-19
+
+### Task: bead-lsv - Improve the 'Create Issue' button
+
+**Status:** Completed
+
+**Problem Solved:**
+The floating action button (FAB) for opening the Issue Assistant had several issues:
+1. The `+` text character was slightly off-center (too low and to the left)
+2. The `aria-label` was 'Create Issue' but should be 'Issue Assistant'
+3. The `data-testid` was 'fab-create-issue' but should be 'fab-issue-assistant'
+
+**Solution Implemented:**
+1. Replaced the `+` text character with a properly centered SVG plus icon
+2. Changed the default `aria-label` from 'Create Issue' to 'Issue Assistant'
+3. Changed `data-testid` from 'fab-create-issue' to 'fab-issue-assistant'
+
+**Work Done:**
+1. Updated `src/components/FloatingActionButton.tsx`:
+   - Changed default label from 'Create Issue' to 'Issue Assistant'
+   - Replaced `+` text with an SVG icon using `<line>` elements for perfect centering
+   - Added `<title>Plus</title>` to SVG for accessibility
+   - Changed `data-testid` from 'fab-create-issue' to 'fab-issue-assistant'
+   - Removed `fontSize: '28px'` style (no longer needed with SVG)
+
+2. Updated `src/components/FloatingActionButton.test.tsx`:
+   - Changed all `getByTestId('fab-create-issue')` to `getByTestId('fab-issue-assistant')`
+   - Updated 'displays plus icon' test to 'displays plus icon as SVG' that checks for SVG element and title
+   - Updated 'has default aria-label' test to expect 'Issue Assistant' instead of 'Create Issue'
+
+**Tests:** All 339 tests pass.
+
+**Files Changed:**
+- src/components/FloatingActionButton.tsx (SVG icon, updated aria-label and data-testid)
+- src/components/FloatingActionButton.test.tsx (updated tests for new implementation)

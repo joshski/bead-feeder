@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 
@@ -9,6 +9,7 @@ export default function AuthCallback() {
   const navigate = useNavigate()
   const { refreshUser } = useAuth()
   const [error, setError] = useState<string | null>(null)
+  const hasProcessedRef = useRef(false)
 
   const exchangeCodeForToken = useCallback(
     async (code: string) => {
@@ -40,6 +41,12 @@ export default function AuthCallback() {
   )
 
   useEffect(() => {
+    // Prevent double-processing in React StrictMode
+    if (hasProcessedRef.current) {
+      return
+    }
+    hasProcessedRef.current = true
+
     const code = searchParams.get('code')
     const state = searchParams.get('state')
     const storedState = sessionStorage.getItem('oauth_state')

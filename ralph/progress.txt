@@ -512,3 +512,39 @@ The application used text headings ("Bead Feeder") in the main navigation and ho
 - src/app/App.tsx (replaced heading with icon in nav)
 - src/app/pages/Home.tsx (added icon above heading)
 - src/app/App.test.tsx (updated test to check for image instead of heading)
+
+## Session 12 - 2026-01-19
+
+### Task: bead-77c - Investigate 'Invalid state parameter' message when loading GitHub repository
+
+**Status:** Completed
+
+**Problem Solved:**
+When loading a GitHub repository for the first time after OAuth authentication, users sometimes saw an "Invalid state parameter" error message even though the repository issues loaded correctly into the DAG view.
+
+**Root Cause:**
+The issue was caused by React's StrictMode, which mounts components twice during development to help identify side effects. In the `AuthCallback` component:
+
+1. First mount: `useEffect` reads `oauth_state` from sessionStorage, then removes it
+2. Second mount: `useEffect` reads `oauth_state` again (now `null` since it was just removed), state validation fails
+
+This resulted in the "Invalid state parameter" error appearing briefly even when authentication was successful, because the effect ran twice with the second run finding no stored state.
+
+**Solution Implemented:**
+Added a `useRef` to track whether the OAuth callback has already been processed:
+
+1. Added `hasProcessedRef = useRef(false)` to track processing state
+2. At the start of the `useEffect`, check if already processed and return early if so
+3. Set `hasProcessedRef.current = true` immediately after the check
+
+This ensures the OAuth callback logic only runs once, even when StrictMode causes double-mounting.
+
+**Technical Notes:**
+- `useRef` persists across re-renders and doesn't reset on StrictMode remount
+- This is a common pattern for effects that should only run once
+- The fix only affects the client-side validation, not the actual OAuth flow security
+
+**Tests:** All 328 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/pages/AuthCallback.tsx (added useRef to prevent double-processing in StrictMode)

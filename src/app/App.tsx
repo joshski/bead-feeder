@@ -41,7 +41,7 @@ function App() {
             borderBottom: '1px solid #e5e7eb',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
               <img
                 src={iconImage}

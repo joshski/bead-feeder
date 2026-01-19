@@ -61,3 +61,57 @@ Migrated all 306 unit tests from vitest to bun:test:
 - vitest.config.ts (deleted)
 - src/test-setup.ts (deleted)
 - All *.test.ts and *.test.tsx files (migrated imports and mocking patterns)
+
+## Session 2 - 2026-01-19
+
+### Task: bead-62u - Make bun test run all tests including e2e
+
+**Status:** Completed
+
+**Problem Solved:**
+The `bun test` command was configured to run only a curated list of unit tests, while e2e tests required a separate script (`scripts/e2e.ts`) that orchestrated server startup, test execution, and cleanup. The goal was to make e2e tests self-contained so `bun test` runs ALL tests including e2e.
+
+**Solution Implemented:**
+Made e2e tests self-contained by moving server startup/shutdown into the test file itself:
+
+1. **Created e2e/setup.ts** - Server management utilities:
+   - `startServers()` - Starts Vite + API servers on test ports (5174, 3002)
+   - `stopServers()` - Shuts down servers and cleans up temp directory
+   - Creates temp data directory for test isolation
+   - Initializes local beads repo for /local route
+   - Waits for servers to be ready before returning
+
+2. **Updated e2e/load-beads-issues.test.ts**:
+   - Added `await startServers()` in `beforeAll`
+   - Added `await stopServers()` in `afterAll`
+   - Imported server utilities from `./setup`
+
+3. **Updated package.json**:
+   - Changed `"test"` to `"bun test"` (runs all tests)
+   - Changed `"test:watch"` to `"bun test --watch"`
+   - Added `"test:unit"` for running only unit tests (previous curated list)
+   - Changed `"test:e2e"` to `"bun test e2e/"` (runs only e2e)
+
+4. **Updated ./check**:
+   - Changed to use `bun run test:unit` for quality gates
+   - This keeps CI/quick checks fast by skipping e2e tests
+
+5. **Deleted scripts/e2e.ts**:
+   - No longer needed since e2e tests are self-contained
+
+**Result:**
+After implementation:
+- `bun test` - Runs ALL tests (unit, integration, e2e)
+- `bun test src/` - Runs only source unit tests (136 tests)
+- `bun test e2e/` - Runs only e2e tests
+- `bun run test:unit` - Runs curated unit test list (306 tests)
+- `./check` - Runs unit tests only (fast quality gates)
+
+**Tests:** All 306 unit tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- e2e/setup.ts (new)
+- e2e/load-beads-issues.test.ts (added server startup/shutdown)
+- package.json (updated scripts)
+- check (updated to use test:unit)
+- scripts/e2e.ts (deleted)

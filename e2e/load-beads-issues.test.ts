@@ -5,6 +5,7 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import { type Browser, chromium, type Locator, type Page } from 'playwright'
 import { TEST_PORTS } from '../config/ports'
+import { startServers, stopServers } from './setup'
 
 /**
  * Helper to wait for a locator to be visible.
@@ -306,6 +307,9 @@ async function takeScreenshot(name: string): Promise<void> {
 
 describe('Load beads issues from GitHub repository', () => {
   beforeAll(async () => {
+    // Start dev servers for e2e tests
+    await startServers()
+
     // Launch browser
     browser = await chromium.launch({ headless: true })
     page = await browser.newPage()
@@ -326,6 +330,9 @@ describe('Load beads issues from GitHub repository', () => {
       forkRepoName = null
       testPat = null
     }
+
+    // Stop dev servers
+    await stopServers()
   })
 
   it('authenticates and displays issues from test repository', async () => {

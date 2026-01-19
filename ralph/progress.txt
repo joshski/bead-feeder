@@ -573,3 +573,29 @@ Reduced the gap in the flex container from `20px` to `12px`:
 
 **Files Changed:**
 - src/app/App.tsx (reduced gap from 20px to 12px)
+
+## Session 14 - 2026-01-19
+
+### Task: bead-4wf - Change repository item background color to grey
+
+**Status:** Completed
+
+**Problem Solved:**
+The repository items in the RepositorySelector component had a blue background (`#f0f9ff`) with a blue border (`#bfdbfe`). The goal was to change these to grey for a more neutral look.
+
+**Solution Implemented:**
+Updated the `repoButton` style in `RepositorySelector.tsx`:
+
+1. **Changed background color**: `#f0f9ff` (light blue) → `#f5f5f5` (light grey)
+2. **Changed border color**: `#bfdbfe` (blue border) → `#d4d4d4` (grey border)
+
+**Technical Notes:**
+- The change is purely cosmetic with no functional impact
+- The grey colors used are from the neutral palette, matching other UI elements
+- `#f5f5f5` is a very light grey that maintains good contrast for text
+- `#d4d4d4` is a medium grey that provides subtle visual separation
+
+**Tests:** All 328 tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/components/RepositorySelector.tsx (changed repoButton backgroundColor and border colors from blue to grey)

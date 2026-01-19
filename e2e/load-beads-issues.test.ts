@@ -313,7 +313,7 @@ describe('Load beads issues from GitHub repository', () => {
     // Launch browser
     browser = await chromium.launch({ headless: true })
     page = await browser.newPage()
-  })
+  }, 60000) // 60 second timeout for server startup + browser launch
 
   afterAll(async () => {
     // Close browser
@@ -333,7 +333,7 @@ describe('Load beads issues from GitHub repository', () => {
 
     // Stop dev servers
     await stopServers()
-  })
+  }, 30000) // 30 second timeout for cleanup
 
   it('authenticates and displays issues from test repository', async () => {
     const username = process.env.TEST_GITHUB_USERNAME

@@ -1,17 +1,20 @@
 interface FloatingActionButtonProps {
   onClick: () => void
   label?: string
+  disabled?: boolean
 }
 
 function FloatingActionButton({
   onClick,
   label = 'Issue Assistant',
+  disabled = false,
 }: FloatingActionButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
+      disabled={disabled}
       style={{
         position: 'fixed',
         bottom: '24px',
@@ -19,24 +22,31 @@ function FloatingActionButton({
         width: '56px',
         height: '56px',
         borderRadius: '50%',
-        backgroundColor: '#3b82f6',
+        backgroundColor: disabled ? '#9ca3af' : '#3b82f6',
         border: 'none',
         color: '#ffffff',
-        cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        boxShadow: disabled
+          ? '0 2px 6px rgba(156, 163, 175, 0.3)'
+          : '0 4px 12px rgba(59, 130, 246, 0.4)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 900,
-        transition: 'transform 0.2s, box-shadow 0.2s',
+        transition: 'transform 0.2s, box-shadow 0.2s, background-color 0.2s',
+        opacity: disabled ? 0.6 : 1,
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.transform = 'scale(1.1)'
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.5)'
+        if (!disabled) {
+          e.currentTarget.style.transform = 'scale(1.1)'
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.5)'
+        }
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.transform = 'scale(1)'
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)'
+        if (!disabled) {
+          e.currentTarget.style.transform = 'scale(1)'
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)'
+        }
       }}
       data-testid="fab-issue-assistant"
     >

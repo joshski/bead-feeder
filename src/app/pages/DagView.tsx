@@ -329,7 +329,10 @@ function DagView() {
       }}
     >
       <DagCanvas nodes={nodes} edges={edges} onConnect={handleConnect} />
-      <FloatingActionButton onClick={() => setIsModalOpen(true)} />
+      <FloatingActionButton
+        onClick={() => setIsModalOpen(true)}
+        disabled={isModalOpen}
+      />
       <CreateIssueModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

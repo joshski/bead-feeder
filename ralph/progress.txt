@@ -599,3 +599,47 @@ Updated the `repoButton` style in `RepositorySelector.tsx`:
 
 **Files Changed:**
 - src/app/components/RepositorySelector.tsx (changed repoButton backgroundColor and border colors from blue to grey)
+
+## Session 15 - 2026-01-19
+
+### Task: bead-dq9 - Disable 'Issue Assistant' button when modal is active
+
+**Status:** Completed
+
+**Problem Solved:**
+The 'Issue Assistant' floating action button (FAB) remained active and clickable even when the CreateIssueModal was already open. This could cause confusion as users might attempt to click it multiple times.
+
+**Solution Implemented:**
+Added a `disabled` prop to the FloatingActionButton component:
+
+1. **Updated src/app/components/FloatingActionButton.tsx**:
+   - Added `disabled?: boolean` prop to the component interface
+   - Added `disabled={disabled}` attribute to the button element
+   - Changed `backgroundColor` from `#3b82f6` (blue) to `#9ca3af` (grey) when disabled
+   - Changed `cursor` from `pointer` to `not-allowed` when disabled
+   - Reduced `boxShadow` intensity when disabled
+   - Added `opacity: 0.6` when disabled
+   - Disabled hover effects when `disabled` is true
+   - Added `background-color` to the transition property
+
+2. **Updated src/app/pages/DagView.tsx**:
+   - Passed `disabled={isModalOpen}` to the FloatingActionButton component
+   - This disables the button when the CreateIssueModal is open
+
+3. **Added tests in src/app/components/FloatingActionButton.test.tsx**:
+   - Test: button is disabled when disabled prop is true
+   - Test: onClick is not called when button is disabled
+   - Test: button has grey background when disabled
+   - Test: button has not-allowed cursor when disabled
+
+**Technical Notes:**
+- The native `disabled` attribute on the button prevents click events from firing
+- Visual feedback (grey color, reduced opacity, not-allowed cursor) clearly communicates the disabled state to users
+- Hover effects are suppressed when disabled to avoid misleading visual feedback
+
+**Tests:** All 332 tests pass (4 new tests added). TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- src/app/components/FloatingActionButton.tsx (added disabled prop and visual styling)
+- src/app/pages/DagView.tsx (pass isModalOpen as disabled prop)
+- src/app/components/FloatingActionButton.test.tsx (added 4 tests for disabled state)

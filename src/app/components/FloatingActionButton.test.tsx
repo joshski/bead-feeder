@@ -44,4 +44,29 @@ describe('FloatingActionButton', () => {
       'Add new item'
     )
   })
+
+  it('is disabled when disabled prop is true', () => {
+    render(<FloatingActionButton onClick={mock(() => {})} disabled={true} />)
+    const button = screen.getByTestId('fab-issue-assistant')
+    expect(button).toBeDisabled()
+  })
+
+  it('does not call onClick when disabled', () => {
+    const onClick = mock(() => {})
+    render(<FloatingActionButton onClick={onClick} disabled={true} />)
+    fireEvent.click(screen.getByTestId('fab-issue-assistant'))
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('has grey background when disabled', () => {
+    render(<FloatingActionButton onClick={mock(() => {})} disabled={true} />)
+    const button = screen.getByTestId('fab-issue-assistant')
+    expect(button.style.backgroundColor).toBe('#9ca3af')
+  })
+
+  it('has not-allowed cursor when disabled', () => {
+    render(<FloatingActionButton onClick={mock(() => {})} disabled={true} />)
+    const button = screen.getByTestId('fab-issue-assistant')
+    expect(button.style.cursor).toBe('not-allowed')
+  })
 })

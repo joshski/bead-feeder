@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { AuthProvider, useAuth } from './AuthContext'
 
 // Test component that uses the auth context
@@ -21,17 +21,19 @@ function TestComponent() {
 }
 
 describe('AuthContext', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
+  const originalFetch = globalThis.fetch
+
+  afterEach(() => {
+    cleanup()
+    globalThis.fetch = originalFetch
   })
 
   it('provides initial loading state', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
         json: () => Promise.resolve({ user: null }),
       })
-    )
+    ) as unknown as typeof fetch
 
     render(
       <AuthProvider>
@@ -49,13 +51,15 @@ describe('AuthContext', () => {
   })
 
   it('fetches user on mount', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          user: { login: 'testuser', id: 123, avatar_url: '', name: 'Test' },
-        }),
-    })
-    vi.stubGlobal('fetch', mockFetch)
+    const mockFetch = mock(() =>
+      Promise.resolve({
+        json: () =>
+          Promise.resolve({
+            user: { login: 'testuser', id: 123, avatar_url: '', name: 'Test' },
+          }),
+      })
+    ) as unknown as typeof fetch
+    globalThis.fetch = mockFetch
 
     render(
       <AuthProvider>
@@ -74,12 +78,11 @@ describe('AuthContext', () => {
   })
 
   it('handles no user', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
         json: () => Promise.resolve({ user: null }),
       })
-    )
+    ) as unknown as typeof fetch
 
     render(
       <AuthProvider>
@@ -93,10 +96,9 @@ describe('AuthContext', () => {
   })
 
   it('handles fetch error gracefully', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('Network error'))
-    )
+    globalThis.fetch = mock(() =>
+      Promise.reject(new Error('Network error'))
+    ) as unknown as typeof fetch
 
     render(
       <AuthProvider>
@@ -111,7 +113,7 @@ describe('AuthContext', () => {
 
   it('throws error when useAuth is used outside provider', () => {
     // Suppress console.error for this test
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => render(<TestComponent />)).toThrow(
       'useAuth must be used within an AuthProvider'

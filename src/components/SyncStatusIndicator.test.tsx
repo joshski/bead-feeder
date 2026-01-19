@@ -1,8 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import SyncStatusIndicator from './SyncStatusIndicator'
 
 describe('SyncStatusIndicator', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   it('displays synced status with green indicator', () => {
     render(<SyncStatusIndicator status="synced" />)
     expect(screen.getByText('Synced')).toBeDefined()
@@ -66,7 +70,7 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('shows resolution buttons when in conflict state with onResolve', () => {
-    const onResolve = vi.fn()
+    const onResolve = mock(() => {})
     render(
       <SyncStatusIndicator
         status="conflict"
@@ -79,7 +83,7 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('calls onResolve with theirs when Pull is clicked', () => {
-    const onResolve = vi.fn()
+    const onResolve = mock(() => {})
     render(
       <SyncStatusIndicator
         status="conflict"
@@ -92,7 +96,7 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('calls onResolve with abort when Abort is clicked', () => {
-    const onResolve = vi.fn()
+    const onResolve = mock(() => {})
     render(
       <SyncStatusIndicator
         status="conflict"
@@ -116,7 +120,7 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('shows refresh button when onRefresh is provided', () => {
-    const onRefresh = vi.fn()
+    const onRefresh = mock(() => {})
     render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)
     expect(screen.getByTestId('refresh-button')).toBeDefined()
   })
@@ -127,21 +131,21 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('calls onRefresh when refresh button is clicked', () => {
-    const onRefresh = vi.fn()
+    const onRefresh = mock(() => {})
     render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)
     fireEvent.click(screen.getByTestId('refresh-button'))
     expect(onRefresh).toHaveBeenCalledTimes(1)
   })
 
   it('disables refresh button when syncing', () => {
-    const onRefresh = vi.fn()
+    const onRefresh = mock(() => {})
     render(<SyncStatusIndicator status="syncing" onRefresh={onRefresh} />)
     const button = screen.getByTestId('refresh-button')
     expect(button.hasAttribute('disabled')).toBe(true)
   })
 
   it('spins refresh icon when syncing', () => {
-    const onRefresh = vi.fn()
+    const onRefresh = mock(() => {})
     render(<SyncStatusIndicator status="syncing" onRefresh={onRefresh} />)
     const button = screen.getByTestId('refresh-button')
     const svg = button.querySelector('svg')
@@ -149,7 +153,7 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('does not spin refresh icon when synced', () => {
-    const onRefresh = vi.fn()
+    const onRefresh = mock(() => {})
     render(<SyncStatusIndicator status="synced" onRefresh={onRefresh} />)
     const button = screen.getByTestId('refresh-button')
     const svg = button.querySelector('svg')

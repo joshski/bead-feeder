@@ -1,6 +1,6 @@
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ReactFlowProvider } from '@xyflow/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { IssueNodeData } from './IssueNode'
 import IssueNode from './IssueNode'
 
@@ -82,7 +82,7 @@ describe('IssueNode', () => {
   })
 
   it('calls onSelect callback on click when provided', () => {
-    const onSelect = vi.fn()
+    const onSelect = mock(() => {})
     const dataWithCallback: IssueNodeData = { ...defaultData, onSelect }
     renderIssueNode(dataWithCallback)
     fireEvent.click(screen.getByTestId('issue-node'))

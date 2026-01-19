@@ -1,20 +1,30 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import RepositorySelector from './RepositorySelector'
 
 describe('RepositorySelector', () => {
-  const mockOnSelect = vi.fn()
+  const mockOnSelect = mock(() => {})
+  const originalFetch = globalThis.fetch
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockOnSelect.mockClear()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    cleanup()
+    globalThis.fetch = originalFetch
   })
 
   it('shows loading state initially', () => {
-    global.fetch = vi.fn(() => new Promise(() => {})) as unknown as typeof fetch
+    globalThis.fetch = mock(
+      () => new Promise(() => {})
+    ) as unknown as typeof fetch
 
     render(<RepositorySelector onSelect={mockOnSelect} />)
 
@@ -22,7 +32,7 @@ describe('RepositorySelector', () => {
   })
 
   it('shows error message when fetch fails', async () => {
-    global.fetch = vi.fn(() =>
+    globalThis.fetch = mock(() =>
       Promise.resolve({
         ok: false,
         status: 500,
@@ -41,7 +51,7 @@ describe('RepositorySelector', () => {
   })
 
   it('shows authentication error for 401 response', async () => {
-    global.fetch = vi.fn(() =>
+    globalThis.fetch = mock(() =>
       Promise.resolve({
         ok: false,
         status: 401,
@@ -63,7 +73,7 @@ describe('RepositorySelector', () => {
       { owner: 'user2', repo: 'repo2', branch: 'develop' },
     ]
 
-    global.fetch = vi.fn(() =>
+    globalThis.fetch = mock(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ repos: mockRepos }),
@@ -84,7 +94,7 @@ describe('RepositorySelector', () => {
   it('calls onSelect when a repository is clicked', async () => {
     const mockRepos = [{ owner: 'user1', repo: 'repo1', branch: 'main' }]
 
-    global.fetch = vi.fn(() =>
+    globalThis.fetch = mock(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ repos: mockRepos }),
@@ -108,7 +118,7 @@ describe('RepositorySelector', () => {
 
   it('retries fetch when retry button is clicked', async () => {
     let callCount = 0
-    global.fetch = vi.fn(() => {
+    globalThis.fetch = mock(() => {
       callCount++
       if (callCount === 1) {
         return Promise.resolve({

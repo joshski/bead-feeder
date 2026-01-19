@@ -1,5 +1,5 @@
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import IssueDetailModal from './IssueDetailModal'
 import type { IssueNodeData } from './IssueNode'
 
@@ -17,48 +17,48 @@ describe('IssueDetailModal', () => {
   })
 
   it('does not render when issue is null', () => {
-    render(<IssueDetailModal issue={null} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={null} onClose={mock(() => {})} />)
     expect(screen.queryByTestId('issue-detail-modal')).not.toBeInTheDocument()
   })
 
   it('renders when issue is provided', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-modal')).toBeInTheDocument()
   })
 
   it('displays issue title', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-title')).toHaveTextContent(
       'Test Issue Title'
     )
   })
 
   it('displays issue ID', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-id')).toHaveTextContent(
       'test-issue-123'
     )
   })
 
   it('displays issue status', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-status')).toHaveTextContent('Open')
   })
 
   it('displays issue type', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('Task')
   })
 
   it('displays issue priority', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-priority')).toHaveTextContent(
       'P2 - Medium'
     )
   })
 
   it('calls onClose when X button is clicked', () => {
-    const onClose = vi.fn()
+    const onClose = mock(() => {})
     render(<IssueDetailModal issue={mockIssue} onClose={onClose} />)
     // shadcn/ui Dialog X button has data-slot="dialog-close"
     const closeButtons = screen.getAllByRole('button', { name: 'Close' })
@@ -71,7 +71,7 @@ describe('IssueDetailModal', () => {
   })
 
   it('calls onClose when Close button at bottom is clicked', () => {
-    const onClose = vi.fn()
+    const onClose = mock(() => {})
     render(<IssueDetailModal issue={mockIssue} onClose={onClose} />)
     fireEvent.click(screen.getByTestId('close-button'))
     expect(onClose).toHaveBeenCalled()
@@ -82,7 +82,9 @@ describe('IssueDetailModal', () => {
       ...mockIssue,
       status: 'in_progress',
     }
-    render(<IssueDetailModal issue={inProgressIssue} onClose={vi.fn()} />)
+    render(
+      <IssueDetailModal issue={inProgressIssue} onClose={mock(() => {})} />
+    )
     expect(screen.getByTestId('issue-detail-status')).toHaveTextContent(
       'In Progress'
     )
@@ -93,7 +95,7 @@ describe('IssueDetailModal', () => {
       ...mockIssue,
       type: 'bug',
     }
-    render(<IssueDetailModal issue={bugIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={bugIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('Bug')
   })
 
@@ -102,7 +104,7 @@ describe('IssueDetailModal', () => {
       ...mockIssue,
       type: 'feature',
     }
-    render(<IssueDetailModal issue={featureIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={featureIssue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-type')).toHaveTextContent('Feature')
   })
 
@@ -111,7 +113,7 @@ describe('IssueDetailModal', () => {
       ...mockIssue,
       priority: 'P0',
     }
-    render(<IssueDetailModal issue={p0Issue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={p0Issue} onClose={mock(() => {})} />)
     expect(screen.getByTestId('issue-detail-priority')).toHaveTextContent(
       'P0 - Critical'
     )
@@ -122,14 +124,16 @@ describe('IssueDetailModal', () => {
       ...mockIssue,
       description: 'This is a test description for the issue.',
     }
-    render(<IssueDetailModal issue={issueWithDescription} onClose={vi.fn()} />)
+    render(
+      <IssueDetailModal issue={issueWithDescription} onClose={mock(() => {})} />
+    )
     expect(screen.getByTestId('issue-detail-description')).toHaveTextContent(
       'This is a test description for the issue.'
     )
   })
 
   it('does not display description section when description is empty', () => {
-    render(<IssueDetailModal issue={mockIssue} onClose={vi.fn()} />)
+    render(<IssueDetailModal issue={mockIssue} onClose={mock(() => {})} />)
     expect(
       screen.queryByTestId('issue-detail-description')
     ).not.toBeInTheDocument()
@@ -143,7 +147,7 @@ describe('IssueDetailModal', () => {
     render(
       <IssueDetailModal
         issue={issueWithMultilineDescription}
-        onClose={vi.fn()}
+        onClose={mock(() => {})}
       />
     )
     const descriptionElement = screen.getByTestId('issue-detail-description')
@@ -158,7 +162,10 @@ describe('IssueDetailModal', () => {
       description: 'A'.repeat(5000),
     }
     render(
-      <IssueDetailModal issue={issueWithLongDescription} onClose={vi.fn()} />
+      <IssueDetailModal
+        issue={issueWithLongDescription}
+        onClose={mock(() => {})}
+      />
     )
     const modal = screen.getByTestId('issue-detail-modal')
     expect(modal).toHaveClass('overflow-y-auto')

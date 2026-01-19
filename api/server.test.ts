@@ -1,5 +1,5 @@
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { type ChildProcess, spawn } from 'node:child_process'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 describe('API Server', () => {
   let serverProcess: ChildProcess

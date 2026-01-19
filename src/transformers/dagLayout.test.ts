@@ -1,5 +1,5 @@
+import { describe, expect, it } from 'bun:test'
 import type { Edge, Node } from '@xyflow/react'
-import { describe, expect, it } from 'vitest'
 import { applyDagLayout } from './dagLayout'
 
 function findNodeById(nodes: Node[], id: string): Node {

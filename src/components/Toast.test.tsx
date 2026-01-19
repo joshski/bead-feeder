@@ -1,14 +1,16 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { Toast, ToastContainer, type ToastMessage } from './Toast'
 
 describe('Toast', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
-    vi.useRealTimers()
+    cleanup()
   })
 
   const mockToast: ToastMessage = {
@@ -25,7 +27,10 @@ describe('Toast', () => {
   it('renders success toast with correct styling', () => {
     render(<Toast toast={mockToast} onDismiss={() => {}} />)
     const alert = screen.getByRole('alert')
-    expect(alert.style.backgroundColor).toBe('rgb(220, 252, 231)')
+    // happy-dom returns hex, jsdom returns rgb
+    expect(['#dcfce7', 'rgb(220, 252, 231)']).toContain(
+      alert.style.backgroundColor
+    )
   })
 
   it('renders error toast with correct styling', () => {
@@ -36,7 +41,9 @@ describe('Toast', () => {
     }
     render(<Toast toast={errorToast} onDismiss={() => {}} />)
     const alert = screen.getByRole('alert')
-    expect(alert.style.backgroundColor).toBe('rgb(254, 242, 242)')
+    expect(['#fef2f2', 'rgb(254, 242, 242)']).toContain(
+      alert.style.backgroundColor
+    )
   })
 
   it('renders info toast with correct styling', () => {
@@ -47,37 +54,47 @@ describe('Toast', () => {
     }
     render(<Toast toast={infoToast} onDismiss={() => {}} />)
     const alert = screen.getByRole('alert')
-    expect(alert.style.backgroundColor).toBe('rgb(219, 234, 254)')
+    expect(['#dbeafe', 'rgb(219, 234, 254)']).toContain(
+      alert.style.backgroundColor
+    )
   })
 
   it('calls onDismiss when dismiss button is clicked', async () => {
-    const onDismiss = vi.fn()
+    const onDismiss = mock(() => {})
     render(<Toast toast={mockToast} onDismiss={onDismiss} />)
 
     const dismissButton = screen.getByRole('button', { name: 'Dismiss' })
     fireEvent.click(dismissButton)
 
-    // Wait for the animation timeout
-    act(() => {
-      vi.advanceTimersByTime(300)
-    })
-
-    expect(onDismiss).toHaveBeenCalledWith('test-1')
+    // Wait for the animation timeout using real timers
+    await waitFor(
+      () => {
+        expect(onDismiss).toHaveBeenCalledWith('test-1')
+      },
+      { timeout: 1000 }
+    )
   })
 
   it('auto-dismisses after duration', async () => {
-    const onDismiss = vi.fn()
-    render(<Toast toast={mockToast} onDismiss={onDismiss} duration={1000} />)
+    const onDismiss = mock(() => {})
+    // Use short duration for testing
+    render(<Toast toast={mockToast} onDismiss={onDismiss} duration={100} />)
 
-    act(() => {
-      vi.advanceTimersByTime(1300) // duration + animation time
-    })
-
-    expect(onDismiss).toHaveBeenCalledWith('test-1')
+    // Wait for auto-dismiss
+    await waitFor(
+      () => {
+        expect(onDismiss).toHaveBeenCalledWith('test-1')
+      },
+      { timeout: 1000 }
+    )
   })
 })
 
 describe('ToastContainer', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   it('renders multiple toasts', () => {
     const toasts: ToastMessage[] = [
       { id: '1', type: 'success', message: 'First toast' },

@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { SyncProvider } from './context/SyncContext'
@@ -13,17 +13,26 @@ class MockEventSource {
 }
 
 describe('App', () => {
-  it('renders the heading on non-home routes', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  beforeEach(() => {
     // Mock EventSource and fetch for contexts
-    vi.stubGlobal('EventSource', MockEventSource)
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
+    Object.defineProperty(globalThis, 'EventSource', {
+      value: MockEventSource,
+      writable: true,
+    })
+    // @ts-expect-error - mock fetch doesn't need all properties
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ issues: [], dependencies: [] }),
-      })
+      } as Response)
     )
+  })
 
+  it('renders the heading on non-home routes', () => {
     render(
       <MemoryRouter initialEntries={['/local?path=/tmp/test']}>
         <AuthProvider>

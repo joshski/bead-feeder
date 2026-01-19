@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import GitHubLoginButton from './GitHubLoginButton'
 
 // Mock crypto.getRandomValues
@@ -15,12 +15,21 @@ Object.defineProperty(globalThis, 'crypto', {
 })
 
 describe('GitHubLoginButton', () => {
+  const mockSessionStorage = {
+    setItem: mock(() => {}),
+    getItem: mock(() => null),
+    removeItem: mock(() => {}),
+  }
+
   beforeEach(() => {
-    vi.stubGlobal('sessionStorage', {
-      setItem: vi.fn(),
-      getItem: vi.fn(),
-      removeItem: vi.fn(),
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      value: mockSessionStorage,
+      writable: true,
     })
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   it('renders the login button', () => {
@@ -42,7 +51,7 @@ describe('GitHubLoginButton', () => {
     fireEvent.click(button)
 
     // Should store the OAuth state for CSRF protection
-    expect(sessionStorage.setItem).toHaveBeenCalledWith(
+    expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
       'oauth_state',
       expect.any(String)
     )

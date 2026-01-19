@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import { debug, error, info, logRequest, warn } from './logger'
 
 describe('logger', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
+  let consoleLogSpy: ReturnType<typeof spyOn>
+  let consoleWarnSpy: ReturnType<typeof spyOn>
+  let consoleErrorSpy: ReturnType<typeof spyOn>
 
   beforeEach(() => {
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {})
+    consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+    consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {})
   })
 
   afterEach(() => {

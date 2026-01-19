@@ -1,5 +1,5 @@
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import FloatingActionButton from './FloatingActionButton'
 
 describe('FloatingActionButton', () => {
@@ -8,12 +8,12 @@ describe('FloatingActionButton', () => {
   })
 
   it('renders the FAB', () => {
-    render(<FloatingActionButton onClick={vi.fn()} />)
+    render(<FloatingActionButton onClick={mock(() => {})} />)
     expect(screen.getByTestId('fab-issue-assistant')).toBeInTheDocument()
   })
 
   it('displays plus icon as SVG', () => {
-    render(<FloatingActionButton onClick={vi.fn()} />)
+    render(<FloatingActionButton onClick={mock(() => {})} />)
     const button = screen.getByTestId('fab-issue-assistant')
     const svg = button.querySelector('svg')
     expect(svg).toBeInTheDocument()
@@ -21,14 +21,14 @@ describe('FloatingActionButton', () => {
   })
 
   it('calls onClick when clicked', () => {
-    const onClick = vi.fn()
+    const onClick = mock(() => {})
     render(<FloatingActionButton onClick={onClick} />)
     fireEvent.click(screen.getByTestId('fab-issue-assistant'))
     expect(onClick).toHaveBeenCalled()
   })
 
   it('has default aria-label', () => {
-    render(<FloatingActionButton onClick={vi.fn()} />)
+    render(<FloatingActionButton onClick={mock(() => {})} />)
     expect(screen.getByTestId('fab-issue-assistant')).toHaveAttribute(
       'aria-label',
       'Issue Assistant'
@@ -36,7 +36,9 @@ describe('FloatingActionButton', () => {
   })
 
   it('accepts custom label', () => {
-    render(<FloatingActionButton onClick={vi.fn()} label="Add new item" />)
+    render(
+      <FloatingActionButton onClick={mock(() => {})} label="Add new item" />
+    )
     expect(screen.getByTestId('fab-issue-assistant')).toHaveAttribute(
       'aria-label',
       'Add new item'

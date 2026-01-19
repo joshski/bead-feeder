@@ -28,7 +28,9 @@
     "api/**/*",
     "scripts/**/*",
     "e2e/**/*",
-    "vite.config.ts"
+    "vite.config.ts",
+    "bun-test.d.ts",
+    "test-preload.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,26 +1,26 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 
-// Create mock git-service functions using vi.hoisted to allow use in vi.mock
-const { mockGitService } = vi.hoisted(() => ({
-  mockGitService: {
-    fetchRepository: vi.fn().mockResolvedValue({ success: true }),
-    pushRepository: vi.fn().mockResolvedValue({ success: true }),
-    pullRepository: vi.fn().mockResolvedValue({ success: true }),
-    compareBranches: vi.fn().mockResolvedValue({
+// Create mock git-service functions
+const mockGitService = {
+  fetchRepository: mock(() => Promise.resolve({ success: true })),
+  pushRepository: mock(() => Promise.resolve({ success: true })),
+  pullRepository: mock(() => Promise.resolve({ success: true })),
+  compareBranches: mock(() =>
+    Promise.resolve({
       success: true,
       status: { ahead: 0, behind: 0, diverged: false },
-    }),
-    getCurrentBranch: vi
-      .fn()
-      .mockResolvedValue({ success: true, output: 'main' }),
-    hasConflicts: vi.fn().mockResolvedValue(false),
-    abortMerge: vi.fn().mockResolvedValue({ success: true }),
-    resolveConflictsTheirs: vi.fn().mockResolvedValue({ success: true }),
-  },
-}))
+    })
+  ),
+  getCurrentBranch: mock(() =>
+    Promise.resolve({ success: true, output: 'main' })
+  ),
+  hasConflicts: mock(() => Promise.resolve(false)),
+  abortMerge: mock(() => Promise.resolve({ success: true })),
+  resolveConflictsTheirs: mock(() => Promise.resolve({ success: true })),
+}
 
-// Mock the git-service module to prevent tests from corrupting local .git/config
-vi.mock('./git-service', () => mockGitService)
+// Mock the git-service module
+mock.module('./git-service', () => mockGitService)
 
 import { getSyncQueue, resetSyncQueue, SyncQueue } from './sync-queue'
 
@@ -28,23 +28,35 @@ describe('SyncQueue', () => {
   let queue: SyncQueue
 
   beforeEach(() => {
-    // Reset all mocks
-    vi.clearAllMocks()
     // Reset mock implementations to default success values
-    mockGitService.fetchRepository.mockResolvedValue({ success: true })
-    mockGitService.pushRepository.mockResolvedValue({ success: true })
-    mockGitService.pullRepository.mockResolvedValue({ success: true })
-    mockGitService.compareBranches.mockResolvedValue({
-      success: true,
-      status: { ahead: 0, behind: 0, diverged: false },
-    })
-    mockGitService.getCurrentBranch.mockResolvedValue({
-      success: true,
-      output: 'main',
-    })
-    mockGitService.hasConflicts.mockResolvedValue(false)
-    mockGitService.abortMerge.mockResolvedValue({ success: true })
-    mockGitService.resolveConflictsTheirs.mockResolvedValue({ success: true })
+    mockGitService.fetchRepository.mockImplementation(() =>
+      Promise.resolve({ success: true })
+    )
+    mockGitService.pushRepository.mockImplementation(() =>
+      Promise.resolve({ success: true })
+    )
+    mockGitService.pullRepository.mockImplementation(() =>
+      Promise.resolve({ success: true })
+    )
+    mockGitService.compareBranches.mockImplementation(() =>
+      Promise.resolve({
+        success: true,
+        status: { ahead: 0, behind: 0, diverged: false },
+      })
+    )
+    mockGitService.getCurrentBranch.mockImplementation(() =>
+      Promise.resolve({
+        success: true,
+        output: 'main',
+      })
+    )
+    mockGitService.hasConflicts.mockImplementation(() => Promise.resolve(false))
+    mockGitService.abortMerge.mockImplementation(() =>
+      Promise.resolve({ success: true })
+    )
+    mockGitService.resolveConflictsTheirs.mockImplementation(() =>
+      Promise.resolve({ success: true })
+    )
 
     resetSyncQueue()
     queue = new SyncQueue({ debounceMs: 50, pushIntervalMs: 100 })
@@ -173,7 +185,7 @@ describe('SyncQueue', () => {
     })
 
     it('allows unsubscribing from events', () => {
-      const handler = vi.fn()
+      const handler = mock(() => {})
       const unsubscribe = queue.on('statusChange', handler)
 
       unsubscribe()

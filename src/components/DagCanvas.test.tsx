@@ -1,8 +1,12 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
+import { cleanup, render, screen } from '@testing-library/react'
 import DagCanvas from './DagCanvas'
 
 describe('DagCanvas', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   it('renders the canvas with nodes', () => {
     const nodes = [
       { id: '1', position: { x: 0, y: 0 }, data: { label: 'Test Node' } },
@@ -22,7 +26,7 @@ describe('DagCanvas', () => {
   })
 
   it('accepts an onConnect callback prop', () => {
-    const onConnect = vi.fn()
+    const onConnect = mock(() => {})
     const nodes = [
       { id: '1', position: { x: 0, y: 0 }, data: { label: 'Node 1' } },
       { id: '2', position: { x: 100, y: 100 }, data: { label: 'Node 2' } },

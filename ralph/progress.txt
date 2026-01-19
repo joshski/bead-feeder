@@ -1287,3 +1287,63 @@ Replaced the slash text with the existing `GitHubIcon` component (already used i
 
 **Files Changed:**
 - src/App.tsx (replaced slash with GitHubIcon in header)
+
+## Session 38 - 2026-01-19
+
+### Task: bead-fu9 - Replace vitest with bun:test for all unit tests
+
+**Status:** Completed
+
+**Problem Solved:**
+The project was using vitest for unit tests, but since the project uses Bun as its runtime and package manager, it made sense to use Bun's built-in test framework (`bun:test`) for consistency and to reduce dependencies.
+
+**Solution Implemented:**
+Migrated all 306 unit tests from vitest to bun:test:
+
+1. **Created test-preload.ts** - Sets up the test environment:
+   - Uses `@happy-dom/global-registrator` to provide DOM APIs (replaces jsdom)
+   - Extends `expect` with `@testing-library/jest-dom` matchers
+   - Mocks `ResizeObserver` for React Flow components
+
+2. **Created bun-test.d.ts** - TypeScript declarations for jest-dom matchers in bun:test
+
+3. **Updated bunfig.toml** - Added preload configuration for test setup
+
+4. **Migrated all test files**:
+   - Changed imports from `'vitest'` to `'bun:test'`
+   - Replaced `vi.spyOn` with `spyOn`
+   - Replaced `vi.fn()` with `mock()`
+   - Replaced `vi.mock()` with `mock.module()`
+   - Converted `describe.each` (vitest-specific) to for loops
+   - Added `cleanup()` calls after each React component test for DOM isolation
+
+5. **Fixed Toast tests**:
+   - Removed fake timers (caused test isolation issues with happy-dom)
+   - Used real timers with `waitFor()` instead
+
+6. **Updated package.json**:
+   - Changed `"test"` script to use `bun test` with explicit file list
+   - Added `"test:integration"` script for server integration tests
+   - Removed vitest and jsdom from devDependencies
+   - Added `@happy-dom/global-registrator` as devDependency
+
+7. **Deleted obsolete files**:
+   - `vitest.config.ts`
+   - `src/test-setup.ts`
+
+**Technical Notes:**
+- happy-dom returns hex colors while jsdom returns rgb() - tests updated to accept both formats
+- Server integration tests (api/server.test.ts) excluded from unit test run as they require a running server
+- Mock module syntax is different: `mock.module()` returns a promise and must be at top level
+
+**Tests:** All 306 unit tests pass. TypeScript compiles. Biome lint passes. Build succeeds.
+
+**Files Changed:**
+- test-preload.ts (new)
+- bun-test.d.ts (new)
+- bunfig.toml (added preload)
+- tsconfig.json (added new files to include)
+- package.json (updated scripts, dependencies)
+- vitest.config.ts (deleted)
+- src/test-setup.ts (deleted)
+- All *.test.ts and *.test.tsx files (migrated imports and mocking patterns)

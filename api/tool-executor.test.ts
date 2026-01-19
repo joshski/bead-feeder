@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'bun:test'
 import { FakeIssueTracker } from './issue-tracker'
 import { executeTool } from './tool-executor'
 
@@ -7,11 +7,6 @@ describe('Tool Executor', () => {
 
   beforeEach(() => {
     tracker = new FakeIssueTracker()
-    vi.resetAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('executeTool', () => {
